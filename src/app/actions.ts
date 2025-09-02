@@ -1,6 +1,7 @@
 "use server";
 
 import { moderateContent } from '@/ai/flows/content-moderation';
+import { GhostNote } from '@/types';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 
@@ -20,6 +21,7 @@ type FormState = {
     message: string;
     errors?: Record<string, string[] | undefined>;
     reset?: boolean;
+    note?: GhostNote;
 }
 
 export async function createNote(prevState: FormState, formData: FormData): Promise<FormState> {
@@ -49,13 +51,26 @@ export async function createNote(prevState: FormState, formData: FormData): Prom
     
     // In a real app, you would save the note to your database here.
     console.log('Note is safe, saving to DB:', { text, lat, lng });
+
+    const newNote: GhostNote = {
+      id: new Date().getTime().toString(),
+      lat,
+      lng,
+      teaser: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
+      type: 'text',
+      score: 0,
+      createdAt: {
+        seconds: Math.floor(Date.now() / 1000),
+        nanoseconds: 0,
+      },
+    };
     
     // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     revalidatePath(`/`);
 
-    return { message: 'Note dropped successfully!', errors: {}, reset: true };
+    return { message: 'Note dropped successfully!', errors: {}, reset: true, note: newNote };
     
   } catch (error) {
     console.error("Error creating note:", error);

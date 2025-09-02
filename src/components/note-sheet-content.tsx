@@ -2,17 +2,15 @@
 
 import { useEffect, useState, useActionState, useRef } from 'react';
 import { useFormStatus } from 'react-dom';
-import { Camera, Heart, Flag, Send, CornerUpLeft } from 'lucide-react';
-import { Note, Reply } from '@/types';
+import { Camera, Heart, Flag, Send } from 'lucide-react';
+import { Note, Reply, GhostNote } from '@/types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
-import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import { Avatar, AvatarFallback } from './ui/avatar';
 import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { submitReply, createNote } from '@/app/actions';
-import { Label } from './ui/label';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
 
@@ -49,7 +47,7 @@ function SubmitButton({label, pendingLabel}: {label: string, pendingLabel: strin
     <Button type="submit" disabled={pending}>
       {pending ? (
         <>
-          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
           {pendingLabel}
         </>
       ) : label}
@@ -61,7 +59,7 @@ interface NoteSheetContentProps {
   noteId: string | null;
   isCreating: boolean;
   userLocation: Coordinates | null;
-  onNoteCreated?: () => void;
+  onNoteCreated?: (newNote: GhostNote) => void;
 }
 
 export default function NoteSheetContent({ noteId, isCreating, userLocation, onNoteCreated }: NoteSheetContentProps) {
@@ -99,9 +97,9 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
         toast({ title: createNoteState.message });
       }
       
-      if(createNoteState.reset){
+      if(createNoteState.reset && createNoteState.note){
         createNoteFormRef.current?.reset();
-        onNoteCreated?.();
+        onNoteCreated?.(createNoteState.note);
       }
     }
   }, [createNoteState, toast, onNoteCreated]);
@@ -112,7 +110,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
         <form ref={createNoteFormRef} action={createNoteAction} className="space-y-4">
             <input type="hidden" name="lat" value={userLocation?.latitude ?? 0} />
             <input type="hidden" name="lng" value={userLocation?.longitude ?? 0} />
-            <Textarea name="text" placeholder="What's on your mind? (Max 800 chars)" maxLength={800} rows={5} />
+            <Textarea name="text" placeholder="What's on your mind? (Max 800 chars)" maxLength={800} rows={5} required />
             {createNoteState.errors?.text && <p className="text-sm text-destructive">{createNoteState.errors.text[0]}</p>}
 
             <div className="flex items-center justify-between">
@@ -121,7 +119,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
                 </Button>
                 <SubmitButton label="Drop Note" pendingLabel="Dropping..." />
             </div>
-            <p className="text-xs text-muted-foreground">Location: {userLocation?.latitude.toFixed(5)}, {userLocation?.longitude.toFixed(5)}</p>
+            {userLocation && <p className="text-xs text-muted-foreground">Location: {userLocation.latitude.toFixed(5)}, {userLocation.longitude.toFixed(5)}</p>}
         </form>
       </div>
     );
@@ -170,9 +168,12 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
                     placeholder="Add a reply... (Max 120 chars)" 
                     maxLength={120} 
                     rows={1} 
+                    required
                     className="flex-grow min-h-0"
                 />
-                <SubmitButton label={<Send className="h-4 w-4" />} pendingLabel="" />
+                <Button type="submit" size="icon" className="h-full">
+                  <Send className="h-4 w-4" />
+                </Button>
             </form>
             {replyFormState.errors?.text && <p className="text-sm text-destructive">{replyFormState.errors.text[0]}</p>}
 

@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/dialog"
 import { Badge } from './ui/badge';
 import CompassView from './compass-view';
+import { useAuth } from './auth-provider';
 
 const MAP_STYLE = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
@@ -35,7 +36,8 @@ const DEFAULT_ZOOM = 16;
 
 
 export default function MapView() {
-  const { location, error, permissionState, requestPermission } = useLocation();
+  const { location, error: locationError, permissionState, requestPermission } = useLocation();
+  const { user } = useAuth();
   const [notes, setNotes] = useState<GhostNote[]>(initialNotes);
   const [selectedNote, setSelectedNote] = useState<GhostNote | null>(null);
   const [revealedNoteId, setRevealedNoteId] = useState<string | null>(null);
@@ -52,26 +54,25 @@ export default function MapView() {
   });
 
   useEffect(() => {
-    if(location) {
-        // Fly to user's location when it becomes available
+    if(location && mapRef.current?.getCenter().lng.toFixed(4) === DEFAULT_CENTER.longitude.toFixed(4)) {
+        // Fly to user's location only once when it becomes available
         mapRef.current?.flyTo({
             center: [location.longitude, location.latitude],
             zoom: 17,
             duration: 2000
         });
-        // Fetch nearby notes when location changes
-        // console.log("Fetching notes near:", location);
     }
   }, [location]);
 
   const handleMarkerClick = (note: GhostNote) => {
+    if (!location) return;
     const distance = getDistance(
-        { latitude: location?.latitude ?? 0, longitude: location?.longitude ?? 0 },
+        location,
         { latitude: note.lat, longitude: note.lng }
     );
     setSelectedNote(note);
 
-    if (distance <= 35) { // Proximity check passed
+    if (distance <= 35 || revealedNoteId === note.id) { // Proximity check passed or already revealed
         setRevealedNoteId(note.id);
         setCreatingNote(false);
         setNoteSheetOpen(true);
@@ -88,6 +89,17 @@ export default function MapView() {
         duration: 2000
       });
     }
+  };
+  
+  const handleNoteCreated = (newNote: GhostNote) => {
+    setNotes(prevNotes => [...prevNotes, newNote]);
+    setNoteSheetOpen(false);
+    // Fly to the new note
+    mapRef.current?.flyTo({
+        center: [newNote.lng, newNote.lat],
+        zoom: 18,
+        duration: 1500
+    });
   };
 
   if (permissionState !== 'granted') {
@@ -135,7 +147,7 @@ export default function MapView() {
         {notes.map(note => (
             <Marker key={note.id} longitude={note.lng} latitude={note.lat} onClick={() => handleMarkerClick(note)}>
                 <button className="transform hover:scale-110 transition-transform">
-                    <MapPin className={`h-8 w-8 drop-shadow-lg ${note.type === 'tip' ? 'text-accent' : 'text-primary/70'}`} fill="currentColor" />
+                    <MapPin className={`h-8 w-8 drop-shadow-lg ${note.id === revealedNoteId ? 'text-accent' : 'text-primary/70'}`} fill="currentColor" />
                 </button>
             </Marker>
         ))}
@@ -152,7 +164,7 @@ export default function MapView() {
                 <div className="p-1">
                     <h3 className="font-bold font-headline">{selectedNote.teaser || "A mysterious note"}</h3>
                     <p className="text-xs text-muted-foreground">{new Date(selectedNote.createdAt.seconds * 1000).toLocaleDateString()}</p>
-                    <Badge variant={selectedNote.type === 'tip' ? 'destructive' : 'secondary'} className="mt-1">{selectedNote.type}</Badge>
+                    <Badge variant={selectedNote.id === revealedNoteId ? 'default' : 'secondary'} className="mt-1">{selectedNote.type}</Badge>
                 </div>
             </Popup>
         )}
@@ -195,7 +207,7 @@ export default function MapView() {
             noteId={revealedNoteId} 
             isCreating={isCreatingNote} 
             userLocation={location}
-            onNoteCreated={() => setNoteSheetOpen(false)}
+            onNoteCreated={handleNoteCreated}
           />
         </SheetContent>
       </Sheet>
