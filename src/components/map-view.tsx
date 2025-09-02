@@ -21,7 +21,17 @@ import {
 import { Badge } from './ui/badge';
 import CompassView from './compass-view';
 import { useAuth } from './auth-provider';
-import { collection, onSnapshot, query, Timestamp } from 'firebase/firestore';
+import {
+  collection,
+  query,
+  orderBy,
+  startAt,
+  endAt,
+  limit,
+  getDocs,
+  Timestamp,
+} from 'firebase/firestore';
+import { geohashQueryBounds, distanceBetween } from 'geofire-common';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 
@@ -51,33 +61,66 @@ export default function MapView() {
   });
 
   useEffect(() => {
-    const q = query(collection(db, "notes"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        setLoadingNotes(true);
-        const notesData = querySnapshot.docs.map(doc => {
+    if (!location) return;
+
+    setLoadingNotes(true);
+
+    const center: [number, number] = [location.latitude, location.longitude];
+    const radiusInM = 5000; // 5km search radius
+    const bounds = geohashQueryBounds(center, radiusInM);
+    const MAX_NOTES = 50;
+
+    const promises = bounds.map((b) =>
+      getDocs(
+        query(
+          collection(db, "notes"),
+          orderBy("geohash"),
+          startAt(b[0]),
+          endAt(b[1]),
+          limit(MAX_NOTES)
+        )
+      )
+    );
+
+    Promise.all(promises)
+      .then((snapshots) => {
+        const notesData: GhostNote[] = [];
+        const seen = new Set<string>();
+
+        snapshots.forEach((snap) => {
+          snap.docs.forEach((doc) => {
+            if (seen.has(doc.id)) return;
             const data = doc.data();
-            // Firestore Timestamps need to be handled carefully
-            const createdAtTimestamp = data.createdAt as Timestamp | null;
-            return {
+            const distanceInKm = distanceBetween(
+              [data.lat, data.lng],
+              center
+            );
+            if (distanceInKm * 1000 <= radiusInM) {
+              seen.add(doc.id);
+              const createdAtTimestamp = data.createdAt as Timestamp | null;
+              notesData.push({
                 id: doc.id,
                 lat: data.lat,
                 lng: data.lng,
                 teaser: data.teaser,
                 type: data.type,
                 score: data.score,
-                // Provide a default or handle null timestamps
-                createdAt: createdAtTimestamp ? { seconds: createdAtTimestamp.seconds, nanoseconds: createdAtTimestamp.nanoseconds } : { seconds: Date.now() / 1000, nanoseconds: 0 },
-            } as GhostNote
+                createdAt: createdAtTimestamp
+                  ? { seconds: createdAtTimestamp.seconds, nanoseconds: createdAtTimestamp.nanoseconds }
+                  : { seconds: Date.now() / 1000, nanoseconds: 0 },
+              });
+            }
+          });
         });
-        setNotes(notesData);
+
+        setNotes(notesData.slice(0, MAX_NOTES));
         setLoadingNotes(false);
-    }, (error) => {
+      })
+      .catch((error) => {
         console.error("Error fetching notes: ", error);
         setLoadingNotes(false);
-    });
-
-    return () => unsubscribe();
-  }, []);
+      });
+  }, [location]);
 
   useEffect(() => {
     if(location && mapRef.current?.getCenter().lng.toFixed(4) === DEFAULT_CENTER.longitude.toFixed(4)) {
@@ -247,9 +290,9 @@ export default function MapView() {
                     You need to be within 35 meters and align your view to unlock this note.
                 </DialogDescription>
             </DialogHeader>
-            {selectedNote && <CompassView
+              {selectedNote && <CompassView
                 userLocation={location}
-                targetLocation={{latitude: selectedNote.lat, longitude: selectedNote.lng}}
+                targetLocation={{latitude: selectedNote.lat, longitude: selectedNote.lng, accuracy: 0}}
                 onAlignedAndClose={() => {
                     setCompassViewOpen(false);
                     setRevealedNoteId(selectedNote.id);
