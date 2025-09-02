@@ -290,10 +290,7 @@ function MapViewContent() {
                     16,
                     ['get', 'render_height']
                 ],
-                'fill-extrusion-base': ['case',
-                    ['>=', ['get', 'zoom'], 16],
-                    ['get', 'render_min_height'], 0
-                ]
+                'fill-extrusion-base': 0,
             }
         },
         labelLayerId
@@ -437,5 +434,7 @@ export default function MapView() {
         </React.Suspense>
     )
 }
+
+    
 
     
