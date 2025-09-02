@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               description: "Anonymous sign-in is not enabled in your Firebase project. Please enable it in the Firebase console.",
               variant: "destructive",
             });
-          } else if (error.code === 'auth/requests-to-this-api-are-blocked') {
+          } else if (error.code === 'auth/requests-to-this-api-are-blocked' || error.code === 'auth/requests-to-this-api-identitytoolkit-method-google.cloud.identitytoolkit.v1.authenticationservice.signup-are-blocked') {
             toast({
               title: "Configuration Required",
               description: "The Identity Platform API is not enabled. Please enable it in your Google Cloud project to use Firebase Authentication.",
