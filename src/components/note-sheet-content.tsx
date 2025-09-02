@@ -683,7 +683,3 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
 
   return <NoteView note={note} onClose={onClose} />;
 }
-
-    
-
-    
