@@ -51,6 +51,7 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imageDimensions, setImageDimensions] = useState<{ w: number; h: number } | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -117,14 +118,11 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
                 const snapshot = await uploadBytes(storageRef, imageFile);
                 const downloadURL = await getDownloadURL(snapshot.ref);
 
-                // This is a placeholder for actual image dimension detection
-                const imageDimensions = { w: 600, h: 400 };
-
                 newNote.media = [{
                     path: downloadURL,
                     type: 'image',
-                    w: imageDimensions.w,
-                    h: imageDimensions.h,
+                    w: imageDimensions?.w ?? 0,
+                    h: imageDimensions?.h ?? 0,
                 }];
             }
 
@@ -151,18 +149,26 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
             setImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
-                setImagePreview(reader.result as string);
+                const result = reader.result as string;
+                setImagePreview(result);
+                const img = new window.Image();
+                img.onload = () => {
+                    setImageDimensions({ w: img.naturalWidth, h: img.naturalHeight });
+                };
+                img.src = result;
             };
             reader.readAsDataURL(file);
         } else {
             setImagePreview(null);
             setImageFile(null);
+            setImageDimensions(null);
         }
     };
     
     const handleRemoveImage = () => {
         setImagePreview(null);
         setImageFile(null);
+        setImageDimensions(null);
         if(fileInputRef.current) {
             fileInputRef.current.value = '';
         }
