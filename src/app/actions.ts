@@ -23,7 +23,7 @@ type CreateNoteFormState = {
     message: string;
     errors?: Record<string, string[] | undefined>;
     success: boolean;
-    note?: GhostNote;
+    note?: GhostNote; // Keep this for now to pass back to client
 }
 
 export async function createNote(prevState: CreateNoteFormState, formData: FormData): Promise<CreateNoteFormState> {
@@ -76,23 +76,11 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
         ...newNoteDoc,
         createdAt: serverTimestamp(),
     });
-
-    const newGhostNote: GhostNote = {
-      id: docRef.id,
-      lat,
-      lng,
-      teaser: newNoteDoc.teaser,
-      type: newNoteDoc.type,
-      score: newNoteDoc.score,
-      createdAt: { 
-        seconds: Math.floor(Date.now() / 1000),
-        nanoseconds: 0,
-      },
-    };
     
     revalidatePath(`/`);
 
-    return { message: 'Note dropped successfully!', success: true, note: newGhostNote };
+    // The note object is constructed on the client now.
+    return { message: 'Note dropped successfully!', success: true };
     
   } catch (error) {
     console.error("Error creating note:", error);

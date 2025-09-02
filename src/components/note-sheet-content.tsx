@@ -40,16 +40,33 @@ function CreateNoteForm({ userLocation, onNoteCreated }: { userLocation: Coordin
     useEffect(() => {
         if(state.message) {
             if (!state.success) {
-                toast({ title: state.message, variant: 'destructive' });
+                toast({ title: "Error creating note", description: state.message, variant: 'destructive' });
             } else {
                 toast({ title: state.message });
-            }
-            if(state.success && state.note){
-                onNoteCreated(state.note);
-                formRef.current?.reset();
+                // Construct the note on the client side for immediate feedback
+                if(formRef.current && userLocation) {
+                    const formData = new FormData(formRef.current);
+                    const text = formData.get('text') as string;
+                    const newGhostNote: GhostNote = {
+                        // This ID is temporary, Firestore will assign a real one.
+                        // We rely on the parent component to refetch or get the real data.
+                        id: `temp-${Date.now()}`, 
+                        lat: userLocation.latitude,
+                        lng: userLocation.longitude,
+                        teaser: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
+                        type: 'text',
+                        score: 0,
+                        createdAt: { 
+                          seconds: Math.floor(Date.now() / 1000),
+                          nanoseconds: 0,
+                        },
+                      };
+                    onNoteCreated(newGhostNote);
+                    formRef.current?.reset();
+                }
             }
         }
-    }, [state, toast, onNoteCreated]);
+    }, [state, toast, onNoteCreated, userLocation]);
 
     return (
         <form ref={formRef} action={formAction} className="p-4 space-y-4">
