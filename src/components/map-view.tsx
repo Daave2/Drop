@@ -21,15 +21,11 @@ import {
 import { Badge } from './ui/badge';
 import CompassView from './compass-view';
 import { useAuth } from './auth-provider';
+import { collection, getDocs, Timestamp } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from './ui/skeleton';
 
 const MAP_STYLE = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-
-// Mock data for initial notes
-const initialNotes: GhostNote[] = [
-  { id: '1', lat: 34.052235, lng: -118.243683, score: 5, teaser: 'Secret Garden', type: 'tip', createdAt: {seconds: Date.now()/1000 - 3600, nanoseconds: 0}},
-  { id: '2', lat: 34.053, lng: -118.244, score: 12, teaser: 'Cool Mural', type: 'photo', createdAt: {seconds: Date.now()/1000 - 86400, nanoseconds: 0} },
-  { id: '3', lat: 34.051, lng: -118.245, score: 2, teaser: 'Hidden Gem', type: 'review', createdAt: {seconds: Date.now()/1000 - 604800, nanoseconds: 0} },
-];
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
@@ -38,7 +34,8 @@ const DEFAULT_ZOOM = 16;
 export default function MapView() {
   const { location, error: locationError, permissionState, requestPermission } = useLocation();
   const { user } = useAuth();
-  const [notes, setNotes] = useState<GhostNote[]>(initialNotes);
+  const [notes, setNotes] = useState<GhostNote[]>([]);
+  const [loadingNotes, setLoadingNotes] = useState(true);
   const [selectedNote, setSelectedNote] = useState<GhostNote | null>(null);
   const [revealedNoteId, setRevealedNoteId] = useState<string | null>(null);
   const [isNoteSheetOpen, setNoteSheetOpen] = useState(false);
@@ -52,6 +49,33 @@ export default function MapView() {
     zoom: DEFAULT_ZOOM,
     pitch: 45,
   });
+
+  useEffect(() => {
+    async function fetchNotes() {
+      try {
+        setLoadingNotes(true);
+        const querySnapshot = await getDocs(collection(db, "notes"));
+        const notesData = querySnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                lat: data.lat,
+                lng: data.lng,
+                teaser: data.teaser,
+                type: data.type,
+                score: data.score,
+                createdAt: data.createdAt ? { seconds: (data.createdAt as Timestamp).seconds, nanoseconds: (data.createdAt as Timestamp).nanoseconds } : { seconds: 0, nanoseconds: 0 },
+            } as GhostNote
+        });
+        setNotes(notesData);
+      } catch (error) {
+        console.error("Error fetching notes: ", error);
+      } finally {
+        setLoadingNotes(false);
+      }
+    }
+    fetchNotes();
+  }, []);
 
   useEffect(() => {
     if(location && mapRef.current?.getCenter().lng.toFixed(4) === DEFAULT_CENTER.longitude.toFixed(4)) {
@@ -94,6 +118,7 @@ export default function MapView() {
   const handleNoteCreated = (newNote: GhostNote) => {
     setNotes(prevNotes => [...prevNotes, newNote]);
     setNoteSheetOpen(false);
+    setCreatingNote(false);
     // Fly to the new note
     mapRef.current?.flyTo({
         center: [newNote.lng, newNote.lat],
@@ -144,13 +169,20 @@ export default function MapView() {
             <div className="w-4 h-4 bg-primary rounded-full border-2 border-white shadow-lg animate-pulse" />
           </Marker>
         )}
-        {notes.map(note => (
+        {!loadingNotes ? notes.map(note => (
             <Marker key={note.id} longitude={note.lng} latitude={note.lat} onClick={() => handleMarkerClick(note)}>
                 <button className="transform hover:scale-110 transition-transform">
                     <MapPin className={`h-8 w-8 drop-shadow-lg ${note.id === revealedNoteId ? 'text-accent' : 'text-primary/70'}`} fill="currentColor" />
                 </button>
             </Marker>
-        ))}
+        )) : (
+          <Marker longitude={viewState.longitude!} latitude={viewState.latitude!}>
+            <div className="flex items-center gap-2 bg-background/80 p-2 rounded-lg">
+                <Skeleton className="h-5 w-5 rounded-full" />
+                <Skeleton className="h-4 w-24" />
+            </div>
+          </Marker>
+        )}
 
         {selectedNote && !isCompassViewOpen && !isNoteSheetOpen && (
             <Popup
@@ -204,10 +236,11 @@ export default function MapView() {
             </SheetTitle>
           </SheetHeader>
           <NoteSheetContent
-            noteId={revealedNoteId} 
+            noteId={selectedNote?.id ?? null} 
             isCreating={isCreatingNote} 
             userLocation={location}
             onNoteCreated={handleNoteCreated}
+            onClose={() => setNoteSheetOpen(false)}
           />
         </SheetContent>
       </Sheet>

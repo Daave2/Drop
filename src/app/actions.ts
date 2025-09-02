@@ -1,9 +1,11 @@
 "use server";
 
 import { moderateContent } from '@/ai/flows/content-moderation';
-import { GhostNote } from '@/types';
+import { GhostNote, Note } from '@/types';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { db } from '@/lib/firebase';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 
 const replySchema = z.object({
   noteId: z.string(),
@@ -49,28 +51,48 @@ export async function createNote(prevState: FormState, formData: FormData): Prom
       };
     }
     
-    // In a real app, you would save the note to your database here.
-    console.log('Note is safe, saving to DB:', { text, lat, lng });
-
-    const newNote: GhostNote = {
-      id: new Date().getTime().toString(),
+    // Save the note to Firestore
+    const newNoteDoc: Omit<Note, 'id' | 'createdAt'> = {
+      text,
       lat,
       lng,
-      teaser: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
-      type: 'text',
+      type: 'text', // Defaulting to text for now
       score: 0,
-      createdAt: {
+      teaser: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
+      // The rest of the fields for a full 'Note' object
+      authorPseudonym: 'Wandering Wombat', // Placeholder
+      geohash: '', // Should be calculated based on lat/lng
+      visibility: 'public',
+      trust: 0.5,
+      placeMaskMeters: 10,
+      revealMode: 'proximity+sightline',
+      revealRadiusM: 35,
+      revealAngleDeg: 20,
+      peekable: false,
+      dmAllowed: false,
+    };
+
+    const docRef = await addDoc(collection(db, 'notes'), {
+        ...newNoteDoc,
+        createdAt: serverTimestamp(),
+    });
+
+    const newGhostNote: GhostNote = {
+      id: docRef.id,
+      lat,
+      lng,
+      teaser: newNoteDoc.teaser,
+      type: newNoteDoc.type,
+      score: newNoteDoc.score,
+      createdAt: { // This is an approximation, real value is on server
         seconds: Math.floor(Date.now() / 1000),
         nanoseconds: 0,
       },
     };
     
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
     revalidatePath(`/`);
 
-    return { message: 'Note dropped successfully!', errors: {}, reset: true, note: newNote };
+    return { message: 'Note dropped successfully!', errors: {}, reset: true, note: newGhostNote };
     
   } catch (error) {
     console.error("Error creating note:", error);

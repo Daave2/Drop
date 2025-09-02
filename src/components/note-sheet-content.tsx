@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useActionState, useRef } from 'react';
-import { useFormStatus } from 'react-dom';
 import { Camera, Heart, Flag, Send } from 'lucide-react';
 import { Note, Reply, GhostNote } from '@/types';
 import { Button } from './ui/button';
@@ -13,29 +12,13 @@ import { useToast } from '@/hooks/use-toast';
 import { submitReply, createNote } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
+import { useFormStatus } from 'react-dom';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Skeleton } from './ui/skeleton';
+
 
 // Mock data
-const mockNote: Note = {
-  id: '2',
-  lat: 34.053,
-  lng: -118.244,
-  score: 12,
-  teaser: 'Cool Mural',
-  type: 'photo',
-  text: 'Found this amazing mural in an alley. The colors are so vibrant! A true hidden gem of the city. Worth the detour.',
-  authorPseudonym: 'ArtsyAlpaca',
-  createdAt: { seconds: Date.now() / 1000 - 86400, nanoseconds: 0 },
-  geohash: '',
-  visibility: 'public',
-  trust: 0.8,
-  placeMaskMeters: 5,
-  revealMode: 'proximity+sightline',
-  revealRadiusM: 35,
-  revealAngleDeg: 20,
-  peekable: false,
-  dmAllowed: false,
-  media: [{ path: `https://picsum.photos/600/800`, w: 600, h: 800, type: 'image' }]
-};
 const mockReplies: Reply[] = [
     {id: 'r1', noteId: '2', text: 'Wow, I walk past here all the time and never noticed!', authorPseudonym: 'SpeedySparrow', createdAt: {seconds: Date.now()/1000 - 3600, nanoseconds: 0}},
     {id: 'r2', noteId: '2', text: 'Thanks for sharing!', authorPseudonym: 'CuriousCapybara', createdAt: {seconds: Date.now()/1000 - 1800, nanoseconds: 0}},
@@ -60,12 +43,14 @@ interface NoteSheetContentProps {
   isCreating: boolean;
   userLocation: Coordinates | null;
   onNoteCreated?: (newNote: GhostNote) => void;
+  onClose?: () => void;
 }
 
-export default function NoteSheetContent({ noteId, isCreating, userLocation, onNoteCreated }: NoteSheetContentProps) {
+export default function NoteSheetContent({ noteId, isCreating, userLocation, onNoteCreated, onClose }: NoteSheetContentProps) {
   const { toast } = useToast();
   const [note, setNote] = useState<Note | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
+  const [loadingNote, setLoadingNote] = useState(true);
   const replyFormRef = useRef<HTMLFormElement>(null);
   const createNoteFormRef = useRef<HTMLFormElement>(null);
   
@@ -73,12 +58,31 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
   const [createNoteState, createNoteAction] = useActionState(createNote, { message: '', errors: {} });
 
   useEffect(() => {
-    if (noteId && !isCreating) {
-      // In a real app, fetch note details and replies here
-      setNote(mockNote);
-      setReplies(mockReplies);
+    async function fetchNote() {
+      if (noteId && !isCreating) {
+        setLoadingNote(true);
+        try {
+          const noteDoc = await getDoc(doc(db, 'notes', noteId));
+          if (noteDoc.exists()) {
+            setNote({ id: noteDoc.id, ...noteDoc.data() } as Note);
+            // In a real app, fetch replies here too
+            setReplies(mockReplies);
+          } else {
+            console.error("No such document!");
+            toast({ title: "Error", description: "Could not find the selected note.", variant: "destructive" });
+            onClose?.();
+          }
+        } catch (error) {
+          console.error("Error fetching document: ", error);
+          toast({ title: "Error", description: "Failed to load the note.", variant: "destructive" });
+          onClose?.();
+        } finally {
+          setLoadingNote(false);
+        }
+      }
     }
-  }, [noteId, isCreating]);
+    fetchNote();
+  }, [noteId, isCreating, toast, onClose]);
 
   useEffect(() => {
     if(replyFormState.message && !replyFormState.errors?.text) {
@@ -98,7 +102,6 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
       }
       
       if(createNoteState.reset && createNoteState.note){
-        createNoteFormRef.current?.reset();
         onNoteCreated?.(createNoteState.note);
       }
     }
@@ -125,7 +128,21 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
     );
   }
 
-  if (!note) return <div className="p-4 text-center">Loading note...</div>;
+  if (loadingNote) {
+    return (
+        <div className="p-4 space-y-6">
+            <Skeleton className="h-64 w-full rounded-lg" />
+            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+            <div className="flex items-center justify-between">
+                <Skeleton className="h-10 w-24" />
+                <Skeleton className="h-10 w-24" />
+            </div>
+        </div>
+    );
+  }
+
+  if (!note) return <div className="p-4 text-center">Note not found.</div>;
 
   return (
     <ScrollArea className="h-[calc(100vh-10rem)] md:h-full">
@@ -146,7 +163,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
                 </Avatar>
                 <span>{note.authorPseudonym}</span>
             </div>
-            <span>{new Date(note.createdAt.seconds * 1000).toLocaleDateString()}</span>
+            <span>{note.createdAt ? new Date((note.createdAt as any).seconds * 1000).toLocaleDateString() : 'Just now'}</span>
         </div>
 
         <div className="flex items-center gap-2">
