@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useActionState, useRef } from 'react';
@@ -19,12 +18,6 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 
 
-// Mock data
-const mockReplies: Reply[] = [
-    {id: 'r1', noteId: '2', text: 'Wow, I walk past here all the time and never noticed!', authorPseudonym: 'SpeedySparrow', createdAt: {seconds: Date.now()/1000 - 3600, nanoseconds: 0}},
-    {id: 'r2', noteId: '2', text: 'Thanks for sharing!', authorPseudonym: 'CuriousCapybara', createdAt: {seconds: Date.now()/1000 - 1800, nanoseconds: 0}},
-];
-
 function SubmitButton({label, pendingLabel}: {label: string, pendingLabel: string}) {
   const { pending } = useFormStatus();
   return (
@@ -39,6 +32,127 @@ function SubmitButton({label, pendingLabel}: {label: string, pendingLabel: strin
   );
 }
 
+function CreateNoteForm({ userLocation, onNoteCreated }: { userLocation: Coordinates | null, onNoteCreated: (note: GhostNote) => void }) {
+    const { toast } = useToast();
+    const formRef = useRef<HTMLFormElement>(null);
+    const [state, formAction] = useActionState(createNote, { message: '', errors: {} });
+
+    useEffect(() => {
+        if(state.message) {
+            if (Object.keys(state.errors ?? {}).length > 0) {
+                toast({ title: state.message, variant: 'destructive' });
+            } else {
+                toast({ title: state.message });
+            }
+            if(state.reset && state.note){
+                onNoteCreated(state.note);
+                formRef.current?.reset();
+            }
+        }
+    }, [state, toast, onNoteCreated]);
+
+    return (
+        <form ref={formRef} action={formAction} className="p-4 space-y-4">
+            <input type="hidden" name="lat" value={userLocation?.latitude ?? 0} />
+            <input type="hidden" name="lng" value={userLocation?.longitude ?? 0} />
+            <Textarea name="text" placeholder="What's on your mind? (Max 800 chars)" maxLength={800} rows={5} required />
+            {state.errors?.text && <p className="text-sm text-destructive">{state.errors.text[0]}</p>}
+
+            <div className="flex items-center justify-between">
+                <Button variant="outline" size="icon" type="button" disabled>
+                    <Camera className="h-4 w-4"/>
+                </Button>
+                <SubmitButton label="Drop Note" pendingLabel="Dropping..." />
+            </div>
+            {userLocation && <p className="text-xs text-muted-foreground">Location: {userLocation.latitude.toFixed(5)}, {userLocation.longitude.toFixed(5)}</p>}
+            {state.errors?.lat && <p className="text-sm text-destructive">Could not determine your location.</p>}
+        </form>
+    );
+}
+
+
+function ReplyForm({ noteId }: { noteId: string }) {
+    const { toast } = useToast();
+    const formRef = useRef<HTMLFormElement>(null);
+    const [state, formAction] = useActionState(submitReply, { message: '', errors: {} });
+
+    useEffect(() => {
+        if (state.message && !state.errors?.text) {
+            toast({ title: state.message });
+            if (state.reset) {
+                formRef.current?.reset();
+            }
+        }
+    }, [state, toast]);
+
+    return (
+        <form id="reply-form" ref={formRef} action={formAction} className="flex items-start gap-2">
+            <input type="hidden" name="noteId" value={noteId} />
+            <Textarea 
+                name="text"
+                placeholder="Add a reply... (Max 120 chars)" 
+                maxLength={120} 
+                rows={1} 
+                required
+                className="flex-grow min-h-0"
+            />
+            <Button type="submit" size="icon" className="h-full">
+                <Send className="h-4 w-4" />
+            </Button>
+            {state.errors?.text && <p className="text-sm text-destructive mt-1">{state.errors.text[0]}</p>}
+        </form>
+    );
+}
+
+function NoteView({ note }: {note: Note}) {
+    const [replies, setReplies] = useState<Reply[]>([]); // Mock replies for now
+    return (
+        <ScrollArea className="h-[calc(100vh-10rem)] md:h-full">
+            <div className="p-4 space-y-6">
+                {note.media?.[0] && (
+                    <div className="rounded-lg overflow-hidden">
+                        <img src={note.media[0].path} alt="Note media" className="w-full h-auto object-cover" data-ai-hint="mural street art" />
+                    </div>
+                )}
+                <p className="text-lg leading-relaxed">{note.text}</p>
+                <div className="flex items-center justify-between text-muted-foreground text-sm">
+                    <div className="flex items-center gap-2">
+                        <Avatar className="w-8 h-8">
+                            <AvatarFallback>{note.authorPseudonym?.substring(0,2)}</AvatarFallback>
+                        </Avatar>
+                        <span>{note.authorPseudonym}</span>
+                    </div>
+                    <span>{note.createdAt ? new Date(note.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm"><Heart className="h-4 w-4 mr-2"/> {note.score}</Button>
+                    <Button variant="outline" size="sm"><Flag className="h-4 w-4 mr-2"/> Report</Button>
+                    <Badge variant="secondary">{note.type}</Badge>
+                </div>
+                <Separator />
+                <div className="space-y-4">
+                    <h3 className="font-headline text-xl">Replies ({replies.length})</h3>
+                    <ReplyForm noteId={note.id} />
+                    <div className="space-y-4">
+                        {replies.map(reply => (
+                            <div key={reply.id} className="flex gap-3">
+                                <Avatar className="h-8 w-8">
+                                    <AvatarFallback>{reply.authorPseudonym?.substring(0,2)}</AvatarFallback>
+                                </Avatar>
+                                <div className="bg-muted p-3 rounded-lg flex-1">
+                                    <p className="text-sm">{reply.text}</p>
+                                    <p className="text-xs text-muted-foreground mt-1">{reply.authorPseudonym} &middot; {new Date(reply.createdAt.seconds * 1000).toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                        ))}
+                        {replies.length === 0 && <p className="text-sm text-muted-foreground text-center">Be the first to reply!</p>}
+                    </div>
+                </div>
+            </div>
+        </ScrollArea>
+    )
+}
+
 interface NoteSheetContentProps {
   noteId: string | null;
   isCreating: boolean;
@@ -50,13 +164,7 @@ interface NoteSheetContentProps {
 export default function NoteSheetContent({ noteId, isCreating, userLocation, onNoteCreated, onClose }: NoteSheetContentProps) {
   const { toast } = useToast();
   const [note, setNote] = useState<Note | null>(null);
-  const [replies, setReplies] = useState<Reply[]>([]);
   const [loadingNote, setLoadingNote] = useState(false);
-  const replyFormRef = useRef<HTMLFormElement>(null);
-  const createNoteFormRef = useRef<HTMLFormElement>(null);
-  
-  const [replyFormState, replyFormAction] = useActionState(submitReply, { message: '', errors: {} });
-  const [createNoteState, createNoteAction] = useActionState(createNote, { message: '', errors: {} });
 
   useEffect(() => {
     async function fetchNote() {
@@ -68,9 +176,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
             const noteData = noteDoc.data();
             const createdAt = noteData.createdAt ? { seconds: noteData.createdAt.seconds, nanoseconds: noteData.createdAt.nanoseconds } : { seconds: Date.now() / 1000, nanoseconds: 0 };
             setNote({ id: noteDoc.id, ...noteData, createdAt } as Note);
-            // setReplies(mockReplies); // We'll add real replies later
           } else {
-            console.error("No such document!");
             toast({ title: "Error", description: "Could not find the selected note.", variant: "destructive" });
             onClose?.();
           }
@@ -83,55 +189,14 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
         }
       } else {
         setNote(null);
-        setReplies([]);
       }
     }
     fetchNote();
   }, [noteId, isCreating, toast, onClose]);
-
-  useEffect(() => {
-    if(replyFormState.message && !replyFormState.errors?.text) {
-        toast({ title: replyFormState.message });
-        if(replyFormState.reset){
-          replyFormRef.current?.reset();
-        }
-    }
-  }, [replyFormState, toast]);
-
-  useEffect(() => {
-    if(createNoteState.message) {
-      if (Object.keys(createNoteState.errors ?? {}).length > 0) {
-        toast({ title: createNoteState.message, variant: 'destructive' });
-      } else {
-        toast({ title: createNoteState.message });
-      }
-      
-      if(createNoteState.reset && createNoteState.note){
-        onNoteCreated?.(createNoteState.note);
-      }
-    }
-  }, [createNoteState, toast, onNoteCreated]);
+  
 
   if (isCreating) {
-    return (
-      <div className="p-4 space-y-6">
-        <form ref={createNoteFormRef} action={createNoteAction} className="space-y-4">
-            <input type="hidden" name="lat" value={userLocation?.latitude ?? 0} />
-            <input type="hidden" name="lng" value={userLocation?.longitude ?? 0} />
-            <Textarea name="text" placeholder="What's on your mind? (Max 800 chars)" maxLength={800} rows={5} required />
-            {createNoteState.errors?.text && <p className="text-sm text-destructive">{createNoteState.errors.text[0]}</p>}
-
-            <div className="flex items-center justify-between">
-                <Button variant="outline" size="icon" type="button" disabled>
-                    <Camera className="h-4 w-4"/>
-                </Button>
-                <SubmitButton label="Drop Note" pendingLabel="Dropping..." />
-            </div>
-            {userLocation && <p className="text-xs text-muted-foreground">Location: {userLocation.latitude.toFixed(5)}, {userLocation.longitude.toFixed(5)}</p>}
-            {createNoteState.errors?.lat && <p className="text-sm text-destructive">Could not determine your location.</p>}
-        </form>
-      </div>
-    );
+    return <CreateNoteForm userLocation={userLocation} onNoteCreated={onNoteCreated!} />;
   }
 
   if (loadingNote) {
@@ -148,74 +213,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
     );
   }
 
-  if (!note) return <div className="p-4 text-center">Note not found.</div>;
+  if (!note) return <div className="p-4 text-center">Select a note to view its contents.</div>;
 
-  return (
-    <ScrollArea className="h-[calc(100vh-10rem)] md:h-full">
-        <div className="p-4 space-y-6">
-        
-        {note.media?.[0] && (
-            <div className="rounded-lg overflow-hidden">
-                <img src={note.media[0].path} alt="Note media" className="w-full h-auto object-cover" data-ai-hint="mural street art" />
-            </div>
-        )}
-
-        <p className="text-lg leading-relaxed">{note.text}</p>
-        
-        <div className="flex items-center justify-between text-muted-foreground text-sm">
-            <div className="flex items-center gap-2">
-                <Avatar className="w-8 h-8">
-                    <AvatarFallback>{note.authorPseudonym?.substring(0,2)}</AvatarFallback>
-                </Avatar>
-                <span>{note.authorPseudonym}</span>
-            </div>
-            <span>{note.createdAt ? new Date(note.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
-        </div>
-
-        <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm"><Heart className="h-4 w-4 mr-2"/> {note.score}</Button>
-            <Button variant="outline" size="sm"><Flag className="h-4 w-4 mr-2"/> Report</Button>
-            <Badge variant="secondary">{note.type}</Badge>
-        </div>
-
-        <Separator />
-
-        {/* Replies Section */}
-        <div className="space-y-4">
-            <h3 className="font-headline text-xl">Replies ({replies.length})</h3>
-            
-            <form id="reply-form" ref={replyFormRef} action={replyFormAction} className="flex items-start gap-2">
-                <input type="hidden" name="noteId" value={note.id} />
-                <Textarea 
-                    name="text"
-                    placeholder="Add a reply... (Max 120 chars)" 
-                    maxLength={120} 
-                    rows={1} 
-                    required
-                    className="flex-grow min-h-0"
-                />
-                <Button type="submit" size="icon" className="h-full">
-                  <Send className="h-4 w-4" />
-                </Button>
-            </form>
-            {replyFormState.errors?.text && <p className="text-sm text-destructive">{replyFormState.errors.text[0]}</p>}
-
-            <div className="space-y-4">
-                {replies.map(reply => (
-                    <div key={reply.id} className="flex gap-3">
-                        <Avatar className="h-8 w-8">
-                            <AvatarFallback>{reply.authorPseudonym?.substring(0,2)}</AvatarFallback>
-                        </Avatar>
-                        <div className="bg-muted p-3 rounded-lg flex-1">
-                            <p className="text-sm">{reply.text}</p>
-                            <p className="text-xs text-muted-foreground mt-1">{reply.authorPseudonym} &middot; {new Date(reply.createdAt.seconds * 1000).toLocaleDateString()}</p>
-                        </div>
-                    </div>
-                ))}
-                {replies.length === 0 && <p className="text-sm text-muted-foreground text-center">Be the first to reply!</p>}
-            </div>
-        </div>
-        </div>
-    </ScrollArea>
-  );
+  return <NoteView note={note} />;
 }

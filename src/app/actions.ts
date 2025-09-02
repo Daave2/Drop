@@ -19,14 +19,14 @@ const noteSchema = z.object({
 });
 
 
-type FormState = {
+type CreateNoteFormState = {
     message: string;
     errors?: Record<string, string[] | undefined>;
     reset?: boolean;
     note?: GhostNote;
 }
 
-export async function createNote(prevState: FormState, formData: FormData): Promise<FormState> {
+export async function createNote(prevState: CreateNoteFormState, formData: FormData): Promise<CreateNoteFormState> {
   const validatedFields = noteSchema.safeParse({
     text: formData.get('text'),
     lat: formData.get('lat'),
@@ -51,17 +51,15 @@ export async function createNote(prevState: FormState, formData: FormData): Prom
       };
     }
     
-    // Save the note to Firestore
     const newNoteDoc: Omit<Note, 'id' | 'createdAt'> = {
       text,
       lat,
       lng,
-      type: 'text', // Defaulting to text for now
+      type: 'text',
       score: 0,
       teaser: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
-      // The rest of the fields for a full 'Note' object
-      authorPseudonym: 'Wandering Wombat', // Placeholder
-      geohash: '', // Should be calculated based on lat/lng
+      authorPseudonym: 'Wandering Wombat',
+      geohash: '',
       visibility: 'public',
       trust: 0.5,
       placeMaskMeters: 10,
@@ -84,7 +82,7 @@ export async function createNote(prevState: FormState, formData: FormData): Prom
       teaser: newNoteDoc.teaser,
       type: newNoteDoc.type,
       score: newNoteDoc.score,
-      createdAt: { // This is an approximation, real value is on server
+      createdAt: { 
         seconds: Math.floor(Date.now() / 1000),
         nanoseconds: 0,
       },
@@ -100,7 +98,13 @@ export async function createNote(prevState: FormState, formData: FormData): Prom
   }
 }
 
-export async function submitReply(prevState: FormState, formData: FormData): Promise<FormState> {
+type ReplyFormState = {
+    message: string;
+    errors?: Record<string, string[] | undefined>;
+    reset?: boolean;
+}
+
+export async function submitReply(prevState: ReplyFormState, formData: FormData): Promise<ReplyFormState> {
   const validatedFields = replySchema.safeParse({
     noteId: formData.get('noteId'),
     text: formData.get('text'),
@@ -124,15 +128,10 @@ export async function submitReply(prevState: FormState, formData: FormData): Pro
       };
     }
     
-    // In a real app, you would save the reply to your database here.
     console.log('Reply is safe, saving to DB:', { noteId, text });
     
-    // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    // Revalidate the path to show the new reply if you were on a note page
-    // revalidatePath(`/note/${noteId}`);
-
     return { message: 'Reply posted successfully!', errors: {}, reset: true };
     
   } catch (error) {
