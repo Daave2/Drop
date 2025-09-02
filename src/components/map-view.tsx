@@ -243,54 +243,6 @@ function MapViewContent() {
     }
   };
 
-  const handleMapLoad = useCallback(() => {
-    const map = mapRef.current?.getMap();
-    if (!map) return;
-
-    // Insert the layer beneath any symbol layer.
-    const layers = map.getStyle().layers;
-    let labelLayerId;
-    for (let i = 0; i < layers.length; i++) {
-        if (layers[i].type === 'symbol' && layers[i].layout?.['text-field']) {
-            labelLayerId = layers[i].id;
-            break;
-        }
-    }
-    
-    // Add a source for the 3D building data
-    map.addSource('openmaptiles', {
-        url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`,
-        type: 'vector',
-    });
-
-    // Add the 3D building layer
-    map.addLayer(
-        {
-            'id': '3d-buildings',
-            'source': 'openmaptiles',
-            'source-layer': 'building',
-            'type': 'fill-extrusion',
-            'minzoom': 15,
-            'paint': {
-                'fill-extrusion-color': '#aaa',
-                'fill-extrusion-height': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    15,
-                    0,
-                    15.05,
-                    ['get', 'height']
-                ],
-                'fill-extrusion-base': 0,
-                'fill-extrusion-opacity': 0.6
-            }
-        },
-        labelLayerId
-    );
-
-  }, []);
-
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-secondary/50 p-4 text-center">
@@ -309,9 +261,25 @@ function MapViewContent() {
         ref={mapRef}
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
-        onLoad={handleMapLoad}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={`https://api.maptiler.com/maps/dataviz/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`}
+        mapStyle={{
+          version: 8,
+          sources: {
+            'osm-tiles': {
+              type: 'raster',
+              tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
+              tileSize: 256,
+              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            },
+          },
+          layers: [
+            {
+              id: 'osm-tiles',
+              type: 'raster',
+              source: 'osm-tiles',
+            },
+          ],
+        }}
         antialias={true}
       >
         {location && (
