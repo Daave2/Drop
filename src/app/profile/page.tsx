@@ -115,6 +115,7 @@ export default function ProfilePage() {
   const [notesDropped, setNotesDropped] = useState(0);
   const [notesRevealed, setNotesRevealed] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
       if (user) {
@@ -136,12 +137,18 @@ export default function ProfilePage() {
                 setNotesDropped(droppedSnapshot.data().count);
 
                 // Fetch notes revealed (liked)
-                const likesQuery = query(collection(db, 'likes'), where("userId", "==", user.uid));
-                const revealedSnapshot = await getCountFromServer(likesQuery);
+                const likesRef = collection(db, 'likes');
+                const revealedQuery = query(likesRef, where("userId", "==", user.uid));
+                const revealedSnapshot = await getCountFromServer(revealedQuery);
                 setNotesRevealed(revealedSnapshot.data().count);
 
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to fetch stats:", error);
+                toast({
+                    title: "Error fetching stats",
+                    description: "Could not load your profile statistics. Please check your Firestore security rules.",
+                    variant: "destructive",
+                });
             } finally {
                 setLoadingStats(false);
             }
@@ -150,7 +157,7 @@ export default function ProfilePage() {
 
           return () => unsubscribe();
       }
-  }, [user]);
+  }, [user, toast]);
 
   const displayName = profileData?.pseudonym || user?.displayName || "Wandering Wombat";
 
