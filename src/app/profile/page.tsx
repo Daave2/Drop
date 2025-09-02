@@ -9,10 +9,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { User, Edit } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { doc, onSnapshot, setDoc, collection, query, where, getCountFromServer } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, collection, query, where, getCountFromServer, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { z } from "zod";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -111,7 +111,7 @@ function StatCard({ title, value, isLoading }: { title: string, value: number | 
 
 export default function ProfilePage() {
   const { user } = useAuth();
-  const [profileData, setProfileData] = useState<{pseudonym?: string} | null>(null);
+  const [profileData, setProfileData] = useState<{pseudonym?: string, createdAt?: Timestamp} | null>(null);
   const [notesDropped, setNotesDropped] = useState(0);
   const [notesRevealed, setNotesRevealed] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
@@ -158,6 +158,29 @@ export default function ProfilePage() {
           return () => unsubscribe();
       }
   }, [user, toast]);
+  
+  const trustScore = useMemo(() => {
+    if (!user || !profileData) return 0;
+    
+    // Base score for being a member
+    let score = 0.1;
+    
+    // Add points for notes dropped
+    score += notesDropped * 0.05;
+    
+    // Add points for notes revealed
+    score += notesRevealed * 0.02;
+
+    // Add points for account age
+    if (profileData.createdAt) {
+        const accountAgeDays = (Date.now() - profileData.createdAt.toMillis()) / (1000 * 60 * 60 * 24);
+        score += Math.min(accountAgeDays * 0.005, 0.2); // Cap tenure bonus
+    }
+
+    // Return score between 0 and 1, formatted to 2 decimal places.
+    return Math.min(score, 1).toFixed(2);
+  }, [user, profileData, notesDropped, notesRevealed]);
+
 
   const displayName = profileData?.pseudonym || user?.displayName || "Wandering Wombat";
 
@@ -199,10 +222,11 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                 <StatCard title="Notes Dropped" value={notesDropped} isLoading={loadingStats} />
                 <StatCard title="Notes Revealed" value={notesRevealed} isLoading={loadingStats} />
-                <StatCard title="Trust Score" value={0.75} isLoading={loadingStats} />
+                <StatCard title="Trust Score" value={trustScore} isLoading={loadingStats} />
             </div>
         </CardContent>
       </Card>
     </div>
   );
 }
+
