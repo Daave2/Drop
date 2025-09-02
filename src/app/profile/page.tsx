@@ -8,34 +8,63 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from "@/components/ui/separator";
 import { User, Edit } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, useActionState, useRef } from "react";
-import { updateDisplayName } from "@/app/actions";
+import { useEffect, useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { z } from "zod";
+
+const profileSchema = z.object({
+    displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters."),
+});
 
 function UpdateProfileForm({ uid, currentDisplayName }: { uid: string, currentDisplayName: string }) {
     const { toast } = useToast();
-    const formRef = useRef<HTMLFormElement>(null);
-    const initialState = { message: "", errors: {}, success: false };
-    const [state, formAction] = useActionState(updateDisplayName, initialState);
     const [isEditing, setIsEditing] = useState(false);
+    const [displayName, setDisplayName] = useState(currentDisplayName);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
+    // Reset display name when editing is cancelled or current name changes
     useEffect(() => {
-        if (state.message) {
-            if (state.success) {
-                toast({ title: "Success!", description: state.message });
-                setIsEditing(false);
-            } else {
-                toast({ title: "Error", description: state.errors?.displayName?.[0] || state.message, variant: "destructive" });
-            }
+        setDisplayName(currentDisplayName);
+    }, [currentDisplayName]);
+
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setError(null);
+
+        const validation = profileSchema.safeParse({ displayName });
+        if (!validation.success) {
+            setError(validation.error.errors[0].message);
+            toast({ title: "Invalid Name", description: validation.error.errors[0].message, variant: "destructive" });
+            return;
         }
-    }, [state, toast]);
+
+        setIsSubmitting(true);
+        try {
+            const profileRef = doc(db, 'profiles', uid);
+            // We use `uid` in the document body to satisfy security rules if needed,
+            // and to keep a record of the owner.
+            await setDoc(profileRef, { pseudonym: displayName, uid: uid }, { merge: true });
+            toast({ title: "Success!", description: "Display name updated successfully!" });
+            setIsEditing(false);
+        } catch (err: any) {
+            console.error("Error updating display name:", err);
+            toast({ title: "Error", description: err.message || "Failed to update display name.", variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
 
     if (!isEditing) {
         return (
-            <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => {
+                setIsEditing(true);
+                setError(null);
+             }} className="flex items-center gap-2">
                 <Edit className="h-4 w-4" />
                 <span>Change Display Name</span>
             </Button>
@@ -43,20 +72,22 @@ function UpdateProfileForm({ uid, currentDisplayName }: { uid: string, currentDi
     }
 
     return (
-        <form ref={formRef} action={formAction} className="grid gap-4">
-            <input type="hidden" name="uid" value={uid} />
+        <form onSubmit={handleSubmit} className="grid gap-4">
             <Input
                 name="displayName"
-                defaultValue={currentDisplayName}
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
                 placeholder="Enter your new display name"
                 required
                 minLength={3}
                 maxLength={50}
             />
-            {state.errors?.displayName && <p className="text-sm text-destructive">{state.errors.displayName[0]}</p>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex justify-end gap-2">
                 <Button type="button" variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
-                <Button type="submit">Save</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? 'Saving...' : 'Save'}
+                </Button>
             </div>
         </form>
     )

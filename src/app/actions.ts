@@ -5,8 +5,6 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
 import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
-import { auth } from 'firebase-admin';
-import { getAuth, updateProfile } from 'firebase/auth';
 
 const replySchema = z.object({
   noteId: z.string(),
@@ -20,51 +18,6 @@ const noteSchema = z.object({
   authorUid: z.string().min(1, "User must be authenticated."),
   authorDisplayName: z.string().optional(),
 });
-
-const profileSchema = z.object({
-    uid: z.string().min(1),
-    displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters."),
-});
-
-type UpdateProfileFormState = {
-    message: string;
-    errors?: {
-        displayName?: string[];
-    };
-    success: boolean;
-};
-
-export async function updateDisplayName(prevState: UpdateProfileFormState, formData: FormData): Promise<UpdateProfileFormState> {
-    const validatedFields = profileSchema.safeParse({
-        uid: formData.get('uid'),
-        displayName: formData.get('displayName'),
-    });
-
-    if (!validatedFields.success) {
-        return {
-            errors: validatedFields.error.flatten().fieldErrors,
-            message: 'Invalid fields.',
-            success: false,
-        };
-    }
-
-    const { uid, displayName } = validatedFields.data;
-
-    try {
-        const profileRef = doc(db, 'profiles', uid);
-        await setDoc(profileRef, { pseudonym: displayName, uid: uid }, { merge: true });
-
-        revalidatePath('/profile');
-        return { message: 'Display name updated successfully!', success: true };
-    } catch (error: any) {
-        console.error("Error updating display name:", error);
-        return {
-            message: 'Failed to update display name.',
-            success: false,
-        };
-    }
-}
-
 
 type CreateNoteFormState = {
     message: string;
