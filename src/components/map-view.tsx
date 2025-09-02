@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
-import type { MapRef, ViewState } from 'react-map-gl/maplibre';
+import type { MapRef, ViewState, MapStyle } from 'react-map-gl/maplibre';
 import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
 import { useLocation } from '@/hooks/use-location';
 import { Button } from '@/components/ui/button';
@@ -36,7 +36,25 @@ import { geohashQueryBounds, distanceBetween } from 'geofire-common';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 
-const MAP_STYLE = 'https://api.maptiler.com/maps/streets/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL';
+const MAP_STYLE: MapStyle = {
+  version: 8,
+  sources: {
+    'osm-tiles': {
+      type: 'raster',
+      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tileSize: 256,
+      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    },
+  },
+  layers: [
+    {
+      id: 'osm-tiles',
+      type: 'raster',
+      source: 'osm-tiles',
+    },
+  ],
+};
+
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
@@ -332,5 +350,7 @@ function getDistance(coords1: {latitude: number, longitude: number}, coords2: {l
   
     return R * c;
   }
+
+    
 
     
