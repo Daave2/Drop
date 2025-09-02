@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useActionState, useRef } from 'react';
-import { Camera, Heart, Flag, Send } from 'lucide-react';
+import { Camera, Heart, Flag, Send, X } from 'lucide-react';
 import { Note, Reply } from '@/types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -19,6 +19,8 @@ import { Skeleton } from './ui/skeleton';
 import { useAuth } from './auth-provider';
 import { z } from 'zod';
 import { moderateContent } from '@/ai/flows/content-moderation';
+import { Input } from './ui/input';
+import Image from 'next/image';
 
 
 function SubmitButton({label, pendingLabel}: {label: string, pendingLabel: string}) {
@@ -39,6 +41,8 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
     const { user } = useAuth();
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
     
     const initialState = { message: '', errors: {}, success: false };
     const [state, formAction] = useActionState(createNote, initialState);
@@ -47,12 +51,33 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
         if (state.success) {
             toast({ title: "Success!", description: state.message });
             formRef.current?.reset();
+            setImagePreview(null);
             onClose();
         } else if (state.message) {
-            const description = state.errors?.server?.[0] || state.errors?.text?.[0] || 'Please check the form and try again.';
+            const description = state.errors?.server?.[0] || state.errors?.text?.[0] || state.errors?.image?.[0] ||'Please check the form and try again.';
             toast({ title: state.message, description, variant: 'destructive' });
         }
     }, [state, toast, onClose]);
+    
+    const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImagePreview(reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        } else {
+            setImagePreview(null);
+        }
+    };
+    
+    const handleRemoveImage = () => {
+        setImagePreview(null);
+        if(fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    }
 
     if (!user) {
       return (
@@ -70,12 +95,32 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
             <input type="hidden" name="authorDisplayName" value={user.displayName ?? ''} />
             <Textarea name="text" placeholder="What's on your mind? (Max 800 chars)" maxLength={800} rows={5} required />
             {state.errors?.text && <p className="text-sm text-destructive">{state.errors.text[0]}</p>}
+            
+            {imagePreview && (
+                <div className="relative">
+                    <Image width={400} height={300} src={imagePreview} alt="Image preview" className="rounded-md w-full object-cover aspect-video" />
+                    <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={handleRemoveImage}>
+                        <X className="h-4 w-4" />
+                    </Button>
+                </div>
+            )}
+            
             {state.errors?.server && <p className="text-sm text-destructive">{state.errors.server[0]}</p>}
+            {state.errors?.image && <p className="text-sm text-destructive">{state.errors.image[0]}</p>}
+
 
             <div className="flex items-center justify-between">
-                <Button variant="outline" size="icon" type="button" disabled>
+                 <Button variant="outline" size="icon" type="button" onClick={() => fileInputRef.current?.click()}>
                     <Camera className="h-4 w-4"/>
                 </Button>
+                <Input
+                    type="file"
+                    name="image"
+                    className="hidden"
+                    ref={fileInputRef}
+                    onChange={handleImageChange}
+                    accept="image/png, image/jpeg, image/gif"
+                />
                 <SubmitButton label="Drop Note" pendingLabel="Dropping..." />
             </div>
             {userLocation && <p className="text-xs text-muted-foreground">Location: {userLocation.latitude.toFixed(5)}, {userLocation.longitude.toFixed(5)}</p>}
@@ -88,7 +133,6 @@ const replySchema = z.object({
   text: z.string().min(1, "Reply cannot be empty.").max(120, "Reply cannot exceed 120 characters."),
 });
 
-// This is now a client-side utility function
 async function getOrCreateClientSidePseudonym(uid: string): Promise<string> {
     const profileRef = doc(db, 'profiles', uid);
     const profileSnap = await getDoc(profileRef);
@@ -222,9 +266,9 @@ function NoteView({ note }: {note: Note}) {
         <div className="flex flex-col h-full">
             <ScrollArea className="flex-1">
                 <div className="p-4 space-y-6">
-                    {note.media?.[0] && (
-                        <div className="rounded-lg overflow-hidden">
-                            <img src={note.media[0].path} alt="Note media" className="w-full h-auto object-cover" data-ai-hint="mural street art" />
+                    {note.media?.[0]?.path && (
+                        <div className="rounded-lg overflow-hidden aspect-video relative bg-muted">
+                            <Image src={note.media[0].path} alt="Note media" layout="fill" className="object-cover" data-ai-hint="mural street art" />
                         </div>
                     )}
                     <p className="text-lg leading-relaxed">{note.text}</p>
@@ -240,7 +284,7 @@ function NoteView({ note }: {note: Note}) {
                     <div className="flex items-center gap-2">
                         <Button variant="outline" size="sm"><Heart className="h-4 w-4 mr-2"/> {note.score}</Button>
                         <Button variant="outline" size="sm"><Flag className="h-4 w-4 mr-2"/> Report</Button>
-                        <Badge variant="secondary">{note.type}</Badge>
+                        <Badge variant={note.type === 'photo' ? 'default' : 'secondary'}>{note.type}</Badge>
                     </div>
                     <Separator />
                     <div className="space-y-4">

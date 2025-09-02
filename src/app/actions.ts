@@ -3,8 +3,10 @@
 import { moderateContent } from '@/ai/flows/content-moderation';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
 import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
+import { Note } from '@/types';
 
 const noteSchema = z.object({
   text: z.string().min(1, "Note cannot be empty.").max(800, "Note cannot exceed 800 characters."),
@@ -12,6 +14,7 @@ const noteSchema = z.object({
   lng: z.coerce.number().min(-180).max(180),
   authorUid: z.string().min(1, "User must be authenticated."),
   authorDisplayName: z.string().optional(),
+  image: z.instanceof(File).optional(),
 });
 
 type CreateNoteFormState = {
@@ -21,6 +24,7 @@ type CreateNoteFormState = {
         lat?: string[];
         lng?: string[];
         authorUid?: string[];
+        image?: string[];
         server?: string[];
     };
     success: boolean;
@@ -58,6 +62,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
     lng: formData.get('lng'),
     authorUid: formData.get('authorUid'),
     authorDisplayName: formData.get('authorDisplayName'),
+    image: formData.get('image'),
   });
 
   if (!validatedFields.success) {
@@ -68,7 +73,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
     };
   }
 
-  const { text, lat, lng, authorUid, authorDisplayName } = validatedFields.data;
+  const { text, lat, lng, authorUid, authorDisplayName, image } = validatedFields.data;
 
   try {
     const moderationResult = await moderateContent({ text });
@@ -82,14 +87,14 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
 
     const pseudonym = await getOrCreatePseudonym(authorUid, authorDisplayName);
     
-    const newNote = {
+    const newNote: Omit<Note, 'id' | 'createdAt'> & { createdAt: any } = {
       text,
       lat,
       lng,
       authorUid,
       createdAt: serverTimestamp(),
       authorPseudonym: pseudonym,
-      type: 'text',
+      type: image ? 'photo' : 'text',
       score: 0,
       teaser: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
       visibility: 'public',
@@ -100,7 +105,29 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
       revealAngleDeg: 20,
       peekable: false,
       dmAllowed: false,
+      media: [],
     };
+    
+    if (image && image.size > 0) {
+        if (image.size > 5 * 1024 * 1024) { // 5MB limit
+            return { message: 'Image must be less than 5MB.', success: false, errors: { image: ['Image must be less than 5MB.'] } };
+        }
+        const storageRef = ref(storage, `notes/${authorUid}/${Date.now()}-${image.name}`);
+        const snapshot = await uploadBytes(storageRef, image);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+
+        // This is a placeholder for actual image dimension detection
+        // For now, we'll use arbitrary values.
+        const imageDimensions = { w: 600, h: 400 };
+
+        newNote.media = [{
+            path: downloadURL,
+            type: 'image',
+            w: imageDimensions.w,
+            h: imageDimensions.h,
+        }];
+    }
+
 
     await addDoc(collection(db, 'notes'), newNote);
     
