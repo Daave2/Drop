@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup, useMap } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState, MapStyle, Layer } from 'react-map-gl/maplibre';
-import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
+import { Plus, MapPin, Compass, LocateFixed, Flame } from 'lucide-react';
 import { useLocation } from '@/hooks/use-location';
 import { Button } from '@/components/ui/button';
 import { GhostNote } from '@/types';
@@ -47,6 +47,7 @@ import { cn } from '@/lib/utils';
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
 const BASE_REVEAL_RADIUS_M = 35;
+const HOT_POST_THRESHOLD = 50;
 
 
 function MapViewContent() {
@@ -299,9 +300,13 @@ function MapViewContent() {
         )}
         {notes.map(note => {
             const { sizeClass } = getNoteDynamicProps(note.score);
+            const isHot = note.score >= HOT_POST_THRESHOLD;
             return (
                 <Marker key={note.id} longitude={note.lng} latitude={note.lat} onClick={() => handleMarkerClick(note)}>
-                    <button className="transform hover:scale-110 transition-transform">
+                    <button className="transform hover:scale-110 transition-transform relative">
+                        {isHot && (
+                           <Flame className={cn('absolute -top-1/3 -right-1/3 text-orange-500 animate-flame-flicker drop-shadow-lg', sizeClass)} />
+                        )}
                         <MapPin className={cn('drop-shadow-lg', 
                             sizeClass,
                             note.id === revealedNoteId ? 'text-accent' : 

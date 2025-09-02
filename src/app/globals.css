@@ -86,3 +86,19 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  @keyframes flame-flicker {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.1);
+    }
+  }
+  .animate-flame-flicker {
+    animation: flame-flicker 1.5s infinite ease-in-out;
+  }
+}
