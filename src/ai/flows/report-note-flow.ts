@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview A flow for handling user reports of notes.
@@ -115,8 +116,6 @@ const reportNoteFlow = ai.defineFlow(
       1.  **removeNote**: For clear, severe violations (hate speech, harassment, spam, private info).
       2.  **flagNoteForReview**: For content that is borderline, subjective, or requires human judgment (like potential misinformation).
       3.  **Do Nothing**: If the report seems unfounded or is about something that is not a violation (e.g., "I don't like this note," "This is boring").
-
-      If the reporter's UID is the same as the author's UID, it's likely a self-report or test. In this case, do not take any action.
 
       If you take an action, provide a brief, professional message to the reporting user explaining what happened. If you take no action, explain why the content does not violate the policies.`,
       tools: [getNoteContentTool, flagNoteForReview, removeNoteTool],
