@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useFormState, useFormStatus } from 'react-dom';
+import { useEffect, useState, useActionState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { Camera, Heart, Flag, Send, CornerUpLeft } from 'lucide-react';
 import { Note, Reply } from '@/types';
 import { Button } from './ui/button';
@@ -55,7 +55,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation }: N
   const [note, setNote] = useState<Note | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
   
-  const [formState, formAction] = useFormState(submitReply, { message: '', errors: {} });
+  const [formState, formAction] = useActionState(submitReply, { message: '', errors: {} });
   const { pending } = useFormStatus();
 
   useEffect(() => {
