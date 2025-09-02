@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Map, { Marker, Popup } from 'react-map-gl/maplibre';
-import type { MapRef, ViewState, MapStyle } from 'react-map-gl/maplibre';
+import Map, { Marker, Popup, useMap } from 'react-map-gl/maplibre';
+import type { MapRef, ViewState, MapStyle, Layer } from 'react-map-gl/maplibre';
 import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
 import { useLocation } from '@/hooks/use-location';
 import { Button } from '@/components/ui/button';
@@ -42,9 +42,6 @@ import { Skeleton } from './ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 import { ThemeToggle } from './theme-toggle';
 
-const MAP_STYLE = "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
-
-
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
 
@@ -68,6 +65,7 @@ function MapViewContent() {
     latitude: DEFAULT_CENTER.latitude,
     zoom: DEFAULT_ZOOM,
     pitch: 45,
+    bearing: -17.6,
   });
   
   // Effect to handle incoming location from URL params
@@ -245,6 +243,54 @@ function MapViewContent() {
     }
   };
 
+  const handleMapLoad = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+
+    // Insert the layer beneath any symbol layer.
+    const layers = map.getStyle().layers;
+    let labelLayerId;
+    for (let i = 0; i < layers.length; i++) {
+        if (layers[i].type === 'symbol' && layers[i].layout?.['text-field']) {
+            labelLayerId = layers[i].id;
+            break;
+        }
+    }
+    
+    // Add a source for the 3D building data
+    map.addSource('openmaptiles', {
+        url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`,
+        type: 'vector',
+    });
+
+    // Add the 3D building layer
+    map.addLayer(
+        {
+            'id': '3d-buildings',
+            'source': 'openmaptiles',
+            'source-layer': 'building',
+            'type': 'fill-extrusion',
+            'minzoom': 15,
+            'paint': {
+                'fill-extrusion-color': '#aaa',
+                'fill-extrusion-height': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    15,
+                    0,
+                    15.05,
+                    ['get', 'height']
+                ],
+                'fill-extrusion-base': 0,
+                'fill-extrusion-opacity': 0.6
+            }
+        },
+        labelLayerId
+    );
+
+  }, []);
+
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-secondary/50 p-4 text-center">
@@ -263,8 +309,10 @@ function MapViewContent() {
         ref={mapRef}
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
+        onLoad={handleMapLoad}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={MAP_STYLE as MapStyle}
+        mapStyle={`https://api.maptiler.com/maps/dataviz/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`}
+        antialias={true}
       >
         {location && (
           <Marker longitude={location.longitude} latitude={location.latitude}>
