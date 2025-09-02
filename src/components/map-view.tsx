@@ -36,24 +36,7 @@ import { geohashQueryBounds, distanceBetween } from 'geofire-common';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 
-const MAP_STYLE: MapStyle = {
-  version: 8,
-  sources: {
-    'osm-tiles': {
-      type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
-      tileSize: 256,
-      attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-    },
-  },
-  layers: [
-    {
-      id: 'osm-tiles',
-      type: 'raster',
-      source: 'osm-tiles',
-    },
-  ],
-};
+const MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json";
 
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
@@ -350,6 +333,8 @@ function getDistance(coords1: {latitude: number, longitude: number}, coords2: {l
   
     return R * c;
   }
+
+    
 
     
 
