@@ -531,7 +531,7 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
     }
 
     return (
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col h-full overflow-hidden">
             <ScrollArea className="flex-1">
                 <div className="p-4 space-y-6">
                     {note.media?.[0]?.path && (
@@ -585,7 +585,9 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                 </div>
             </ScrollArea>
             <Separator />
-            <ReplyForm noteId={note.id} />
+            <div className="flex-shrink-0">
+                <ReplyForm noteId={note.id} />
+            </div>
             <ReportDialog 
                 note={note} 
                 open={isReportDialogOpen} 
