@@ -123,15 +123,34 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
                     return;
                 }
                 const storageRef = ref(storage, `notes/${user.uid}/${Date.now()}-${imageFile.name}`);
-                const snapshot = await uploadBytes(storageRef, imageFile);
-                const downloadURL = await getDownloadURL(snapshot.ref);
+                
+                const UPLOAD_TIMEOUT = 15000; // 15 seconds
+                const uploadPromise = uploadBytes(storageRef, imageFile);
+                
+                const timeoutPromise = new Promise((_, reject) => 
+                    setTimeout(() => reject(new Error("Upload timeout")), UPLOAD_TIMEOUT)
+                );
 
-                newNote.media = [{
-                    path: downloadURL,
-                    type: 'image',
-                    w: imageDimensions?.w ?? 0,
-                    h: imageDimensions?.h ?? 0,
-                }];
+                try {
+                    const snapshot = await Promise.race([uploadPromise, timeoutPromise]);
+                    const downloadURL = await getDownloadURL((snapshot as any).ref);
+
+                    newNote.media = [{
+                        path: downloadURL,
+                        type: 'image',
+                        w: imageDimensions?.w ?? 0,
+                        h: imageDimensions?.h ?? 0,
+                    }];
+                } catch (uploadError: any) {
+                    if (uploadError.message === "Upload timeout") {
+                         toast({ title: "Image upload timed out", description: "Please check your network connection and try again.", variant: "destructive" });
+                    } else {
+                        toast({ title: "Image upload failed", description: "Could not upload the image. Please try again.", variant: "destructive" });
+                    }
+                    console.error("Upload failed:", uploadError);
+                    setIsSubmitting(false);
+                    return;
+                }
             }
 
             // 6. Save note to Firestore
@@ -663,5 +682,4 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
 
   return <NoteView note={note} onClose={onClose} />;
 }
-
     
