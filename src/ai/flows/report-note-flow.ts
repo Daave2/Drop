@@ -120,7 +120,7 @@ const reportNoteFlow = ai.defineFlow(
 
       If you take an action, provide a brief, professional message to the reporting user explaining what happened. If you take no action, explain why the content does not violate the policies.`,
       tools: [getNoteContentTool, flagNoteTool, removeNoteTool],
-      model: ai.getModel('googleai/gemini-2.5-pro'),
+      model: 'googleai/gemini-2.5-pro',
     });
 
     const toolCalls = output!.toolCalls;
