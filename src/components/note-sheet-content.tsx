@@ -9,11 +9,11 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { createNote, getOrCreatePseudonym } from '@/app/actions';
+import { createNote } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
 import { useFormStatus } from 'react-dom';
-import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from './auth-provider';
@@ -88,6 +88,26 @@ const replySchema = z.object({
   text: z.string().min(1, "Reply cannot be empty.").max(120, "Reply cannot exceed 120 characters."),
 });
 
+// This is now a client-side utility function
+async function getOrCreateClientSidePseudonym(uid: string): Promise<string> {
+    const profileRef = doc(db, 'profiles', uid);
+    const profileSnap = await getDoc(profileRef);
+
+    if (profileSnap.exists() && profileSnap.data().pseudonym) {
+        return profileSnap.data().pseudonym;
+    }
+
+    const adjectives = ["Whispering", "Wandering", "Silent", "Hidden", "Forgotten", "Lost", "Secret", "Phantom"];
+    const nouns = ["Wombat", "Voyager", "Pilgrim", "Ghost", "Scribe", "Oracle", "Nomad", "Dreamer"];
+    const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+    const newPseudonym = `${randomAdjective} ${randomNoun}`;
+
+    await setDoc(profileRef, { pseudonym: newPseudonym, uid, createdAt: serverTimestamp() }, { merge: true });
+
+    return newPseudonym;
+}
+
 function ReplyForm({ noteId }: { noteId: string }) {
     const { user } = useAuth();
     const { toast } = useToast();
@@ -124,7 +144,7 @@ function ReplyForm({ noteId }: { noteId: string }) {
                 return;
             }
 
-            const pseudonym = await getOrCreatePseudonym(user.uid, null);
+            const pseudonym = await getOrCreateClientSidePseudonym(user.uid);
             const replyRef = collection(db, 'notes', noteId, 'replies');
             
             await addDoc(replyRef, {

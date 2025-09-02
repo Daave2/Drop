@@ -4,7 +4,7 @@ import { moderateContent } from '@/ai/flows/content-moderation';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
-import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 
 const noteSchema = z.object({
   text: z.string().min(1, "Note cannot be empty.").max(800, "Note cannot exceed 800 characters."),
