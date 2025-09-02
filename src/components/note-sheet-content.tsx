@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useRef } from 'react';
@@ -20,6 +21,27 @@ import { z } from 'zod';
 import { moderateContent } from '@/ai/flows/content-moderation';
 import { Input } from './ui/input';
 import Image from 'next/image';
+import { toggleLikeNote } from '@/app/actions';
+
+
+async function getOrCreateClientSidePseudonym(uid: string): Promise<string> {
+    const profileRef = doc(db, 'profiles', uid);
+    const profileSnap = await getDoc(profileRef);
+
+    if (profileSnap.exists() && profileSnap.data().pseudonym) {
+        return profileSnap.data().pseudonym;
+    }
+
+    const adjectives = ["Whispering", "Wandering", "Silent", "Hidden", "Forgotten", "Lost", "Secret", "Phantom"];
+    const nouns = ["Wombat", "Voyager", "Pilgrim", "Ghost", "Scribe", "Oracle", "Nomad", "Dreamer"];
+    const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+    const newPseudonym = `${randomAdjective} ${randomNoun}`;
+    
+    await setDoc(profileRef, { pseudonym: newPseudonym, uid, createdAt: serverTimestamp() }, { merge: true });
+
+    return newPseudonym;
+}
 
 
 function SubmitButton({label, pendingLabel, isSubmitting}: {label: string, pendingLabel: string, isSubmitting: boolean}) {
@@ -209,27 +231,6 @@ const replySchema = z.object({
   text: z.string().min(1, "Reply cannot be empty.").max(120, "Reply cannot exceed 120 characters."),
 });
 
-async function getOrCreateClientSidePseudonym(uid: string): Promise<string> {
-    const profileRef = doc(db, 'profiles', uid);
-    const profileSnap = await getDoc(profileRef);
-
-    if (profileSnap.exists() && profileSnap.data().pseudonym) {
-        return profileSnap.data().pseudonym;
-    }
-
-    const adjectives = ["Whispering", "Wandering", "Silent", "Hidden", "Forgotten", "Lost", "Secret", "Phantom"];
-    const nouns = ["Wombat", "Voyager", "Pilgrim", "Ghost", "Scribe", "Oracle", "Nomad", "Dreamer"];
-    const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-    const newPseudonym = `${randomAdjective} ${randomNoun}`;
-
-    // This is a client-side operation, so we need to be careful with security rules.
-    // The rule should allow a user to create their own profile.
-    await setDoc(profileRef, { pseudonym: newPseudonym, uid, createdAt: serverTimestamp() }, { merge: true });
-
-    return newPseudonym;
-}
-
 function ReplyForm({ noteId }: { noteId: string }) {
     const { user } = useAuth();
     const { toast } = useToast();
@@ -314,12 +315,41 @@ function ReplyForm({ noteId }: { noteId: string }) {
     );
 }
 
-function NoteView({ note }: {note: Note}) {
+function NoteView({ note: initialNote }: {note: Note}) {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const [note, setNote] = useState<Note>(initialNote);
     const [replies, setReplies] = useState<Reply[]>([]);
+    const [isLiked, setIsLiked] = useState(false);
+    const [isLiking, setIsLiking] = useState(false);
     const [loadingReplies, setLoadingReplies] = useState(true);
 
     useEffect(() => {
-        const repliesRef = collection(db, 'notes', note.id, 'replies');
+        const noteRef = doc(db, 'notes', initialNote.id);
+        const unsubscribeNote = onSnapshot(noteRef, (doc) => {
+            if (doc.exists()) {
+                 const data = doc.data();
+                 const createdAt = data.createdAt instanceof Timestamp ? 
+                    { seconds: data.createdAt.seconds, nanoseconds: data.createdAt.nanoseconds } : 
+                    { seconds: Date.now() / 1000, nanoseconds: 0 };
+                setNote({ id: doc.id, ...data, createdAt } as Note);
+            }
+        });
+        
+        return () => unsubscribeNote();
+    }, [initialNote.id]);
+    
+    useEffect(() => {
+        if (!user) return;
+        const likeRef = doc(db, 'notes', initialNote.id, 'likes', user.uid);
+        const unsubscribeLike = onSnapshot(likeRef, (doc) => {
+            setIsLiked(doc.exists());
+        });
+        return () => unsubscribeLike();
+    }, [initialNote.id, user]);
+
+    useEffect(() => {
+        const repliesRef = collection(db, 'notes', initialNote.id, 'replies');
         const q = query(repliesRef, orderBy('createdAt', 'asc'));
 
         const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -338,7 +368,20 @@ function NoteView({ note }: {note: Note}) {
         });
 
         return () => unsubscribe();
-    }, [note.id]);
+    }, [initialNote.id]);
+
+    const handleLikeToggle = async () => {
+        if (!user) {
+            toast({ title: "Please sign in to like notes.", variant: "destructive"});
+            return;
+        }
+        setIsLiking(true);
+        const result = await toggleLikeNote(note.id, user.uid);
+        if (!result.success) {
+            toast({ title: "Error", description: result.error || "Failed to update like status.", variant: "destructive" });
+        }
+        setIsLiking(false);
+    };
 
     return (
         <div className="flex flex-col h-full">
@@ -360,7 +403,10 @@ function NoteView({ note }: {note: Note}) {
                         <span>{note.createdAt ? new Date(note.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm"><Heart className="h-4 w-4 mr-2"/> {note.score}</Button>
+                        <Button variant="outline" size="sm" onClick={handleLikeToggle} disabled={isLiking}>
+                            <Heart className={cn("h-4 w-4 mr-2", isLiked && "fill-destructive text-destructive")} /> 
+                            {note.score}
+                        </Button>
                         <Button variant="outline" size="sm"><Flag className="h-4 w-4 mr-2"/> Report</Button>
                         <Badge variant={note.type === 'photo' ? 'default' : 'secondary'}>{note.type}</Badge>
                     </div>
