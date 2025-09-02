@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
-import type { MapRef } from 'react-map-gl/maplibre';
+import type { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
 import { useLocation } from '@/hooks/use-location';
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,10 @@ const initialNotes: GhostNote[] = [
   { id: '3', lat: 34.051, lng: -118.245, score: 2, teaser: 'Hidden Gem', type: 'review', createdAt: {seconds: Date.now()/1000 - 604800, nanoseconds: 0} },
 ];
 
+const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
+const DEFAULT_ZOOM = 16;
+
+
 export default function MapView() {
   const { location, error, permissionState, requestPermission } = useLocation();
   const [notes, setNotes] = useState<GhostNote[]>(initialNotes);
@@ -38,21 +42,27 @@ export default function MapView() {
   const [isNoteSheetOpen, setNoteSheetOpen] = useState(false);
   const [isCreatingNote, setCreatingNote] = useState(false);
   const [isCompassViewOpen, setCompassViewOpen] = useState(false);
-  const [mapRef, setMapRef] = useState<MapRef | null>(null);
+  const mapRef = useRef<MapRef | null>(null);
 
-  const initialViewState = useMemo(() => ({
-    longitude: location?.longitude || -118.243683,
-    latitude: location?.latitude || 34.052235,
-    zoom: 16,
+  const [viewState, setViewState] = useState<Partial<ViewState>>({
+    longitude: DEFAULT_CENTER.longitude,
+    latitude: DEFAULT_CENTER.latitude,
+    zoom: DEFAULT_ZOOM,
     pitch: 45,
-  }), [location]);
+  });
 
   useEffect(() => {
-    if(location && mapRef) {
+    if(location) {
+        // Fly to user's location when it becomes available
+        mapRef.current?.flyTo({
+            center: [location.longitude, location.latitude],
+            zoom: 17,
+            duration: 2000
+        });
         // Fetch nearby notes when location changes
         // console.log("Fetching notes near:", location);
     }
-  }, [location, mapRef]);
+  }, [location]);
 
   const handleMarkerClick = (note: GhostNote) => {
     const distance = getDistance(
@@ -71,8 +81,8 @@ export default function MapView() {
   };
 
   const handleCenterMap = () => {
-    if (location && mapRef) {
-      mapRef.flyTo({
+    if (location && mapRef.current) {
+      mapRef.current.flyTo({
         center: [location.longitude, location.latitude],
         zoom: 17,
         duration: 2000
@@ -96,8 +106,9 @@ export default function MapView() {
   return (
     <div className="h-screen w-screen relative">
       <Map
-        ref={setMapRef}
-        initialViewState={initialViewState}
+        ref={mapRef}
+        {...viewState}
+        onMove={evt => setViewState(evt.viewState)}
         style={{ width: '100%', height: '100%' }}
         mapStyle={{
             version: 8,
@@ -168,6 +179,7 @@ export default function MapView() {
         size="icon"
         className="absolute bottom-40 right-4 rounded-full w-14 h-14 shadow-lg"
         onClick={handleCenterMap}
+        disabled={!location}
       >
         <LocateFixed className="w-6 h-6" />
       </Button>
@@ -179,7 +191,12 @@ export default function MapView() {
               {isCreatingNote ? "Drop a New Note" : "Note Revealed!"}
             </SheetTitle>
           </SheetHeader>
-          <NoteSheetContent noteId={revealedNoteId} isCreating={isCreatingNote} userLocation={location} />
+          <NoteSheetContent
+            noteId={revealedNoteId} 
+            isCreating={isCreatingNote} 
+            userLocation={location}
+            onNoteCreated={() => setNoteSheetOpen(false)}
+          />
         </SheetContent>
       </Sheet>
 

@@ -9,13 +9,58 @@ const replySchema = z.object({
   text: z.string().min(1, "Reply cannot be empty.").max(120, "Reply cannot exceed 120 characters."),
 });
 
+const noteSchema = z.object({
+  text: z.string().min(1, "Note cannot be empty.").max(800, "Note cannot exceed 800 characters."),
+  lat: z.coerce.number(),
+  lng: z.coerce.number(),
+});
+
+
 type FormState = {
     message: string;
-    errors?: {
-        text?: string[];
-        noteId?: string[];
-    };
+    errors?: Record<string, string[] | undefined>;
     reset?: boolean;
+}
+
+export async function createNote(prevState: FormState, formData: FormData): Promise<FormState> {
+  const validatedFields = noteSchema.safeParse({
+    text: formData.get('text'),
+    lat: formData.get('lat'),
+    lng: formData.get('lng'),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: 'Invalid fields.',
+    };
+  }
+
+  const { text, lat, lng } = validatedFields.data;
+
+  try {
+    const moderationResult = await moderateContent({ text });
+    if (!moderationResult.isSafe) {
+      return {
+        errors: { text: [moderationResult.reason || 'This note violates our content policy.'] },
+        message: 'Your note was flagged as inappropriate. Please revise.',
+      };
+    }
+    
+    // In a real app, you would save the note to your database here.
+    console.log('Note is safe, saving to DB:', { text, lat, lng });
+    
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    revalidatePath(`/`);
+
+    return { message: 'Note dropped successfully!', errors: {}, reset: true };
+    
+  } catch (error) {
+    console.error("Error creating note:", error);
+    return { message: 'An unexpected error occurred. Please try again.', errors: {} };
+  }
 }
 
 export async function submitReply(prevState: FormState, formData: FormData): Promise<FormState> {
