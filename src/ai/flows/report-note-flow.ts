@@ -14,6 +14,7 @@ import {
   ReportNoteOutput,
   ReportNoteOutputSchema,
 } from './report-note';
+import { GenerateResponse } from 'genkit';
 
 // Server-side Firebase Admin SDK initialization
 import {initializeApp, getApps, cert} from 'firebase-admin/app';
@@ -98,7 +99,7 @@ const reportNoteFlow = ai.defineFlow(
     outputSchema: ReportNoteOutputSchema,
   },
   async (input) => {
-    const {output} = await ai.generate({
+    const response: GenerateResponse = await ai.generate({
       prompt: `You are a Trust and Safety agent for NoteDrop. A user is reporting a note. Your job is to determine the appropriate action based on the note's content and the user's report.
 
       Content Safety Guidelines:
@@ -122,11 +123,16 @@ const reportNoteFlow = ai.defineFlow(
       model: 'googleai/gemini-2.5-pro',
     });
 
+    const output = response.output;
+
     if (!output) {
+      const finishReason = response.finishReason;
+      const safetyRatings = response.safetyRatings?.map(r => `${r.category}: ${r.safetyHarm}`).join(', ');
+      const message = `We received your report, but were unable to process it. Reason: ${finishReason}. ${safetyRatings ? `Details: ${safetyRatings}` : ''}`;
       return {
         success: false,
         actionTaken: 'none',
-        message: "We received your report, but were unable to process it at this time. Please try again later.",
+        message: message,
       };
     }
 
