@@ -347,12 +347,15 @@ function ReportDialog({ note, open, onOpenChange, onClose }: { note: Note, open:
                 description: result.message,
                 variant: result.success ? "default" : "destructive",
             });
-            onClose();
+            if (result.success) {
+                onClose(); // Close the main note sheet
+            }
         } catch (error: any) {
             console.error("Error reporting note:", error);
             toast({ title: "Error", description: error.message || "Failed to submit report.", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
+            onOpenChange(false); // Close the dialog
         }
     };
 
@@ -549,7 +552,7 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                 note={note} 
                 open={isReportDialogOpen} 
                 onOpenChange={setReportDialogOpen}
-                onClose={() => setReportDialogOpen(false)}
+                onClose={onClose}
             />
         </div>
     )
