@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import Map, { Marker, Popup } from 'react-map-gl';
-import type { MapRef } from 'react-map-gl';
+import Map, { Marker, Popup } from 'react-map-gl/maplibre';
+import type { MapRef } from 'react-map-gl/maplibre';
 import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
 import { useLocation } from '@/hooks/use-location';
 import { Button } from '@/components/ui/button';
@@ -115,7 +115,6 @@ export default function MapView() {
                 source: 'osm-tiles'
             }]
         }}
-        mapboxAccessToken={null as any} // maplibre-gl does not require an access token
       >
         {location && (
           <Marker longitude={location.longitude} latitude={location.latitude}>
