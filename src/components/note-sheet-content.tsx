@@ -40,7 +40,7 @@ function SubmitButton({label, pendingLabel, isSubmitting}: {label: string, pendi
 
 const noteSchema = z.object({
   text: z.string().min(1, "Note cannot be empty.").max(800, "Note cannot exceed 800 characters."),
-  image: z.instanceof(File).optional(),
+  image: z.instanceof(File).nullish(),
 });
 
 
