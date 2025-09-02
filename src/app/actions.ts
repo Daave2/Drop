@@ -1,7 +1,7 @@
 "use server";
 
 import { moderateContent } from '@/ai/flows/content-moderation';
-import { GhostNote, Note } from '@/types';
+import { Note } from '@/types';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
@@ -76,7 +76,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
       dmAllowed: false,
     };
 
-    const docRef = await addDoc(collection(db, 'notes'), {
+    await addDoc(collection(db, 'notes'), {
         ...newNoteDoc,
         createdAt: serverTimestamp(),
     });
@@ -128,6 +128,8 @@ export async function submitReply(prevState: ReplyFormState, formData: FormData)
     // TODO: Actually save the reply to the database
     await new Promise(resolve => setTimeout(resolve, 1000));
     
+    revalidatePath(`/notes/${noteId}`);
+
     return { message: 'Reply posted successfully!', success: true };
     
   } catch (error) {

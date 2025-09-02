@@ -32,7 +32,7 @@ function SubmitButton({label, pendingLabel}: {label: string, pendingLabel: strin
   );
 }
 
-function CreateNoteForm({ userLocation, onNoteCreated, onClose }: { userLocation: Coordinates | null, onNoteCreated: (note: GhostNote) => void, onClose: () => void }) {
+function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates | null, onClose: () => void }) {
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
     
@@ -42,6 +42,7 @@ function CreateNoteForm({ userLocation, onNoteCreated, onClose }: { userLocation
     useEffect(() => {
         if (state.success) {
             toast({ title: "Success!", description: state.message });
+            formRef.current?.reset();
             onClose();
         } else if (state.message && (state.errors?.text || state.errors?.server)) {
             toast({ title: "Error", description: state.message, variant: 'destructive' });
@@ -72,7 +73,8 @@ function CreateNoteForm({ userLocation, onNoteCreated, onClose }: { userLocation
 function ReplyForm({ noteId }: { noteId: string }) {
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
-    const [state, formAction] = useActionState(submitReply, { message: '', errors: {}, success: false });
+    const initialState = { message: '', errors: {}, success: false };
+    const [state, formAction] = useActionState(submitReply, initialState);
 
     useEffect(() => {
         if (state.message) {
@@ -161,11 +163,10 @@ interface NoteSheetContentProps {
   noteId: string | null;
   isCreating: boolean;
   userLocation: Coordinates | null;
-  onNoteCreated: (newNote: GhostNote) => void;
   onClose: () => void;
 }
 
-export default function NoteSheetContent({ noteId, isCreating, userLocation, onNoteCreated, onClose }: NoteSheetContentProps) {
+export default function NoteSheetContent({ noteId, isCreating, userLocation, onClose }: NoteSheetContentProps) {
   const { toast } = useToast();
   const [note, setNote] = useState<Note | null>(null);
   const [loadingNote, setLoadingNote] = useState(false);
@@ -200,7 +201,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
   
 
   if (isCreating) {
-    return <CreateNoteForm userLocation={userLocation} onNoteCreated={onNoteCreated} onClose={onClose} />;
+    return <CreateNoteForm userLocation={userLocation} onClose={onClose} />;
   }
 
   if (loadingNote) {
