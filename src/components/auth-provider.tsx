@@ -50,7 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setLoading(false); 
           }
         } else {
-            // If anon sign-in was already attempted and failed, just stop loading
+            // If anon sign-in was already attempted and user is still null (e.g., after sign out)
+            // just stop loading. This prevents re-attempts on sign-out.
             setLoading(false);
         }
       }
