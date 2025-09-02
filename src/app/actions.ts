@@ -6,12 +6,6 @@ import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
 import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 
-const replySchema = z.object({
-  noteId: z.string(),
-  text: z.string().min(1, "Reply cannot be empty.").max(120, "Reply cannot exceed 120 characters."),
-  authorUid: z.string().min(1, "User must be authenticated."),
-});
-
 const noteSchema = z.object({
   text: z.string().min(1, "Note cannot be empty.").max(800, "Note cannot exceed 800 characters."),
   lat: z.coerce.number().min(-90).max(90),
@@ -32,7 +26,7 @@ type CreateNoteFormState = {
     success: boolean;
 }
 
-async function getOrCreatePseudonym(uid: string, requestedName?: string | null): Promise<string> {
+export async function getOrCreatePseudonym(uid: string, requestedName?: string | null): Promise<string> {
     const profileRef = doc(db, 'profiles', uid);
     const profileSnap = await getDoc(profileRef);
 
@@ -121,65 +115,6 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
         message: `Failed to save note to database.`,
         success: false, 
         errors: { server: [`Firestore error: ${errorMessage}`] } 
-    };
-  }
-}
-
-type ReplyFormState = {
-    message: string;
-    errors?: Record<string, string[] | undefined>;
-    success: boolean;
-}
-
-export async function submitReply(prevState: ReplyFormState, formData: FormData): Promise<ReplyFormState> {
-  const validatedFields = replySchema.safeParse({
-    noteId: formData.get('noteId'),
-    text: formData.get('text'),
-    authorUid: formData.get('authorUid'),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Invalid fields.',
-      success: false,
-    };
-  }
-  
-  const { text, noteId, authorUid } = validatedFields.data;
-
-  try {
-    const moderationResult = await moderateContent({ text });
-    if (!moderationResult.isSafe) {
-      return {
-        errors: { text: [moderationResult.reason || 'This reply violates our content policy.'] },
-        message: 'Your reply was flagged as inappropriate. Please revise.',
-        success: false,
-      };
-    }
-    
-    const pseudonym = await getOrCreatePseudonym(authorUid, null);
-
-    const replyRef = collection(db, 'notes', noteId, 'replies');
-    await addDoc(replyRef, {
-        text,
-        noteId,
-        authorUid,
-        authorPseudonym: pseudonym,
-        createdAt: serverTimestamp(),
-    });
-    
-    revalidatePath(`/notes/${noteId}`);
-
-    return { message: 'Reply posted successfully!', success: true };
-    
-  } catch (error: any) {
-    console.error("Error submitting reply:", error);
-    const errorMessage = error.message || 'An unknown error occurred.';
-    return { 
-      message: `Failed to post reply.`, 
-      success: false,
-      errors: { server: [errorMessage] }
     };
   }
 }

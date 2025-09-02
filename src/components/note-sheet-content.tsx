@@ -9,14 +9,16 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { submitReply, createNote } from '@/app/actions';
+import { createNote, getOrCreatePseudonym } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
 import { useFormStatus } from 'react-dom';
-import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from './auth-provider';
+import { z } from 'zod';
+import { moderateContent } from '@/ai/flows/content-moderation';
 
 
 function SubmitButton({label, pendingLabel}: {label: string, pendingLabel: string}) {
@@ -82,48 +84,89 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
     );
 }
 
+const replySchema = z.object({
+  text: z.string().min(1, "Reply cannot be empty.").max(120, "Reply cannot exceed 120 characters."),
+});
 
 function ReplyForm({ noteId }: { noteId: string }) {
     const { user } = useAuth();
     const { toast } = useToast();
-    const formRef = useRef<HTMLFormElement>(null);
-    const initialState = { message: '', errors: {}, success: false };
-    const [state, formAction] = useActionState(submitReply, initialState);
+    const [text, setText] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        if (state.message) {
-            if (!state.success) {
-                 toast({ title: "Error", description: state.errors?.text?.[0] || state.errors?.server?.[0] || 'Failed to post reply.', variant: 'destructive' });
-            } else {
-                toast({ title: state.message });
-                if (state.success) {
-                    formRef.current?.reset();
-                }
-            }
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!user) {
+            toast({ title: "Not signed in", description: "You must be signed in to reply.", variant: "destructive" });
+            return;
         }
-    }, [state, toast]);
+
+        const validation = replySchema.safeParse({ text });
+        if (!validation.success) {
+            setError(validation.error.errors[0].message);
+            return;
+        }
+        
+        setError(null);
+        setIsSubmitting(true);
+
+        try {
+            const moderationResult = await moderateContent({ text });
+            if (!moderationResult.isSafe) {
+                toast({
+                    title: "Inappropriate Content",
+                    description: moderationResult.reason || "This reply violates our content policy. Please revise.",
+                    variant: "destructive"
+                });
+                setError(moderationResult.reason || "This reply violates our content policy.");
+                setIsSubmitting(false);
+                return;
+            }
+
+            const pseudonym = await getOrCreatePseudonym(user.uid, null);
+            const replyRef = collection(db, 'notes', noteId, 'replies');
+            
+            await addDoc(replyRef, {
+                text,
+                noteId,
+                authorUid: user.uid,
+                authorPseudonym: pseudonym,
+                createdAt: serverTimestamp(),
+            });
+
+            setText("");
+            toast({ title: "Reply posted successfully!" });
+
+        } catch (err: any) {
+            console.error("Error submitting reply:", err);
+            toast({ title: "Error", description: err.message || "Failed to post reply.", variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
     
     if (!user) {
         return <p className="text-sm text-center text-muted-foreground py-4">Please sign in to reply.</p>
     }
 
     return (
-        <form id="reply-form" ref={formRef} action={formAction} className="flex items-start gap-2 p-4">
-            <input type="hidden" name="noteId" value={noteId} />
-            <input type="hidden" name="authorUid" value={user.uid} />
+        <form id="reply-form" onSubmit={handleSubmit} className="flex items-start gap-2 p-4">
             <div className="flex-grow space-y-1">
                 <Textarea 
                     name="text"
+                    value={text}
+                    onChange={(e) => setText(e.target.value)}
                     placeholder="Add a reply... (Max 120 chars)" 
                     maxLength={120} 
                     rows={1} 
                     required
                     className="flex-grow min-h-0"
                 />
-                {state.errors?.text && <p className="text-sm text-destructive mt-1">{state.errors.text[0]}</p>}
+                {error && <p className="text-sm text-destructive mt-1">{error}</p>}
             </div>
-            <Button type="submit" size="icon" className="h-full">
-                <Send className="h-4 w-4" />
+            <Button type="submit" size="icon" className="h-full" disabled={isSubmitting}>
+                 {isSubmitting ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div> : <Send className="h-4 w-4" />}
             </Button>
         </form>
     );
