@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useRef } from 'react';
@@ -85,6 +86,7 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
                 return;
             }
 
+            /*
             // 2. Moderate content
             const moderationResult = await moderateContent({ text });
             if (!moderationResult.isSafe) {
@@ -92,6 +94,7 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
                 setIsSubmitting(false);
                 return;
             }
+            */
 
             // 3. Get user pseudonym
             const pseudonym = await getOrCreatePseudonym(user.uid);
@@ -257,6 +260,7 @@ function ReplyForm({ noteId }: { noteId: string }) {
         setIsSubmitting(true);
 
         try {
+            /*
             const moderationResult = await moderateContent({ text });
             if (!moderationResult.isSafe) {
                 toast({
@@ -268,6 +272,7 @@ function ReplyForm({ noteId }: { noteId: string }) {
                 setIsSubmitting(false);
                 return;
             }
+            */
 
             const pseudonym = await getOrCreatePseudonym(user.uid);
             const replyRef = collection(db, 'notes', noteId, 'replies');
