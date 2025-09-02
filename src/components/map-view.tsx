@@ -39,6 +39,7 @@ import {
 import { geohashQueryBounds, distanceBetween } from 'geofire-common';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
+import { useSearchParams } from 'next/navigation';
 
 const MAP_STYLE = "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
 
@@ -47,7 +48,7 @@ const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
 
 
-export default function MapView() {
+function MapViewContent() {
   const { location, error: locationError, permissionState, requestPermission } = useLocation();
   const { user } = useAuth();
   const [notes, setNotes] = useState<GhostNote[]>([]);
@@ -59,6 +60,7 @@ export default function MapView() {
   const [isCompassViewOpen, setCompassViewOpen] = useState(false);
   const mapRef = useRef<MapRef | null>(null);
   const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchParams = useSearchParams();
 
   const [viewState, setViewState] = useState<Partial<ViewState>>({
     longitude: DEFAULT_CENTER.longitude,
@@ -66,6 +68,20 @@ export default function MapView() {
     zoom: DEFAULT_ZOOM,
     pitch: 45,
   });
+  
+  // Effect to handle incoming location from URL params
+  useEffect(() => {
+    const lat = searchParams.get('lat');
+    const lng = searchParams.get('lng');
+    const zoom = searchParams.get('zoom');
+    if (lat && lng && mapRef.current) {
+        mapRef.current.flyTo({
+            center: [parseFloat(lng), parseFloat(lat)],
+            zoom: zoom ? parseInt(zoom) : 17,
+            duration: 2000,
+        });
+    }
+  }, [searchParams]);
 
   // Haversine distance function
   const getDistance = (coords1: {latitude: number, longitude: number}, coords2: {latitude: number, longitude: number}) => {
@@ -170,8 +186,9 @@ export default function MapView() {
   // Effect to center map on user location when it becomes available for the first time
   useEffect(() => {
     if (location && mapRef.current) {
-      // Check if the map is still at the default location
+      // Check if the map is still at the default location and not being controlled by URL params
       if (
+        !searchParams.get('lat') &&
         viewState.longitude === DEFAULT_CENTER.longitude &&
         viewState.latitude === DEFAULT_CENTER.latitude
       ) {
@@ -182,7 +199,7 @@ export default function MapView() {
         });
       }
     }
-  }, [location, viewState.longitude, viewState.latitude]);
+  }, [location, viewState.longitude, viewState.latitude, searchParams]);
 
 
   const handleMarkerClick = (note: GhostNote) => {
@@ -352,4 +369,11 @@ export default function MapView() {
   );
 }
 
-    
+// The page needs to be wrapped in a Suspense boundary because it uses useSearchParams
+export default function MapView() {
+    return (
+        <React.Suspense fallback={<div>Loading...</div>}>
+            <MapViewContent />
+        </React.Suspense>
+    )
+}

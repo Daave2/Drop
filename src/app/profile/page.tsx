@@ -5,17 +5,18 @@ import { AuthButton } from "@/components/auth-button";
 import { useAuth } from "@/components/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Edit } from "lucide-react";
+import { User, Edit, MessageSquare, Heart, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { doc, onSnapshot, setDoc, collection, query, where, getCountFromServer, Timestamp } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, collection, query, where, getCountFromServer, Timestamp, getDocs, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { z } from "zod";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Note } from "@/types";
 
 const profileSchema = z.object({
     displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters."),
@@ -104,6 +105,65 @@ function StatCard({ title, value, isLoading }: { title: string, value: number | 
                 <p className="text-3xl font-bold">{value}</p>
             )}
             <p className="text-sm text-muted-foreground">{title}</p>
+        </div>
+    )
+}
+
+function MyNotesList({ uid }: { uid: string }) {
+    const [notes, setNotes] = useState<Note[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchNotes = async () => {
+            setLoading(true);
+            try {
+                const notesRef = collection(db, 'notes');
+                const q = query(notesRef, where("authorUid", "==", uid), orderBy("createdAt", "desc"));
+                const querySnapshot = await getDocs(q);
+                const userNotes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Note));
+                setNotes(userNotes);
+            } catch (error) {
+                console.error("Error fetching user notes:", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchNotes();
+    }, [uid]);
+
+    if (loading) {
+        return (
+            <div className="space-y-2">
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+                <Skeleton className="h-16 w-full" />
+            </div>
+        )
+    }
+    
+    if (notes.length === 0) {
+        return <p className="text-muted-foreground text-center py-4">You haven't dropped any notes yet.</p>
+    }
+
+    return (
+        <div className="space-y-3">
+            {notes.map(note => (
+                <div key={note.id} className="bg-muted/50 p-3 rounded-lg">
+                    <p className="truncate">{note.text}</p>
+                    <div className="flex justify-between items-center text-sm text-muted-foreground mt-2">
+                        <span>{new Date(note.createdAt.seconds * 1000).toLocaleDateString()}</span>
+                        <div className="flex items-center gap-4">
+                            <span className="flex items-center gap-1"><Heart className="h-4 w-4" /> {note.score}</span>
+                            <Button asChild variant="ghost" size="sm">
+                                <Link href={`/?lat=${note.lat}&lng=${note.lng}&zoom=18`}>
+                                    <MapPin className="h-4 w-4 mr-1" /> View on Map
+                                </Link>
+                            </Button>
+                        </div>
+                    </div>
+                </div>
+            ))}
         </div>
     )
 }
@@ -226,7 +286,18 @@ export default function ProfilePage() {
             </div>
         </CardContent>
       </Card>
+
+        {user && (
+            <Card className="mt-8">
+                <CardHeader>
+                    <CardTitle>My Notes</CardTitle>
+                    <CardDescription>A list of all the notes you have dropped.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <MyNotesList uid={user.uid} />
+                </CardContent>
+            </Card>
+        )}
     </div>
   );
 }
-
