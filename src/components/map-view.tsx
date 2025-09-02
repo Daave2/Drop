@@ -21,7 +21,7 @@ import {
 import { Badge } from './ui/badge';
 import CompassView from './compass-view';
 import { useAuth } from './auth-provider';
-import { collection, getDocs, Timestamp } from 'firebase/firestore';
+import { collection, onSnapshot, query, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 
@@ -51,10 +51,9 @@ export default function MapView() {
   });
 
   useEffect(() => {
-    async function fetchNotes() {
-      try {
+    const q = query(collection(db, "notes"));
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
         setLoadingNotes(true);
-        const querySnapshot = await getDocs(collection(db, "notes"));
         const notesData = querySnapshot.docs.map(doc => {
             const data = doc.data();
             return {
@@ -68,13 +67,13 @@ export default function MapView() {
             } as GhostNote
         });
         setNotes(notesData);
-      } catch (error) {
-        console.error("Error fetching notes: ", error);
-      } finally {
         setLoadingNotes(false);
-      }
-    }
-    fetchNotes();
+    }, (error) => {
+        console.error("Error fetching notes: ", error);
+        setLoadingNotes(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -116,15 +115,7 @@ export default function MapView() {
   };
   
   const handleNoteCreated = (newNote: GhostNote) => {
-    setNotes(prevNotes => [...prevNotes, newNote]);
-    setNoteSheetOpen(false);
-    setCreatingNote(false);
-    // Fly to the new note
-    mapRef.current?.flyTo({
-        center: [newNote.lng, newNote.lat],
-        zoom: 18,
-        duration: 1500
-    });
+    // No longer needed, onSnapshot will update the notes list
   };
 
   if (permissionState !== 'granted') {

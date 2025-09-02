@@ -32,41 +32,21 @@ function SubmitButton({label, pendingLabel}: {label: string, pendingLabel: strin
   );
 }
 
-function CreateNoteForm({ userLocation, onNoteCreated }: { userLocation: Coordinates | null, onNoteCreated: (note: GhostNote) => void }) {
+function CreateNoteForm({ userLocation, onNoteCreated, onClose }: { userLocation: Coordinates | null, onNoteCreated: (note: GhostNote) => void, onClose: () => void }) {
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
-    const [state, formAction] = useActionState(createNote, { message: '', errors: {}, success: false });
+    
+    const initialState = { message: '', errors: {}, success: false };
+    const [state, formAction] = useActionState(createNote, initialState);
 
     useEffect(() => {
-        if(state.message) {
-            if (!state.success) {
-                toast({ title: "Error creating note", description: state.message, variant: 'destructive' });
-            } else {
-                toast({ title: state.message });
-                // Construct the note on the client side for immediate feedback
-                if(formRef.current && userLocation) {
-                    const formData = new FormData(formRef.current);
-                    const text = formData.get('text') as string;
-                    const newGhostNote: GhostNote = {
-                        // This ID is temporary, Firestore will assign a real one.
-                        // We rely on the parent component to refetch or get the real data.
-                        id: `temp-${Date.now()}`, 
-                        lat: userLocation.latitude,
-                        lng: userLocation.longitude,
-                        teaser: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
-                        type: 'text',
-                        score: 0,
-                        createdAt: { 
-                          seconds: Math.floor(Date.now() / 1000),
-                          nanoseconds: 0,
-                        },
-                      };
-                    onNoteCreated(newGhostNote);
-                    formRef.current?.reset();
-                }
-            }
+        if (state.success) {
+            toast({ title: "Success!", description: state.message });
+            onClose();
+        } else if (state.message && (state.errors?.text || state.errors?.server)) {
+            toast({ title: "Error", description: state.message, variant: 'destructive' });
         }
-    }, [state, toast, onNoteCreated, userLocation]);
+    }, [state, toast, onClose]);
 
     return (
         <form ref={formRef} action={formAction} className="p-4 space-y-4">
@@ -74,6 +54,7 @@ function CreateNoteForm({ userLocation, onNoteCreated }: { userLocation: Coordin
             <input type="hidden" name="lng" value={userLocation?.longitude ?? 0} />
             <Textarea name="text" placeholder="What's on your mind? (Max 800 chars)" maxLength={800} rows={5} required />
             {state.errors?.text && <p className="text-sm text-destructive">{state.errors.text[0]}</p>}
+            {state.errors?.server && <p className="text-sm text-destructive">{state.errors.server[0]}</p>}
 
             <div className="flex items-center justify-between">
                 <Button variant="outline" size="icon" type="button" disabled>
@@ -180,8 +161,8 @@ interface NoteSheetContentProps {
   noteId: string | null;
   isCreating: boolean;
   userLocation: Coordinates | null;
-  onNoteCreated?: (newNote: GhostNote) => void;
-  onClose?: () => void;
+  onNoteCreated: (newNote: GhostNote) => void;
+  onClose: () => void;
 }
 
 export default function NoteSheetContent({ noteId, isCreating, userLocation, onNoteCreated, onClose }: NoteSheetContentProps) {
@@ -219,7 +200,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
   
 
   if (isCreating) {
-    return <CreateNoteForm userLocation={userLocation} onNoteCreated={onNoteCreated!} />;
+    return <CreateNoteForm userLocation={userLocation} onNoteCreated={onNoteCreated} onClose={onClose} />;
   }
 
   if (loadingNote) {

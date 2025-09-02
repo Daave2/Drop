@@ -21,9 +21,13 @@ const noteSchema = z.object({
 
 type CreateNoteFormState = {
     message: string;
-    errors?: Record<string, string[] | undefined>;
+    errors?: {
+        text?: string[];
+        lat?: string[];
+        lng?: string[];
+        server?: string[];
+    };
     success: boolean;
-    note?: GhostNote; // Keep this for now to pass back to client
 }
 
 export async function createNote(prevState: CreateNoteFormState, formData: FormData): Promise<CreateNoteFormState> {
@@ -79,12 +83,11 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
     
     revalidatePath(`/`);
 
-    // The note object is constructed on the client now.
     return { message: 'Note dropped successfully!', success: true };
     
   } catch (error) {
     console.error("Error creating note:", error);
-    return { message: 'An unexpected error occurred. Please try again.', success: false };
+    return { message: 'An unexpected error occurred. Please try again.', success: false, errors: { server: ['Failed to save note to database.'] } };
   }
 }
 
