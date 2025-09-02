@@ -126,7 +126,7 @@ const reportNoteFlow = ai.defineFlow(
     if (!output) {
       const finishReason = response.finishReason;
       const safetyRatings = response.safetyRatings?.map(r => `${r.category}: ${r.safetyHarm}`).join(', ');
-      const message = `We received your report, but were unable to process it. Reason: ${finishReason}. ${safetyRatings ? `Details: ${safetyRatings}` : ''}`;
+      const message = `We received your report, but were unable to process it. reason: ${finishReason}. ${safetyRatings ? `Details: ${safetyRatings}` : ''}`;
       return {
         success: false,
         actionTaken: 'none',
@@ -146,29 +146,30 @@ const reportNoteFlow = ai.defineFlow(
       };
     }
 
-    const calledTool = toolCalls[0];
-    if (calledTool.tool === 'removeNote') {
+    const calledToolName = toolCalls[0].tool;
+    if (calledToolName === 'removeNote') {
       return {
         success: true,
         actionTaken: 'removed',
         message:
-          "Thank you for your report. We have removed the note as it violates our content policies.",
+          output.text || "Thank you for your report. We have removed the note as it violates our content policies.",
       };
     }
-    if (calledTool.tool === 'flagNoteForReview') {
+    if (calledToolName === 'flagNoteForReview') {
       return {
         success: true,
         actionTaken: 'flagged',
         message:
-          "Thank you for your report. The note has been flagged for further review by our team.",
+          output.text || "Thank you for your report. The note has been flagged for further review by our team.",
       };
     }
 
+    // Default case if a tool was called but we don't have a specific message for it.
     return {
       success: true,
       actionTaken: 'none',
       message:
-        "Thank you for your report. We will review it, but no immediate action was taken.",
+        output.text || "Thank you for your report. We will review it, but no immediate action was taken.",
     };
   }
 );
