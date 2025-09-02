@@ -12,7 +12,7 @@ import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
-import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, runTransaction, where, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, runTransaction, where, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { getOrCreatePseudonym } from '@/lib/pseudonym';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
@@ -337,19 +337,18 @@ function ReportDialog({ note, open, onOpenChange, onClose }: { note: Note, open:
 
         setIsSubmitting(true);
         try {
-            const result = await reportNote({
-                noteId: note.id,
-                reason,
-                reporterUid: user.uid,
+            const noteRef = doc(db, 'notes', note.id);
+            await updateDoc(noteRef, {
+                visibility: 'unlisted',
+                'review.status': 'pending',
+                'review.reason': `Reported by ${user.uid}: ${reason}`,
             });
+
             toast({
                 title: "Report Submitted",
-                description: result.message,
-                variant: result.success ? "default" : "destructive",
+                description: "Thank you for your report. The note has been flagged for further review.",
             });
-            if (result.success) {
-                onClose(); // Close the main note sheet
-            }
+            onClose(); // Close the main note sheet
         } catch (error: any) {
             console.error("Error reporting note:", error);
             toast({ title: "Error", description: error.message || "Failed to submit report.", variant: "destructive" });
@@ -365,7 +364,7 @@ function ReportDialog({ note, open, onOpenChange, onClose }: { note: Note, open:
                 <AlertDialogHeader>
                     <AlertDialogTitle>Report Note</AlertDialogTitle>
                     <AlertDialogDescription>
-                        Why are you reporting this note? Please provide a brief explanation. Your report is anonymous.
+                        Why are you reporting this note? Please provide a brief explanation. Your report is anonymous to other users.
                     </AlertDialogDescription>
                 </AlertDialogHeader>
                 <div className="grid gap-2">
@@ -376,11 +375,12 @@ function ReportDialog({ note, open, onOpenChange, onClose }: { note: Note, open:
                         value={reason}
                         onChange={(e) => setReason(e.target.value)}
                         maxLength={500}
+                        required
                     />
                 </div>
                 <AlertDialogFooter>
                     <AlertDialogCancel>Cancel</AlertDialogCancel>
-                    <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
+                    <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting || reason.length < 10}>
                         {isSubmitting ? 'Submitting...' : 'Submit Report'}
                     </AlertDialogAction>
                 </AlertDialogFooter>
@@ -404,8 +404,8 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
         const unsubscribeNote = onSnapshot(noteRef, (doc) => {
             if (doc.exists()) {
                  const data = doc.data();
-                 if (data.visibility === 'unlisted') {
-                    // If the note has been hidden (e.g. by a report), close the sheet.
+                 if (data.visibility === 'unlisted' && data.authorUid !== user?.uid) {
+                    // If the note has been hidden and we are not the author, close the sheet.
                     toast({title: "Note Unavailable", description: "This note is no longer available."});
                     onClose();
                     return;
@@ -418,7 +418,7 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
         });
         
         return () => unsubscribeNote();
-    }, [initialNote.id, toast, onClose]);
+    }, [initialNote.id, toast, onClose, user?.uid]);
     
     useEffect(() => {
         if (!user) return;
@@ -518,11 +518,11 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                         <span>{note.createdAt ? new Date(note.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" size="sm" onClick={handleLikeToggle} disabled={isLiking}>
+                        <Button variant="outline" size="sm" onClick={handleLikeToggle} disabled={isLiking || note.authorUid === user?.uid}>
                             <Heart className={cn("h-4 w-4 mr-2", isLiked && "fill-destructive text-destructive")} /> 
                             {note.score}
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => setReportDialogOpen(true)}><Flag className="h-4 w-4 mr-2"/> Report</Button>
+                        <Button variant="outline" size="sm" onClick={() => setReportDialogOpen(true)} disabled={note.authorUid === user?.uid}><Flag className="h-4 w-4 mr-2"/> Report</Button>
                         <Badge variant={note.type === 'photo' ? 'default' : 'secondary'}>{note.type}</Badge>
                     </div>
                     <Separator />
