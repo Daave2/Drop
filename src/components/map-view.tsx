@@ -42,6 +42,7 @@ import { Skeleton } from './ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
+import { cn } from '@/lib/utils';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
@@ -280,7 +281,10 @@ function MapViewContent() {
         {notes.map(note => (
             <Marker key={note.id} longitude={note.lng} latitude={note.lat} onClick={() => handleMarkerClick(note)}>
                 <button className="transform hover:scale-110 transition-transform">
-                    <MapPin className={`h-8 w-8 drop-shadow-lg ${note.id === revealedNoteId ? 'text-accent' : 'text-primary/70'}`} fill="currentColor" />
+                    <MapPin className={cn('h-8 w-8 drop-shadow-lg', 
+                        note.id === revealedNoteId ? 'text-accent' : 
+                        note.type === 'photo' ? 'text-secondary-foreground/70' : 'text-primary/70'
+                    )} fill="currentColor" />
                 </button>
             </Marker>
         ))}
