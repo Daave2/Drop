@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
@@ -56,6 +56,8 @@ export default function MapView() {
         setLoadingNotes(true);
         const notesData = querySnapshot.docs.map(doc => {
             const data = doc.data();
+            // Firestore Timestamps need to be handled carefully
+            const createdAtTimestamp = data.createdAt as Timestamp | null;
             return {
                 id: doc.id,
                 lat: data.lat,
@@ -63,7 +65,8 @@ export default function MapView() {
                 teaser: data.teaser,
                 type: data.type,
                 score: data.score,
-                createdAt: data.createdAt ? { seconds: (data.createdAt as Timestamp).seconds, nanoseconds: (data.createdAt as Timestamp).nanoseconds } : { seconds: 0, nanoseconds: 0 },
+                // Provide a default or handle null timestamps
+                createdAt: createdAtTimestamp ? { seconds: createdAtTimestamp.seconds, nanoseconds: createdAtTimestamp.nanoseconds } : { seconds: Date.now() / 1000, nanoseconds: 0 },
             } as GhostNote
         });
         setNotes(notesData);
@@ -114,7 +117,7 @@ export default function MapView() {
     }
   };
   
-  const handleNoteCreated = (newNote: GhostNote) => {
+  const handleNoteCreated = () => {
     // No longer needed, onSnapshot will update the notes list
   };
 

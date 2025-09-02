@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useActionState, useRef } from 'react';
 import { Camera, Heart, Flag, Send } from 'lucide-react';
-import { Note, Reply, GhostNote } from '@/types';
+import { Note, Reply } from '@/types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
@@ -13,7 +13,7 @@ import { submitReply, createNote } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
 import { useFormStatus } from 'react-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 
@@ -163,10 +163,11 @@ interface NoteSheetContentProps {
   noteId: string | null;
   isCreating: boolean;
   userLocation: Coordinates | null;
+  onNoteCreated: () => void;
   onClose: () => void;
 }
 
-export default function NoteSheetContent({ noteId, isCreating, userLocation, onClose }: NoteSheetContentProps) {
+export default function NoteSheetContent({ noteId, isCreating, userLocation, onNoteCreated, onClose }: NoteSheetContentProps) {
   const { toast } = useToast();
   const [note, setNote] = useState<Note | null>(null);
   const [loadingNote, setLoadingNote] = useState(false);
@@ -178,9 +179,11 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onC
         try {
           const noteDoc = await getDoc(doc(db, 'notes', noteId));
           if (noteDoc.exists()) {
-            const noteData = noteDoc.data();
-            const createdAt = noteData.createdAt ? { seconds: noteData.createdAt.seconds, nanoseconds: noteData.createdAt.nanoseconds } : { seconds: Date.now() / 1000, nanoseconds: 0 };
-            setNote({ id: noteDoc.id, ...noteData, createdAt } as Note);
+            const data = noteDoc.data();
+            const createdAt = data.createdAt instanceof Timestamp ? 
+                { seconds: data.createdAt.seconds, nanoseconds: data.createdAt.nanoseconds } : 
+                { seconds: Date.now() / 1000, nanoseconds: 0 };
+            setNote({ id: noteDoc.id, ...data, createdAt } as Note);
           } else {
             toast({ title: "Error", description: "Could not find the selected note.", variant: "destructive" });
             onClose?.();
@@ -201,14 +204,17 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onC
   
 
   if (isCreating) {
-    return <CreateNoteForm userLocation={userLocation} onClose={onClose} />;
+    return <CreateNoteForm userLocation={userLocation} onClose={() => {
+        onNoteCreated();
+        onClose();
+    }} />;
   }
 
   if (loadingNote) {
     return (
         <div className="p-4 space-y-6">
             <Skeleton className="h-64 w-full rounded-lg" />
-            <Skeleton className="h-6 w-3/g" />
+            <Skeleton className="h-6 w-3/4" />
             <Skeleton className="h-4 w-1/2" />
             <div className="flex items-center justify-between">
                 <Skeleton className="h-10 w-24" />

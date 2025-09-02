@@ -1,8 +1,8 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getStorage, connectStorageEmulator } from 'firebase/storage';
-import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
+import { getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import { getStorage } from 'firebase/storage';
+import { getFunctions } from 'firebase/functions';
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -14,6 +14,7 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
+// Initialize Firebase
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 const auth = getAuth(app);
@@ -21,13 +22,17 @@ const db = getFirestore(app);
 const storage = getStorage(app);
 const functions = getFunctions(app);
 
-// If in development, connect to emulators
+// If in development, connect to emulators.
+// This check is generally safe for production builds,
+// as env vars are replaced at build time.
 if (process.env.NODE_ENV === 'development') {
-    // Point to the emulators
-    // connectAuthEmulator(auth, 'http://localhost:9099', { disableWarnings: true });
+    // It's recommended to handle emulator connections here
+    // But for this project, we're assuming direct connection.
+    // connectAuthEmulator(auth, 'http://localhost:9099');
     // connectFirestoreEmulator(db, 'localhost', 8080);
     // connectStorageEmulator(storage, 'localhost', 9199);
     // connectFunctionsEmulator(functions, 'localhost', 5001);
 }
+
 
 export { app, auth, db, storage, functions };
