@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useActionState, useRef } from 'react';
@@ -64,8 +65,9 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
         try {
           const noteDoc = await getDoc(doc(db, 'notes', noteId));
           if (noteDoc.exists()) {
-            setNote({ id: noteDoc.id, ...noteDoc.data() } as Note);
-            // In a real app, fetch replies here too
+            const noteData = noteDoc.data();
+            const createdAt = noteData.createdAt ? { seconds: noteData.createdAt.seconds, nanoseconds: noteData.createdAt.nanoseconds } : { seconds: Date.now() / 1000, nanoseconds: 0 };
+            setNote({ id: noteDoc.id, ...noteData, createdAt } as Note);
             setReplies(mockReplies);
           } else {
             console.error("No such document!");
@@ -165,7 +167,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
                 </Avatar>
                 <span>{note.authorPseudonym}</span>
             </div>
-            <span>{note.createdAt ? new Date((note.createdAt as any).seconds * 1000).toLocaleDateString() : 'Just now'}</span>
+            <span>{note.createdAt ? new Date(note.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
         </div>
 
         <div className="flex items-center gap-2">
