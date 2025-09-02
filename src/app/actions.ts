@@ -56,7 +56,6 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
       };
     }
     
-    // Simplified, clean note object for Firestore
     const newNote = {
       text,
       lat,
@@ -82,9 +81,14 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
 
     return { message: 'Note dropped successfully!', success: true };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error creating note:", error);
-    return { message: 'An unexpected error occurred. Please try again.', success: false, errors: { server: ['Failed to save note to database.'] } };
+    const errorMessage = error.message || 'An unknown error occurred.';
+    return { 
+        message: `Failed to save note to database: ${errorMessage}`, 
+        success: false, 
+        errors: { server: [`Firestore error: ${errorMessage}`] } 
+    };
   }
 }
 
