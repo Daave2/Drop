@@ -17,7 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from "@/components/ui/dialog"
+} from '@/components/ui/dialog';
 import { Badge } from './ui/badge';
 import CompassView from './compass-view';
 import { useAuth } from './auth-provider';
@@ -30,6 +30,9 @@ import {
   limit,
   getDocs,
   Timestamp,
+  QuerySnapshot,
+  QueryDocumentSnapshot,
+  DocumentData,
 } from 'firebase/firestore';
 import { geohashQueryBounds, distanceBetween } from 'geofire-common';
 import { db } from '@/lib/firebase';
@@ -70,7 +73,7 @@ export default function MapView() {
     const bounds = geohashQueryBounds(center, radiusInM);
     const MAX_NOTES = 50;
 
-    const promises = bounds.map((b) =>
+    const promises = bounds.map((b: [string, string]) =>
       getDocs(
         query(
           collection(db, "notes"),
@@ -83,12 +86,12 @@ export default function MapView() {
     );
 
     Promise.all(promises)
-      .then((snapshots) => {
+      .then((snapshots: QuerySnapshot<DocumentData>[]) => {
         const notesData: GhostNote[] = [];
         const seen = new Set<string>();
 
-        snapshots.forEach((snap) => {
-          snap.docs.forEach((doc) => {
+        snapshots.forEach((snap: QuerySnapshot<DocumentData>) => {
+          snap.docs.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
             if (seen.has(doc.id)) return;
             const data = doc.data();
             const distanceInKm = distanceBetween(
@@ -239,13 +242,13 @@ export default function MapView() {
         )}
       </Map>
 
-      <header className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center bg-gradient-to-b from-background/80 to-transparent">
+      <header className="absolute top-0 left-0 right-0 p-2 sm:p-4 flex justify-between items-center bg-gradient-to-b from-background/80 to-transparent">
         <Logo />
         <AuthButton />
       </header>
 
       <Button
-        className="absolute bottom-24 right-4 rounded-full w-14 h-14 shadow-lg"
+        className="absolute right-4 rounded-full w-12 h-12 shadow-lg bottom-20 sm:bottom-24 sm:w-14 sm:h-14"
         onClick={() => {
             setCreatingNote(true);
             setSelectedNote(null);
@@ -258,7 +261,7 @@ export default function MapView() {
       <Button
         variant="secondary"
         size="icon"
-        className="absolute bottom-40 right-4 rounded-full w-14 h-14 shadow-lg"
+        className="absolute right-4 rounded-full w-12 h-12 shadow-lg bottom-36 sm:bottom-40 sm:w-14 sm:h-14"
         onClick={handleCenterMap}
         disabled={!location}
       >
