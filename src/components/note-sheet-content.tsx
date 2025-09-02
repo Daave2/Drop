@@ -35,6 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Label } from './ui/label';
+import { SheetFooter, SheetHeader, SheetTitle } from './ui/sheet';
 
 
 function SubmitButton({label, pendingLabel, isSubmitting}: {label: string, pendingLabel: string, isSubmitting: boolean}) {
@@ -56,7 +57,7 @@ const noteSchema = z.object({
 });
 
 
-function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates | null, onClose: () => void }) {
+function CreateNoteForm({ userLocation, onNoteCreated, onClose }: { userLocation: Coordinates | null, onNoteCreated: () => void, onClose: () => void }) {
     const { user } = useAuth();
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
@@ -160,8 +161,7 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
             formRef.current?.reset();
             setImagePreview(null);
             setImageFile(null);
-            onClose();
-
+            onNoteCreated(); // This will fetch notes and close the sheet
         } catch (error: any) {
             console.error("Error creating note:", error);
             toast({ title: "Error creating note", description: error.message || "An unknown error occurred.", variant: "destructive" });
@@ -210,34 +210,49 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
     }
 
     return (
-        <form ref={formRef} onSubmit={handleSubmit} className="p-4 space-y-4">
-            <Textarea name="text" placeholder="What's on your mind? (Max 800 chars)" maxLength={800} rows={5} required />
-            
-            {imagePreview && (
-                <div className="relative">
-                    <Image width={400} height={300} src={imagePreview} alt="Image preview" className="rounded-md w-full object-cover aspect-video" />
-                    <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={handleRemoveImage}>
-                        <X className="h-4 w-4" />
+        <>
+            <SheetHeader>
+                <SheetTitle className="font-headline text-2xl">Drop a New Note</SheetTitle>
+            </SheetHeader>
+            <ScrollArea className="flex-1 -mx-6">
+                <form ref={formRef} onSubmit={handleSubmit} className="px-6 pt-4 space-y-4">
+                    <Textarea name="text" placeholder="What's on your mind? (Max 800 chars)" maxLength={800} rows={5} required />
+                    
+                    {imagePreview && (
+                        <div className="relative">
+                            <Image width={400} height={300} src={imagePreview} alt="Image preview" className="rounded-md w-full object-cover aspect-video" />
+                            <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-6 w-6" onClick={handleRemoveImage}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
+                     {userLocation && <p className="text-xs text-muted-foreground">Location: {userLocation.latitude.toFixed(5)}, {userLocation.longitude.toFixed(5)}</p>}
+                </form>
+            </ScrollArea>
+             <SheetFooter className="pt-4">
+                 <div className="flex items-center justify-between w-full">
+                     <Button variant="outline" size="icon" type="button" onClick={() => fileInputRef.current?.click()}>
+                        <Camera className="h-4 w-4"/>
+                    </Button>
+                    <Input
+                        type="file"
+                        name="image"
+                        className="hidden"
+                        ref={fileInputRef}
+                        onChange={handleImageChange}
+                        accept="image/png, image/jpeg, image/gif"
+                    />
+                    <Button form="create-note-form" type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? (
+                            <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                            Dropping...
+                            </>
+                        ) : 'Drop Note'}
                     </Button>
                 </div>
-            )}
-
-            <div className="flex items-center justify-between">
-                 <Button variant="outline" size="icon" type="button" onClick={() => fileInputRef.current?.click()}>
-                    <Camera className="h-4 w-4"/>
-                </Button>
-                <Input
-                    type="file"
-                    name="image"
-                    className="hidden"
-                    ref={fileInputRef}
-                    onChange={handleImageChange}
-                    accept="image/png, image/jpeg, image/gif"
-                />
-                <SubmitButton label="Drop Note" pendingLabel="Dropping..." isSubmitting={isSubmitting} />
-            </div>
-            {userLocation && <p className="text-xs text-muted-foreground">Location: {userLocation.latitude.toFixed(5)}, {userLocation.longitude.toFixed(5)}</p>}
-        </form>
+            </SheetFooter>
+        </>
     );
 }
 
@@ -296,7 +311,7 @@ function ReplyForm({ noteId }: { noteId: string }) {
     }
 
     return (
-        <form id="reply-form" onSubmit={handleSubmit} className="flex items-start gap-2 p-4">
+        <form id="reply-form" onSubmit={handleSubmit} className="flex items-start gap-2 pt-2">
             <div className="flex-grow space-y-1">
                 <Textarea 
                     name="text"
@@ -412,9 +427,6 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
         const unsubscribeNote = onSnapshot(noteRef, (doc) => {
             if (doc.exists()) {
                  const data = doc.data();
-                 // This is the race condition fix.
-                 // If the note becomes unlisted and the current user is NOT the author,
-                 // close the sheet before Firestore throws a permission error.
                  if (data.visibility === 'unlisted' && data.authorUid !== user?.uid) {
                     toast({title: "Note Unavailable", description: "This note is no longer available."});
                     onClose();
@@ -425,13 +437,10 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                     { seconds: Date.now() / 1000, nanoseconds: 0 };
                 setNote({ id: doc.id, ...data, createdAt } as Note);
             } else {
-                // This handles the case where the note is deleted by the author.
                 toast({title: "Note Deleted", description: "This note has been removed."});
                 onClose();
             }
         }, (error) => {
-            // This will now only catch actual network errors, not permission errors,
-            // because the logic above prevents the permission error from happening.
             console.error("Snapshot listener error:", error);
             toast({title: "Network Error", description: "Could not sync with the note."});
             onClose();
@@ -531,9 +540,12 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
     }
 
     return (
-        <div className="flex flex-col h-full overflow-hidden">
-            <ScrollArea className="flex-1">
-                <div className="p-4 space-y-6">
+        <>
+            <SheetHeader>
+                <SheetTitle className="font-headline text-2xl">Note Revealed!</SheetTitle>
+            </SheetHeader>
+            <ScrollArea className="flex-1 -mx-6">
+                <div className="px-6 pt-4 space-y-6">
                     {note.media?.[0]?.path && (
                         <div className="rounded-lg overflow-hidden aspect-video relative bg-muted">
                             <Image src={note.media[0].path} alt="Note media" fill className="object-cover" data-ai-hint="mural street art" />
@@ -584,10 +596,10 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                     </div>
                 </div>
             </ScrollArea>
-            <Separator />
-            <div className="flex-shrink-0">
+            <SheetFooter className="pt-2">
                 <ReplyForm noteId={note.id} />
-            </div>
+            </SheetFooter>
+
             <ReportDialog 
                 note={note} 
                 open={isReportDialogOpen} 
@@ -611,7 +623,7 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+        </>
     )
 }
 
@@ -660,10 +672,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
   
 
   if (isCreating) {
-    return <CreateNoteForm userLocation={userLocation} onClose={() => {
-        onNoteCreated();
-        onClose();
-    }} />;
+    return <CreateNoteForm userLocation={userLocation} onNoteCreated={onNoteCreated} onClose={onClose} />;
   }
 
   if (loadingNote) {
@@ -684,4 +693,6 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
 
   return <NoteView note={note} onClose={onClose} />;
 }
+    
+
     

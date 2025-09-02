@@ -8,7 +8,7 @@ import { Plus, MapPin, Compass, LocateFixed, Flame } from 'lucide-react';
 import { useLocation } from '@/hooks/use-location';
 import { Button } from '@/components/ui/button';
 import { GhostNote } from '@/types';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import NoteSheetContent from './note-sheet-content';
 import { Logo } from './ui/logo';
 import { AuthButton } from './auth-button';
@@ -264,6 +264,7 @@ function MapViewContent() {
     if (viewState.latitude && viewState.longitude) {
       fetchNotesForView([viewState.latitude, viewState.longitude]);
     }
+    setNoteSheetOpen(false);
   };
 
   const mapStyleUrl = theme === 'dark' 
@@ -365,19 +366,11 @@ function MapViewContent() {
 
       <Sheet open={isNoteSheetOpen} onOpenChange={setNoteSheetOpen}>
         <SheetContent side="bottom" className="md:max-w-md md:right-0 md:left-auto md:top-0 md:h-full md:rounded-l-2xl">
-          <SheetHeader>
-            <SheetTitle className="font-headline text-2xl">
-              {isCreatingNote ? "Drop a New Note" : "Note Revealed!"}
-            </SheetTitle>
-          </SheetHeader>
           <NoteSheetContent
             noteId={selectedNote?.id ?? null} 
             isCreating={isCreatingNote} 
             userLocation={location}
-            onNoteCreated={() => {
-              handleNoteCreated();
-              setNoteSheetOpen(false);
-            }}
+            onNoteCreated={handleNoteCreated}
             onClose={() => setNoteSheetOpen(false)}
           />
         </SheetContent>
@@ -416,3 +409,5 @@ export default function MapView() {
         </React.Suspense>
     )
 }
+
+    
