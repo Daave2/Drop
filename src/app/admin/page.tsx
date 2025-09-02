@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { collection, getDocs, doc, getDoc, writeBatch, Timestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, writeBatch, Timestamp, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -100,14 +100,21 @@ export default function AdminPage() {
         fetchReports();
     }, [toast]);
 
-    const handleDismissReport = async (reportId: string) => {
+    const handleDismissReport = async (reportId: string, noteId: string) => {
         try {
             const batch = writeBatch(db);
+
+            // Delete the report
             const reportRef = doc(db, 'reports', reportId);
             batch.delete(reportRef);
+
+            // Restore the note's visibility
+            const noteRef = doc(db, 'notes', noteId);
+            batch.update(noteRef, { visibility: 'public' });
+
             await batch.commit();
 
-            toast({ title: "Report Dismissed", description: "The report has been removed." });
+            toast({ title: "Report Dismissed", description: "The note is now public again." });
             fetchReports(); // Refresh the list
         } catch (error) {
             console.error("Error dismissing report:", error);
@@ -168,7 +175,7 @@ export default function AdminPage() {
                             <Separator />
                             <ReportedNote noteId={report.noteId} />
                             <div className="flex justify-end gap-2 pt-4">
-                                <Button variant="outline" onClick={() => handleDismissReport(report.id)}>Dismiss Report</Button>
+                                <Button variant="outline" onClick={() => handleDismissReport(report.id, report.noteId)}>Dismiss Report</Button>
                                 <Button variant="destructive" onClick={() => handleDeleteNote(report.id, report.noteId)}>Delete Note</Button>
                             </div>
                         </div>
