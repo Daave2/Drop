@@ -12,7 +12,7 @@ import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
-import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, setDoc, runTransaction } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, setDoc, runTransaction, where, deleteDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { Skeleton } from './ui/skeleton';
@@ -347,7 +347,9 @@ function NoteView({ note: initialNote }: {note: Note}) {
     
     useEffect(() => {
         if (!user) return;
-        const likeRef = doc(db, 'notes', initialNote.id, 'likes', user.uid);
+        // Use composite key for the like document ID
+        const likeId = `${user.uid}_${initialNote.id}`;
+        const likeRef = doc(db, 'likes', likeId);
         const unsubscribeLike = onSnapshot(likeRef, (doc) => {
             setIsLiked(doc.exists());
         });
@@ -384,7 +386,9 @@ function NoteView({ note: initialNote }: {note: Note}) {
         setIsLiking(true);
 
         const noteRef = doc(db, 'notes', note.id);
-        const likeRef = doc(db, 'notes', note.id, 'likes', user.uid);
+        // Use composite key for the like document ID
+        const likeId = `${user.uid}_${note.id}`;
+        const likeRef = doc(db, 'likes', likeId);
 
         try {
             await runTransaction(db, async (transaction) => {
@@ -403,7 +407,11 @@ function NoteView({ note: initialNote }: {note: Note}) {
                     transaction.update(noteRef, { score: currentScore - 1 });
                 } else {
                     // User has not liked the note, so like it.
-                    transaction.set(likeRef, { userId: user.uid, createdAt: serverTimestamp() });
+                    transaction.set(likeRef, { 
+                        userId: user.uid, 
+                        noteId: note.id,
+                        createdAt: serverTimestamp() 
+                    });
                     transaction.update(noteRef, { score: currentScore + 1 });
                 }
             });
