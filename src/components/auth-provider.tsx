@@ -3,7 +3,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, onAuthStateChanged, signInAnonymously } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, isFirebaseConfigured } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
@@ -22,6 +22,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    if (!isFirebaseConfigured || !auth) {
+      toast({
+        title: 'Authentication Error',
+        description: 'Firebase is not configured. Sign-in is unavailable.',
+        variant: 'destructive',
+      });
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
         setUser(currentUser);

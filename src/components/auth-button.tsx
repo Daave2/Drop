@@ -20,6 +20,10 @@ export function AuthButton() {
   const { user } = useAuth();
 
   const handleSignIn = async () => {
+    if (!auth) {
+      console.error("Firebase is not configured. Unable to sign in.");
+      return;
+    }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
@@ -29,6 +33,10 @@ export function AuthButton() {
   };
 
   const handleSignOut = async () => {
+    if (!auth) {
+      console.error("Firebase is not configured. Unable to sign out.");
+      return;
+    }
     try {
       await signOut(auth);
     } catch (error) {
