@@ -7,15 +7,25 @@
 
 import {ai} from '@/ai/genkit';
 import {z} from 'zod';
-import {doc, getDoc, updateDoc} from 'firebase/firestore';
-import {db} from '@/lib/firebase';
-import {Note} from '@/types';
 import {
   ReportNoteInput,
   ReportNoteInputSchema,
   ReportNoteOutput,
   ReportNoteOutputSchema,
 } from './report-note';
+
+// Server-side Firebase Admin SDK initialization
+import {initializeApp, getApps, cert} from 'firebase-admin/app';
+import {getFirestore, doc, getDoc, updateDoc} from 'firebase-admin/firestore';
+import {Note} from '@/types';
+
+// Initialize Firebase Admin SDK only if it hasn't been already
+if (!getApps().length) {
+  initializeApp({
+    // Assumes GOOGLE_APPLICATION_CREDENTIALS are set in the environment
+  });
+}
+const adminDb = getFirestore();
 
 
 const getNoteContentTool = ai.defineTool(
@@ -30,7 +40,7 @@ const getNoteContentTool = ai.defineTool(
     }),
   },
   async ({noteId}) => {
-    const noteRef = doc(db, 'notes', noteId);
+    const noteRef = doc(adminDb, 'notes', noteId);
     const noteSnap = await getDoc(noteRef);
     if (!noteSnap.exists()) {
       throw new Error('Note not found.');
@@ -53,7 +63,7 @@ const flagNoteTool = ai.defineTool(
     outputSchema: z.void(),
   },
   async ({noteId, reason}) => {
-    const noteRef = doc(db, 'notes', noteId);
+    const noteRef = doc(adminDb, 'notes', noteId);
     await updateDoc(noteRef, {
       visibility: 'unlisted',
       'review.status': 'pending',
@@ -71,7 +81,7 @@ const removeNoteTool = ai.defineTool(
     outputSchema: z.void(),
   },
   async ({noteId, reason}) => {
-    const noteRef = doc(db, 'notes', noteId);
+    const noteRef = doc(adminDb, 'notes', noteId);
     await updateDoc(noteRef, {
       visibility: 'unlisted',
       'review.status': 'removed',
