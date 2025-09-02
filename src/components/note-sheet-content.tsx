@@ -12,7 +12,7 @@ import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
-import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, setDoc, runTransaction } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { Skeleton } from './ui/skeleton';
@@ -21,27 +21,32 @@ import { z } from 'zod';
 import { moderateContent } from '@/ai/flows/content-moderation';
 import { Input } from './ui/input';
 import Image from 'next/image';
-import { toggleLikeNote } from '@/app/actions';
 import { cn } from '@/lib/utils';
 
 
 async function getOrCreateClientSidePseudonym(uid: string): Promise<string> {
     const profileRef = doc(db, 'profiles', uid);
-    const profileSnap = await getDoc(profileRef);
+    try {
+        const profileSnap = await getDoc(profileRef);
 
-    if (profileSnap.exists() && profileSnap.data().pseudonym) {
-        return profileSnap.data().pseudonym;
+        if (profileSnap.exists() && profileSnap.data().pseudonym) {
+            return profileSnap.data().pseudonym;
+        }
+
+        const adjectives = ["Whispering", "Wandering", "Silent", "Hidden", "Forgotten", "Lost", "Secret", "Phantom"];
+        const nouns = ["Wombat", "Voyager", "Pilgrim", "Ghost", "Scribe", "Oracle", "Nomad", "Dreamer"];
+        const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+        const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+        const newPseudonym = `${randomAdjective} ${randomNoun}`;
+        
+        await setDoc(profileRef, { pseudonym: newPseudonym, uid, createdAt: serverTimestamp() }, { merge: true });
+
+        return newPseudonym;
+    } catch (error) {
+        console.error("Error getting or creating pseudonym: ", error);
+        // Fallback pseudonym in case of error (e.g. security rules)
+        return "Anonymous Adventurer";
     }
-
-    const adjectives = ["Whispering", "Wandering", "Silent", "Hidden", "Forgotten", "Lost", "Secret", "Phantom"];
-    const nouns = ["Wombat", "Voyager", "Pilgrim", "Ghost", "Scribe", "Oracle", "Nomad", "Dreamer"];
-    const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-    const newPseudonym = `${randomAdjective} ${randomNoun}`;
-    
-    await setDoc(profileRef, { pseudonym: newPseudonym, uid, createdAt: serverTimestamp() }, { merge: true });
-
-    return newPseudonym;
 }
 
 
@@ -377,11 +382,37 @@ function NoteView({ note: initialNote }: {note: Note}) {
             return;
         }
         setIsLiking(true);
-        const result = await toggleLikeNote(note.id, user.uid);
-        if (!result.success) {
-            toast({ title: "Error", description: result.error || "Failed to update like status.", variant: "destructive" });
+
+        const noteRef = doc(db, 'notes', note.id);
+        const likeRef = doc(db, 'notes', note.id, 'likes', user.uid);
+
+        try {
+            await runTransaction(db, async (transaction) => {
+                const likeDoc = await transaction.get(likeRef);
+                const noteDoc = await transaction.get(noteRef);
+
+                if (!noteDoc.exists()) {
+                    throw new Error("Note does not exist!");
+                }
+
+                const currentScore = noteDoc.data().score || 0;
+
+                if (likeDoc.exists()) {
+                    // User has liked the note, so unlike it.
+                    transaction.delete(likeRef);
+                    transaction.update(noteRef, { score: currentScore - 1 });
+                } else {
+                    // User has not liked the note, so like it.
+                    transaction.set(likeRef, { userId: user.uid, createdAt: serverTimestamp() });
+                    transaction.update(noteRef, { score: currentScore + 1 });
+                }
+            });
+        } catch (error: any) {
+            console.error("Transaction failed: ", error);
+            toast({ title: "Error", description: error.message || "Failed to update like status.", variant: "destructive" });
+        } finally {
+            setIsLiking(false);
         }
-        setIsLiking(false);
     };
 
     return (
