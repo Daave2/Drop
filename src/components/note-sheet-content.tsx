@@ -16,6 +16,7 @@ import { useFormStatus } from 'react-dom';
 import { doc, getDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
+import { useAuth } from './auth-provider';
 
 
 function SubmitButton({label, pendingLabel}: {label: string, pendingLabel: string}) {
@@ -33,6 +34,7 @@ function SubmitButton({label, pendingLabel}: {label: string, pendingLabel: strin
 }
 
 function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates | null, onClose: () => void }) {
+    const { user } = useAuth();
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
     
@@ -44,15 +46,25 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
             toast({ title: "Success!", description: state.message });
             formRef.current?.reset();
             onClose();
-        } else if (state.message && (state.errors?.text || state.errors?.server)) {
-            toast({ title: "Error", description: state.message, variant: 'destructive' });
+        } else if (state.message) {
+            const description = state.errors?.server?.[0] || state.errors?.text?.[0] || 'Please check the form and try again.';
+            toast({ title: state.message, description, variant: 'destructive' });
         }
     }, [state, toast, onClose]);
+
+    if (!user) {
+      return (
+        <div className="p-4 text-center text-muted-foreground">
+          You must be signed in to drop a note.
+        </div>
+      );
+    }
 
     return (
         <form ref={formRef} action={formAction} className="p-4 space-y-4">
             <input type="hidden" name="lat" value={userLocation?.latitude ?? 0} />
             <input type="hidden" name="lng" value={userLocation?.longitude ?? 0} />
+            <input type="hidden" name="authorUid" value={user.uid} />
             <Textarea name="text" placeholder="What's on your mind? (Max 800 chars)" maxLength={800} rows={5} required />
             {state.errors?.text && <p className="text-sm text-destructive">{state.errors.text[0]}</p>}
             {state.errors?.server && <p className="text-sm text-destructive">{state.errors.server[0]}</p>}

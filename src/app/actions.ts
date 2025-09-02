@@ -15,6 +15,7 @@ const noteSchema = z.object({
   text: z.string().min(1, "Note cannot be empty.").max(800, "Note cannot exceed 800 characters."),
   lat: z.coerce.number().min(-90).max(90),
   lng: z.coerce.number().min(-180).max(180),
+  authorUid: z.string().min(1, "User must be authenticated."),
 });
 
 
@@ -24,6 +25,7 @@ type CreateNoteFormState = {
         text?: string[];
         lat?: string[];
         lng?: string[];
+        authorUid?: string[];
         server?: string[];
     };
     success: boolean;
@@ -34,6 +36,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
     text: formData.get('text'),
     lat: formData.get('lat'),
     lng: formData.get('lng'),
+    authorUid: formData.get('authorUid'),
   });
 
   if (!validatedFields.success) {
@@ -44,7 +47,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
     };
   }
 
-  const { text, lat, lng } = validatedFields.data;
+  const { text, lat, lng, authorUid } = validatedFields.data;
 
   try {
     const moderationResult = await moderateContent({ text });
@@ -60,6 +63,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
       text,
       lat,
       lng,
+      authorUid,
       createdAt: serverTimestamp(),
       authorPseudonym: 'Wandering Wombat', // Placeholder
       type: 'text',
@@ -85,7 +89,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
     console.error("Error creating note:", error);
     const errorMessage = error.message || 'An unknown error occurred.';
     return { 
-        message: `Failed to save note to database: ${errorMessage}`, 
+        message: `Failed to save note to database.`,
         success: false, 
         errors: { server: [`Firestore error: ${errorMessage}`] } 
     };
