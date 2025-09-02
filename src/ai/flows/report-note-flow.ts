@@ -119,7 +119,7 @@ const reportNoteFlow = ai.defineFlow(
       If the reporter's UID is the same as the author's UID, it's likely a self-report or test. In this case, do not take any action.
 
       If you take an action, provide a brief, professional message to the reporting user explaining what happened. If you take no action, explain why the content does not violate the policies.`,
-      tools: [getNoteContentTool, flagNoteTool, removeNoteTool],
+      tools: [getNoteContentTool, flagNoteForReview, removeNoteTool],
       model: 'googleai/gemini-2.5-pro',
     });
 
