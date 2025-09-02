@@ -54,7 +54,7 @@ const getNoteContentTool = ai.defineTool(
   }
 );
 
-const flagNoteTool = ai.defineTool(
+const flagNoteForReview = ai.defineTool(
   {
     name: 'flagNoteForReview',
     description:
@@ -123,14 +123,22 @@ const reportNoteFlow = ai.defineFlow(
       model: 'googleai/gemini-2.5-pro',
     });
 
-    const toolCalls = output!.toolCalls;
+    if (!output) {
+      return {
+        success: false,
+        actionTaken: 'none',
+        message: "We received your report, but were unable to process it at this time. Please try again later.",
+      };
+    }
+
+    const toolCalls = output.toolCalls;
 
     if (!toolCalls || toolCalls.length === 0) {
       return {
         success: true,
         actionTaken: 'none',
         message:
-          output!.text ||
+          output.text ||
           "Thank you for your report. We've reviewed it and found that the content does not violate our policies.",
       };
     }
