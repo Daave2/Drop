@@ -261,8 +261,8 @@ function MapViewContent() {
     }
     
     // Add a source for the 3D building data
-    map.addSource('openfreemap', {
-        url: `https://tiles.openfreemap.org/planet`,
+    map.addSource('openmaptiles', {
+        url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`,
         type: 'vector',
     });
 
@@ -270,27 +270,23 @@ function MapViewContent() {
     map.addLayer(
         {
             'id': '3d-buildings',
-            'source': 'openfreemap',
+            'source': 'openmaptiles',
             'source-layer': 'building',
             'type': 'fill-extrusion',
             'minzoom': 15,
-            'filter': ['!=', ['get', 'hide_3d'], true],
             'paint': {
-                'fill-extrusion-color': [
-                    'interpolate',
-                    ['linear'],
-                    ['get', 'render_height'], 0, 'lightgray', 200, 'royalblue', 400, 'lightblue'
-                ],
+                'fill-extrusion-color': '#aaa',
                 'fill-extrusion-height': [
                     'interpolate',
                     ['linear'],
                     ['zoom'],
                     15,
                     0,
-                    16,
-                    ['get', 'render_height']
+                    15.05,
+                    ['get', 'height']
                 ],
                 'fill-extrusion-base': 0,
+                'fill-extrusion-opacity': 0.6
             }
         },
         labelLayerId
@@ -434,7 +430,3 @@ export default function MapView() {
         </React.Suspense>
     )
 }
-
-    
-
-    
