@@ -36,7 +36,7 @@ import { geohashQueryBounds, distanceBetween } from 'geofire-common';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 
-const MAP_STYLE = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const MAP_STYLE = 'https://api.maptiler.com/maps/streets/style.json?key=get_your_own_OpIi9ZULNHzrESv6T2vL';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
@@ -144,12 +144,18 @@ export default function MapView() {
 
   // Effect to center map on user location when it becomes available for the first time
   useEffect(() => {
-    if (location && viewState.longitude === DEFAULT_CENTER.longitude && viewState.latitude === DEFAULT_CENTER.latitude) {
-      mapRef.current?.flyTo({
-        center: [location.longitude, location.latitude],
-        zoom: 17,
-        duration: 2000
-      });
+    if (location && mapRef.current) {
+      // Check if the map is still at the default location
+      if (
+        viewState.longitude === DEFAULT_CENTER.longitude &&
+        viewState.latitude === DEFAULT_CENTER.latitude
+      ) {
+        mapRef.current.flyTo({
+          center: [location.longitude, location.latitude],
+          zoom: 17,
+          duration: 2000,
+        });
+      }
     }
   }, [location, viewState.longitude, viewState.latitude]);
 
@@ -206,22 +212,7 @@ export default function MapView() {
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={{
-            version: 8,
-            sources: {
-                'osm-tiles': {
-                    type: 'raster',
-                    tiles: [MAP_STYLE],
-                    tileSize: 256,
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                }
-            },
-            layers: [{
-                id: 'osm-tiles',
-                type: 'raster',
-                source: 'osm-tiles'
-            }]
-        }}
+        mapStyle={MAP_STYLE}
       >
         {location && (
           <Marker longitude={location.longitude} latitude={location.latitude}>
@@ -341,3 +332,5 @@ function getDistance(coords1: {latitude: number, longitude: number}, coords2: {l
   
     return R * c;
   }
+
+    
