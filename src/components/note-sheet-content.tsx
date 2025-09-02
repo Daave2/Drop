@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useActionState, useRef } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Camera, Heart, Flag, Send, X } from 'lucide-react';
 import { Note, Reply } from '@/types';
 import { Button } from './ui/button';
@@ -9,12 +9,11 @@ import { Badge } from './ui/badge';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { createNote } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
-import { useFormStatus } from 'react-dom';
 import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, setDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, storage } from '@/lib/firebase';
+import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from './auth-provider';
 import { z } from 'zod';
@@ -23,11 +22,10 @@ import { Input } from './ui/input';
 import Image from 'next/image';
 
 
-function SubmitButton({label, pendingLabel}: {label: string, pendingLabel: string}) {
-  const { pending } = useFormStatus();
+function SubmitButton({label, pendingLabel, isSubmitting}: {label: string, pendingLabel: string, isSubmitting: boolean}) {
   return (
-    <Button type="submit" disabled={pending}>
-      {pending ? (
+    <Button type="submit" disabled={isSubmitting}>
+      {isSubmitting ? (
         <>
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
           {pendingLabel}
@@ -37,31 +35,117 @@ function SubmitButton({label, pendingLabel}: {label: string, pendingLabel: strin
   );
 }
 
+const noteSchema = z.object({
+  text: z.string().min(1, "Note cannot be empty.").max(800, "Note cannot exceed 800 characters."),
+  image: z.instanceof(File).optional(),
+});
+
+
 function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates | null, onClose: () => void }) {
     const { user } = useAuth();
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     
-    const initialState = { message: '', errors: {}, success: false };
-    const [state, formAction] = useActionState(createNote, initialState);
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        if (!user || !userLocation) {
+            toast({ title: "Error", description: "User or location not available.", variant: "destructive" });
+            return;
+        }
 
-    useEffect(() => {
-        if (state.success) {
-            toast({ title: "Success!", description: state.message });
+        setIsSubmitting(true);
+        const formData = new FormData(e.currentTarget);
+        const text = formData.get('text') as string;
+
+        try {
+            // 1. Validate content
+            const validation = noteSchema.safeParse({ text, image: imageFile });
+            if (!validation.success) {
+                toast({ title: "Invalid Input", description: validation.error.errors[0].message, variant: "destructive" });
+                setIsSubmitting(false);
+                return;
+            }
+
+            // 2. Moderate content
+            const moderationResult = await moderateContent({ text });
+            if (!moderationResult.isSafe) {
+                toast({ title: "Inappropriate Content", description: moderationResult.reason || "This note violates our content policy.", variant: "destructive" });
+                setIsSubmitting(false);
+                return;
+            }
+
+            // 3. Get user pseudonym
+            const pseudonym = await getOrCreateClientSidePseudonym(user.uid);
+            
+            // 4. Prepare base note data
+             const newNote: Omit<Note, 'id' | 'createdAt'> & { createdAt: any } = {
+              text,
+              lat: userLocation.latitude,
+              lng: userLocation.longitude,
+              authorUid: user.uid,
+              createdAt: serverTimestamp(),
+              authorPseudonym: pseudonym,
+              type: imageFile ? 'photo' : 'text',
+              score: 0,
+              teaser: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
+              visibility: 'public',
+              trust: 0.5,
+              placeMaskMeters: 10,
+              revealMode: 'proximity+sightline',
+              revealRadiusM: 35,
+              revealAngleDeg: 20,
+              peekable: false,
+              dmAllowed: false,
+              media: [],
+            };
+
+            // 5. Handle image upload if present
+            if (imageFile) {
+                if (imageFile.size > 5 * 1024 * 1024) { // 5MB limit
+                    toast({ title: "Image too large", description: "Image must be less than 5MB.", variant: "destructive" });
+                    setIsSubmitting(false);
+                    return;
+                }
+                const storageRef = ref(storage, `notes/${user.uid}/${Date.now()}-${imageFile.name}`);
+                const snapshot = await uploadBytes(storageRef, imageFile);
+                const downloadURL = await getDownloadURL(snapshot.ref);
+
+                // This is a placeholder for actual image dimension detection
+                const imageDimensions = { w: 600, h: 400 };
+
+                newNote.media = [{
+                    path: downloadURL,
+                    type: 'image',
+                    w: imageDimensions.w,
+                    h: imageDimensions.h,
+                }];
+            }
+
+            // 6. Save note to Firestore
+            await addDoc(collection(db, 'notes'), newNote);
+            
+            toast({ title: "Success!", description: "Note dropped successfully!" });
             formRef.current?.reset();
             setImagePreview(null);
+            setImageFile(null);
             onClose();
-        } else if (state.message) {
-            const description = state.errors?.server?.[0] || state.errors?.text?.[0] || state.errors?.image?.[0] ||'Please check the form and try again.';
-            toast({ title: state.message, description, variant: 'destructive' });
+
+        } catch (error: any) {
+            console.error("Error creating note:", error);
+            toast({ title: "Error creating note", description: error.message || "An unknown error occurred.", variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
         }
-    }, [state, toast, onClose]);
+    }
     
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file) {
+            setImageFile(file);
             const reader = new FileReader();
             reader.onloadend = () => {
                 setImagePreview(reader.result as string);
@@ -69,11 +153,13 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
             reader.readAsDataURL(file);
         } else {
             setImagePreview(null);
+            setImageFile(null);
         }
     };
     
     const handleRemoveImage = () => {
         setImagePreview(null);
+        setImageFile(null);
         if(fileInputRef.current) {
             fileInputRef.current.value = '';
         }
@@ -88,13 +174,8 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
     }
 
     return (
-        <form ref={formRef} action={formAction} className="p-4 space-y-4">
-            <input type="hidden" name="lat" value={userLocation?.latitude ?? 0} />
-            <input type="hidden" name="lng" value={userLocation?.longitude ?? 0} />
-            <input type="hidden" name="authorUid" value={user.uid} />
-            <input type="hidden" name="authorDisplayName" value={user.displayName ?? ''} />
+        <form ref={formRef} onSubmit={handleSubmit} className="p-4 space-y-4">
             <Textarea name="text" placeholder="What's on your mind? (Max 800 chars)" maxLength={800} rows={5} required />
-            {state.errors?.text && <p className="text-sm text-destructive">{state.errors.text[0]}</p>}
             
             {imagePreview && (
                 <div className="relative">
@@ -104,10 +185,6 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
                     </Button>
                 </div>
             )}
-            
-            {state.errors?.server && <p className="text-sm text-destructive">{state.errors.server[0]}</p>}
-            {state.errors?.image && <p className="text-sm text-destructive">{state.errors.image[0]}</p>}
-
 
             <div className="flex items-center justify-between">
                  <Button variant="outline" size="icon" type="button" onClick={() => fileInputRef.current?.click()}>
@@ -121,10 +198,9 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
                     onChange={handleImageChange}
                     accept="image/png, image/jpeg, image/gif"
                 />
-                <SubmitButton label="Drop Note" pendingLabel="Dropping..." />
+                <SubmitButton label="Drop Note" pendingLabel="Dropping..." isSubmitting={isSubmitting} />
             </div>
             {userLocation && <p className="text-xs text-muted-foreground">Location: {userLocation.latitude.toFixed(5)}, {userLocation.longitude.toFixed(5)}</p>}
-            {state.errors?.lat && <p className="text-sm text-destructive">Could not determine your location.</p>}
         </form>
     );
 }
@@ -147,6 +223,8 @@ async function getOrCreateClientSidePseudonym(uid: string): Promise<string> {
     const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
     const newPseudonym = `${randomAdjective} ${randomNoun}`;
 
+    // This is a client-side operation, so we need to be careful with security rules.
+    // The rule should allow a user to create their own profile.
     await setDoc(profileRef, { pseudonym: newPseudonym, uid, createdAt: serverTimestamp() }, { merge: true });
 
     return newPseudonym;
