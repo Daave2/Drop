@@ -35,16 +35,16 @@ function SubmitButton({label, pendingLabel}: {label: string, pendingLabel: strin
 function CreateNoteForm({ userLocation, onNoteCreated }: { userLocation: Coordinates | null, onNoteCreated: (note: GhostNote) => void }) {
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
-    const [state, formAction] = useActionState(createNote, { message: '', errors: {} });
+    const [state, formAction] = useActionState(createNote, { message: '', errors: {}, success: false });
 
     useEffect(() => {
         if(state.message) {
-            if (Object.keys(state.errors ?? {}).length > 0) {
+            if (!state.success) {
                 toast({ title: state.message, variant: 'destructive' });
             } else {
                 toast({ title: state.message });
             }
-            if(state.reset && state.note){
+            if(state.success && state.note){
                 onNoteCreated(state.note);
                 formRef.current?.reset();
             }
@@ -74,15 +74,15 @@ function CreateNoteForm({ userLocation, onNoteCreated }: { userLocation: Coordin
 function ReplyForm({ noteId }: { noteId: string }) {
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
-    const [state, formAction] = useActionState(submitReply, { message: '', errors: {} });
+    const [state, formAction] = useActionState(submitReply, { message: '', errors: {}, success: false });
 
     useEffect(() => {
         if (state.message) {
-            if (state.errors?.text) {
-                 toast({ title: state.message, description: state.errors.text[0], variant: 'destructive' });
+            if (!state.success) {
+                 toast({ title: state.message, description: state.errors?.text?.[0], variant: 'destructive' });
             } else {
                 toast({ title: state.message });
-                if (state.reset) {
+                if (state.success) {
                     formRef.current?.reset();
                 }
             }
@@ -209,7 +209,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
     return (
         <div className="p-4 space-y-6">
             <Skeleton className="h-64 w-full rounded-lg" />
-            <Skeleton className="h-6 w-3/4" />
+            <Skeleton className="h-6 w-3/g" />
             <Skeleton className="h-4 w-1/2" />
             <div className="flex items-center justify-between">
                 <Skeleton className="h-10 w-24" />

@@ -22,7 +22,7 @@ const noteSchema = z.object({
 type CreateNoteFormState = {
     message: string;
     errors?: Record<string, string[] | undefined>;
-    reset?: boolean;
+    success: boolean;
     note?: GhostNote;
 }
 
@@ -37,6 +37,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: 'Invalid fields.',
+      success: false,
     };
   }
 
@@ -48,6 +49,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
       return {
         errors: { text: [moderationResult.reason || 'This note violates our content policy.'] },
         message: 'Your note was flagged as inappropriate. Please revise.',
+        success: false,
       };
     }
     
@@ -90,18 +92,18 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
     
     revalidatePath(`/`);
 
-    return { message: 'Note dropped successfully!', errors: {}, reset: true, note: newGhostNote };
+    return { message: 'Note dropped successfully!', success: true, note: newGhostNote };
     
   } catch (error) {
     console.error("Error creating note:", error);
-    return { message: 'An unexpected error occurred. Please try again.', errors: {} };
+    return { message: 'An unexpected error occurred. Please try again.', success: false };
   }
 }
 
 type ReplyFormState = {
     message: string;
     errors?: Record<string, string[] | undefined>;
-    reset?: boolean;
+    success: boolean;
 }
 
 export async function submitReply(prevState: ReplyFormState, formData: FormData): Promise<ReplyFormState> {
@@ -114,6 +116,7 @@ export async function submitReply(prevState: ReplyFormState, formData: FormData)
     return {
       errors: validatedFields.error.flatten().fieldErrors,
       message: 'Invalid fields.',
+      success: false,
     };
   }
   
@@ -125,6 +128,7 @@ export async function submitReply(prevState: ReplyFormState, formData: FormData)
       return {
         errors: { text: [moderationResult.reason || 'This reply violates our content policy.'] },
         message: 'Your reply was flagged as inappropriate. Please revise.',
+        success: false,
       };
     }
     
@@ -133,10 +137,10 @@ export async function submitReply(prevState: ReplyFormState, formData: FormData)
     // TODO: Actually save the reply to the database
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    return { message: 'Reply posted successfully!', errors: {}, reset: true };
+    return { message: 'Reply posted successfully!', success: true };
     
   } catch (error) {
     console.error("Error submitting reply:", error);
-    return { message: 'An unexpected error occurred. Please try again.', errors: {} };
+    return { message: 'An unexpected error occurred. Please try again.', success: false };
   }
 }
