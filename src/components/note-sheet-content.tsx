@@ -12,7 +12,7 @@ import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
-import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, runTransaction, where, deleteDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, runTransaction, where, deleteDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { getOrCreatePseudonym } from '@/lib/pseudonym';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
@@ -337,18 +337,21 @@ function ReportDialog({ note, open, onOpenChange, onClose }: { note: Note, open:
 
         setIsSubmitting(true);
         try {
-            const noteRef = doc(db, 'notes', note.id);
-            await updateDoc(noteRef, {
-                visibility: 'unlisted',
-                'review.status': 'pending',
-                'review.reason': `Reported by ${user.uid}: ${reason}`,
+            const result = await reportNote({
+                noteId: note.id,
+                reason,
+                reporterUid: user.uid,
             });
 
-            toast({
-                title: "Report Submitted",
-                description: "Thank you for your report. The note has been flagged for further review.",
-            });
-            onClose(); // Close the main note sheet
+            if (result.success) {
+                toast({
+                    title: "Report Submitted",
+                    description: result.message,
+                });
+                onClose(); // Close the main note sheet
+            } else {
+                throw new Error(result.message || "An unknown error occurred during reporting.");
+            }
         } catch (error: any) {
             console.error("Error reporting note:", error);
             toast({ title: "Error", description: error.message || "Failed to submit report.", variant: "destructive" });
