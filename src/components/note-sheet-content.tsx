@@ -20,10 +20,22 @@ import { Skeleton } from './ui/skeleton';
 import { useAuth } from './auth-provider';
 import { z } from 'zod';
 import { moderateContent } from '@/ai/flows/content-moderation';
+import { reportNote } from '@/ai/flows/report-note-flow';
 import { Input } from './ui/input';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { geohashForLocation } from 'geofire-common';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Label } from './ui/label';
 
 
 function SubmitButton({label, pendingLabel, isSubmitting}: {label: string, pendingLabel: string, isSubmitting: boolean}) {
@@ -307,7 +319,74 @@ function ReplyForm({ noteId }: { noteId: string }) {
     );
 }
 
-function NoteView({ note: initialNote }: {note: Note}) {
+function ReportDialog({ note, open, onOpenChange, onClose }: { note: Note, open: boolean, onOpenChange: (open: boolean) => void, onClose: () => void }) {
+    const { user } = useAuth();
+    const { toast } = useToast();
+    const [reason, setReason] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleSubmit = async () => {
+        if (!user) {
+            toast({ title: "Not signed in", description: "You must be signed in to report.", variant: "destructive" });
+            return;
+        }
+        if (reason.length < 10) {
+            toast({ title: "Reason too short", description: "Please provide a more detailed reason.", variant: "destructive" });
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const result = await reportNote({
+                noteId: note.id,
+                reason,
+                reporterUid: user.uid,
+            });
+            toast({
+                title: "Report Submitted",
+                description: result.message,
+                variant: result.success ? "default" : "destructive",
+            });
+            onClose();
+        } catch (error: any) {
+            console.error("Error reporting note:", error);
+            toast({ title: "Error", description: error.message || "Failed to submit report.", variant: "destructive" });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    return (
+        <AlertDialog open={open} onOpenChange={onOpenChange}>
+            <AlertDialogContent>
+                <AlertDialogHeader>
+                    <AlertDialogTitle>Report Note</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Why are you reporting this note? Please provide a brief explanation. Your report is anonymous.
+                    </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="grid gap-2">
+                    <Label htmlFor="reason">Reason for reporting</Label>
+                    <Textarea
+                        id="reason"
+                        placeholder="e.g., This note contains harassment."
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                        maxLength={500}
+                    />
+                </div>
+                <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting}>
+                        {isSubmitting ? 'Submitting...' : 'Submit Report'}
+                    </AlertDialogAction>
+                </AlertDialogFooter>
+            </AlertDialogContent>
+        </AlertDialog>
+    );
+}
+
+function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => void}) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [note, setNote] = useState<Note>(initialNote);
@@ -315,12 +394,19 @@ function NoteView({ note: initialNote }: {note: Note}) {
     const [isLiked, setIsLiked] = useState(false);
     const [isLiking, setIsLiking] = useState(false);
     const [loadingReplies, setLoadingReplies] = useState(true);
+    const [isReportDialogOpen, setReportDialogOpen] = useState(false);
 
     useEffect(() => {
         const noteRef = doc(db, 'notes', initialNote.id);
         const unsubscribeNote = onSnapshot(noteRef, (doc) => {
             if (doc.exists()) {
                  const data = doc.data();
+                 if (data.visibility === 'unlisted') {
+                    // If the note has been hidden (e.g. by a report), close the sheet.
+                    toast({title: "Note Unavailable", description: "This note is no longer available."});
+                    onClose();
+                    return;
+                 }
                  const createdAt = data.createdAt instanceof Timestamp ? 
                     { seconds: data.createdAt.seconds, nanoseconds: data.createdAt.nanoseconds } : 
                     { seconds: Date.now() / 1000, nanoseconds: 0 };
@@ -329,7 +415,7 @@ function NoteView({ note: initialNote }: {note: Note}) {
         });
         
         return () => unsubscribeNote();
-    }, [initialNote.id]);
+    }, [initialNote.id, toast, onClose]);
     
     useEffect(() => {
         if (!user) return;
@@ -418,7 +504,7 @@ function NoteView({ note: initialNote }: {note: Note}) {
                             <Image src={note.media[0].path} alt="Note media" layout="fill" className="object-cover" data-ai-hint="mural street art" />
                         </div>
                     )}
-                    <p className="text-lg leading-relaxed">{note.text}</p>
+                    <p className="text-lg leading-relaxed whitespace-pre-wrap">{note.text}</p>
                     <div className="flex items-center justify-between text-muted-foreground text-sm">
                         <div className="flex items-center gap-2">
                             <Avatar className="w-8 h-8">
@@ -433,7 +519,7 @@ function NoteView({ note: initialNote }: {note: Note}) {
                             <Heart className={cn("h-4 w-4 mr-2", isLiked && "fill-destructive text-destructive")} /> 
                             {note.score}
                         </Button>
-                        <Button variant="outline" size="sm"><Flag className="h-4 w-4 mr-2"/> Report</Button>
+                        <Button variant="outline" size="sm" onClick={() => setReportDialogOpen(true)}><Flag className="h-4 w-4 mr-2"/> Report</Button>
                         <Badge variant={note.type === 'photo' ? 'default' : 'secondary'}>{note.type}</Badge>
                     </div>
                     <Separator />
@@ -447,7 +533,7 @@ function NoteView({ note: initialNote }: {note: Note}) {
                                         <AvatarFallback>{reply.authorPseudonym?.substring(0,2)}</AvatarFallback>
                                     </Avatar>
                                     <div className="bg-muted p-3 rounded-lg flex-1">
-                                        <p className="text-sm">{reply.text}</p>
+                                        <p className="text-sm whitespace-pre-wrap">{reply.text}</p>
                                         <p className="text-xs text-muted-foreground mt-1">{reply.authorPseudonym} &middot; {new Date(reply.createdAt.seconds * 1000).toLocaleDateString()}</p>
                                     </div>
                                 </div>
@@ -457,8 +543,14 @@ function NoteView({ note: initialNote }: {note: Note}) {
                     </div>
                 </div>
             </ScrollArea>
-             <Separator />
+            <Separator />
             <ReplyForm noteId={note.id} />
+            <ReportDialog 
+                note={note} 
+                open={isReportDialogOpen} 
+                onOpenChange={setReportDialogOpen}
+                onClose={() => setReportDialogOpen(false)}
+            />
         </div>
     )
 }
@@ -530,7 +622,5 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
 
   if (!note) return <div className="p-4 text-center">Select a note to view its contents.</div>;
 
-  return <NoteView note={note} />;
+  return <NoteView note={note} onClose={onClose} />;
 }
-
-    
