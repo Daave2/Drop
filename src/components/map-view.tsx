@@ -53,7 +53,7 @@ export default function MapView() {
   const [isCreatingNote, setCreatingNote] = useState(false);
   const [isCompassViewOpen, setCompassViewOpen] = useState(false);
   const mapRef = useRef<MapRef | null>(null);
-  const [searchCenter, setSearchCenter] = useState<[number, number]>([DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude]);
+  const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const [viewState, setViewState] = useState<Partial<ViewState>>({
     longitude: DEFAULT_CENTER.longitude,
@@ -62,19 +62,12 @@ export default function MapView() {
     pitch: 45,
   });
 
-  useEffect(() => {
-    // When location becomes available, set it as the search center
-    if (location) {
-        setSearchCenter([location.latitude, location.longitude]);
-    }
-  }, [location]);
-
-  useEffect(() => {
-    // Fetch notes whenever the search center changes
+  const fetchNotesForView = (center: [number, number]) => {
+    if (!db) return;
     setLoadingNotes(true);
 
     const radiusInM = 5000; // 5km search radius
-    const bounds = geohashQueryBounds(searchCenter, radiusInM);
+    const bounds = geohashQueryBounds(center, radiusInM);
     const MAX_NOTES = 50;
 
     const promises = bounds.map((b) =>
@@ -100,7 +93,7 @@ export default function MapView() {
             const data = doc.data();
             const distanceInKm = distanceBetween(
               [data.lat, data.lng],
-              searchCenter
+              center
             );
             if (distanceInKm * 1000 <= radiusInM) {
               seen.add(doc.id);
@@ -127,18 +120,37 @@ export default function MapView() {
         console.error("Error fetching notes: ", error);
         setLoadingNotes(false);
       });
-  }, [searchCenter]);
+  }
 
+  // Effect to fetch notes when the component mounts or viewState changes
   useEffect(() => {
-    if(location && mapRef.current?.getCenter().lng.toFixed(4) === DEFAULT_CENTER.longitude.toFixed(4)) {
-        // Fly to user's location only once when it becomes available
-        mapRef.current?.flyTo({
-            center: [location.longitude, location.latitude],
-            zoom: 17,
-            duration: 2000
-        });
+    // Center map on user location when it becomes available for the first time
+    if (location && viewState.longitude === DEFAULT_CENTER.longitude) {
+      setViewState(current => ({
+        ...current,
+        longitude: location.longitude,
+        latitude: location.latitude,
+        zoom: 17,
+      }));
+       fetchNotesForView([location.latitude, location.longitude]);
+    } else if (viewState.latitude && viewState.longitude) {
+        // Initial fetch for default location
+        fetchNotesForView([viewState.latitude, viewState.longitude]);
     }
   }, [location]);
+
+
+  const handleMoveEnd = (evt: ViewState) => {
+    if (moveTimeoutRef.current) {
+        clearTimeout(moveTimeoutRef.current);
+    }
+    moveTimeoutRef.current = setTimeout(() => {
+        if (evt.latitude && evt.longitude) {
+            fetchNotesForView([evt.latitude, evt.longitude]);
+        }
+    }, 500); // Debounce for 500ms
+  };
+
 
   const handleMarkerClick = (note: GhostNote) => {
     if (!location) return;
@@ -168,7 +180,9 @@ export default function MapView() {
   };
   
   const handleNoteCreated = () => {
-    // No longer needed, onSnapshot will update the notes list
+    if (viewState.latitude && viewState.longitude) {
+      fetchNotesForView([viewState.latitude, viewState.longitude]);
+    }
   };
 
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
@@ -189,6 +203,7 @@ export default function MapView() {
         ref={mapRef}
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
+        onMoveEnd={evt => handleMoveEnd(evt.viewState)}
         style={{ width: '100%', height: '100%' }}
         mapStyle={{
             version: 8,
@@ -332,5 +347,3 @@ function getDistance(coords1: {latitude: number, longitude: number}, coords2: {l
   
     return R * c;
   }
-
-    
