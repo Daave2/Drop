@@ -34,6 +34,7 @@ import {
   QuerySnapshot,
   QueryDocumentSnapshot,
   DocumentData,
+  where,
 } from 'firebase/firestore';
 import { geohashQueryBounds, distanceBetween } from 'geofire-common';
 import { db } from '@/lib/firebase';
@@ -97,6 +98,7 @@ export default function MapView() {
       getDocs(
         query(
           collection(db, "notes"),
+          where("visibility", "==", "public"),
           orderBy("geohash"),
           startAt(b[0]),
           endAt(b[1]),
@@ -349,3 +351,5 @@ export default function MapView() {
     </div>
   );
 }
+
+    
