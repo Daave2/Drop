@@ -12,10 +12,9 @@ import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, collection, query, where, getCountFromServer } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { z } from "zod";
-import { getNotesDroppedCount, getNotesRevealedCount } from "@/app/actions";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const profileSchema = z.object({
@@ -127,14 +126,20 @@ export default function ProfilePage() {
           });
 
           const fetchStats = async () => {
+            if (!user) return;
             setLoadingStats(true);
             try {
-                const [droppedCount, revealedCount] = await Promise.all([
-                    getNotesDroppedCount(user.uid),
-                    getNotesRevealedCount(user.uid)
-                ]);
-                setNotesDropped(droppedCount);
-                setNotesRevealed(revealedCount);
+                // Fetch notes dropped
+                const notesRef = collection(db, 'notes');
+                const droppedQuery = query(notesRef, where("authorUid", "==", user.uid));
+                const droppedSnapshot = await getCountFromServer(droppedQuery);
+                setNotesDropped(droppedSnapshot.data().count);
+
+                // Fetch notes revealed (liked)
+                const likesQuery = query(collection(db, 'likes'), where("userId", "==", user.uid));
+                const revealedSnapshot = await getCountFromServer(likesQuery);
+                setNotesRevealed(revealedSnapshot.data().count);
+
             } catch (error) {
                 console.error("Failed to fetch stats:", error);
             } finally {
