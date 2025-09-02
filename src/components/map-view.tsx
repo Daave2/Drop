@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
@@ -62,7 +62,7 @@ export default function MapView() {
     pitch: 45,
   });
 
-  const fetchNotesForView = (center: [number, number]) => {
+  const fetchNotesForView = useCallback((center: [number, number]) => {
     if (!db) return;
     setLoadingNotes(true);
 
@@ -114,42 +114,44 @@ export default function MapView() {
         });
 
         setNotes(notesData.slice(0, MAX_NOTES));
-        setLoadingNotes(false);
       })
       .catch((error) => {
         console.error("Error fetching notes: ", error);
+      }).finally(() => {
         setLoadingNotes(false);
       });
-  }
+  }, []);
 
-  // Effect to fetch notes when the component mounts or viewState changes
+  // Effect to fetch notes when the map view changes
   useEffect(() => {
-    // Center map on user location when it becomes available for the first time
-    if (location && viewState.longitude === DEFAULT_CENTER.longitude) {
+    if (moveTimeoutRef.current) {
+      clearTimeout(moveTimeoutRef.current);
+    }
+    moveTimeoutRef.current = setTimeout(() => {
+      if (viewState.latitude && viewState.longitude) {
+        fetchNotesForView([viewState.latitude, viewState.longitude]);
+      }
+    }, 500); // Debounce for 500ms
+  
+    return () => {
+      if (moveTimeoutRef.current) {
+        clearTimeout(moveTimeoutRef.current);
+      }
+    };
+  }, [viewState.latitude, viewState.longitude, fetchNotesForView]);
+  
+
+  // Effect to center map on user location when it becomes available for the first time
+  useEffect(() => {
+    if (location && viewState.longitude === DEFAULT_CENTER.longitude && viewState.latitude === DEFAULT_CENTER.latitude) {
       setViewState(current => ({
         ...current,
         longitude: location.longitude,
         latitude: location.latitude,
         zoom: 17,
       }));
-       fetchNotesForView([location.latitude, location.longitude]);
-    } else if (viewState.latitude && viewState.longitude) {
-        // Initial fetch for default location
-        fetchNotesForView([viewState.latitude, viewState.longitude]);
     }
-  }, [location]);
-
-
-  const handleMoveEnd = (evt: ViewState) => {
-    if (moveTimeoutRef.current) {
-        clearTimeout(moveTimeoutRef.current);
-    }
-    moveTimeoutRef.current = setTimeout(() => {
-        if (evt.latitude && evt.longitude) {
-            fetchNotesForView([evt.latitude, evt.longitude]);
-        }
-    }, 500); // Debounce for 500ms
-  };
+  }, [location, viewState.longitude, viewState.latitude]);
 
 
   const handleMarkerClick = (note: GhostNote) => {
@@ -203,7 +205,6 @@ export default function MapView() {
         ref={mapRef}
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
-        onMoveEnd={evt => handleMoveEnd(evt.viewState)}
         style={{ width: '100%', height: '100%' }}
         mapStyle={{
             version: 8,
@@ -347,3 +348,5 @@ function getDistance(coords1: {latitude: number, longitude: number}, coords2: {l
   
     return R * c;
   }
+
+    
