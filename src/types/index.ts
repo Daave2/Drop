@@ -38,7 +38,7 @@ export interface GhostNote {
 export interface Reply {
   id: string;
   noteId: string;
-  uid?: string | null;
+  authorUid?: string | null;
   authorPseudonym?: string;
   text: string;
   createdAt: { seconds: number; nanoseconds: number };

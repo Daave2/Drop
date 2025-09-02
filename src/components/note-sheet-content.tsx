@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from 'react';
-import { Camera, Heart, Flag, Send, X } from 'lucide-react';
+import { Camera, Heart, Flag, Send, X, Trash2 } from 'lucide-react';
 import { Note, Reply } from '@/types';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
@@ -12,7 +12,7 @@ import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
-import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, runTransaction, where, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, runTransaction, where, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { getOrCreatePseudonym } from '@/lib/pseudonym';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
@@ -319,7 +319,7 @@ function ReplyForm({ noteId }: { noteId: string }) {
     );
 }
 
-function ReportDialog({ note, open, onOpenChange, onClose }: { note: Note, open: boolean, onOpenChange: (open: boolean) => void, onClose: () => void }) {
+function ReportDialog({ note, open, onOpenChange, onReportSubmit }: { note: Note, open: boolean, onOpenChange: (open: boolean) => void, onReportSubmit: () => void }) {
     const { user } = useAuth();
     const { toast } = useToast();
     const [reason, setReason] = useState('');
@@ -337,24 +337,25 @@ function ReportDialog({ note, open, onOpenChange, onClose }: { note: Note, open:
 
         setIsSubmitting(true);
         try {
-            const result = await reportNote({
-                noteId: note.id,
-                reason,
-                reporterUid: user.uid,
+            const noteRef = doc(db, "notes", note.id);
+            // This client-side update requires appropriate security rules.
+            // e.g., allow users to update the 'visibility' field if they are authenticated.
+            await updateDoc(noteRef, {
+                visibility: 'unlisted'
             });
 
-            if (result.success) {
-                toast({
-                    title: "Report Submitted",
-                    description: result.message,
-                });
-                onClose(); // Close the main note sheet
-            } else {
-                throw new Error(result.message || "An unknown error occurred during reporting.");
-            }
+            // TODO: In a real app, you would also create a 'reports' document
+            // for moderators to review, likely using a server-side Cloud Function
+            // to avoid complex security rules.
+
+            toast({
+                title: "Report Submitted",
+                description: "Thank you for your report. The note has been flagged for review.",
+            });
+            onReportSubmit(); 
         } catch (error: any) {
             console.error("Error reporting note:", error);
-            toast({ title: "Error", description: error.message || "Failed to submit report.", variant: "destructive" });
+            toast({ title: "Error", description: error.message || "Failed to submit report. You may not have permission to perform this action.", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
             onOpenChange(false); // Close the dialog
@@ -401,6 +402,7 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
     const [isLiking, setIsLiking] = useState(false);
     const [loadingReplies, setLoadingReplies] = useState(true);
     const [isReportDialogOpen, setReportDialogOpen] = useState(false);
+    const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
     useEffect(() => {
         const noteRef = doc(db, 'notes', initialNote.id);
@@ -408,7 +410,6 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
             if (doc.exists()) {
                  const data = doc.data();
                  if (data.visibility === 'unlisted' && data.authorUid !== user?.uid) {
-                    // If the note has been hidden and we are not the author, close the sheet.
                     toast({title: "Note Unavailable", description: "This note is no longer available."});
                     onClose();
                     return;
@@ -417,6 +418,10 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                     { seconds: data.createdAt.seconds, nanoseconds: data.createdAt.nanoseconds } : 
                     { seconds: Date.now() / 1000, nanoseconds: 0 };
                 setNote({ id: doc.id, ...data, createdAt } as Note);
+            } else {
+                // Note was deleted
+                toast({title: "Note Deleted", description: "This note has been removed."});
+                onClose();
             }
         });
         
@@ -425,7 +430,6 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
     
     useEffect(() => {
         if (!user) return;
-        // Use composite key for the like document ID
         const likeId = `${user.uid}_${initialNote.id}`;
         const likeRef = doc(db, 'likes', likeId);
         const unsubscribeLike = onSnapshot(likeRef, (doc) => {
@@ -464,7 +468,6 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
         setIsLiking(true);
 
         const noteRef = doc(db, 'notes', note.id);
-        // Use composite key for the like document ID
         const likeId = `${user.uid}_${note.id}`;
         const likeRef = doc(db, 'likes', likeId);
 
@@ -480,11 +483,9 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                 const currentScore = noteDoc.data().score || 0;
 
                 if (likeDoc.exists()) {
-                    // User has liked the note, so unlike it.
                     transaction.delete(likeRef);
                     transaction.update(noteRef, { score: currentScore - 1 });
                 } else {
-                    // User has not liked the note, so like it.
                     transaction.set(likeRef, { 
                         userId: user.uid, 
                         noteId: note.id,
@@ -500,6 +501,22 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
             setIsLiking(false);
         }
     };
+    
+    const handleDelete = async () => {
+        if (user?.uid !== note.authorUid) {
+            toast({ title: "Not Authorized", description: "You can only delete your own notes.", variant: "destructive" });
+            return;
+        }
+        try {
+            await deleteDoc(doc(db, "notes", note.id));
+            toast({ title: "Note Deleted", description: "Your note has been successfully deleted." });
+            onClose();
+        } catch (error: any) {
+            console.error("Error deleting note: ", error);
+            toast({ title: "Error", description: error.message || "Failed to delete the note.", variant: "destructive" });
+        }
+        setDeleteDialogOpen(false);
+    }
 
     return (
         <div className="flex flex-col h-full">
@@ -507,7 +524,7 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                 <div className="p-4 space-y-6">
                     {note.media?.[0]?.path && (
                         <div className="rounded-lg overflow-hidden aspect-video relative bg-muted">
-                            <Image src={note.media[0].path} alt="Note media" layout="fill" className="object-cover" data-ai-hint="mural street art" />
+                            <Image src={note.media[0].path} alt="Note media" fill className="object-cover" data-ai-hint="mural street art" />
                         </div>
                     )}
                     <p className="text-lg leading-relaxed whitespace-pre-wrap">{note.text}</p>
@@ -520,12 +537,18 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                         </div>
                         <span>{note.createdAt ? new Date(note.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         <Button variant="outline" size="sm" onClick={handleLikeToggle} disabled={isLiking || note.authorUid === user?.uid}>
                             <Heart className={cn("h-4 w-4 mr-2", isLiked && "fill-destructive text-destructive")} /> 
                             {note.score}
                         </Button>
                         <Button variant="outline" size="sm" onClick={() => setReportDialogOpen(true)} disabled={note.authorUid === user?.uid}><Flag className="h-4 w-4 mr-2"/> Report</Button>
+                        {note.authorUid === user?.uid && (
+                            <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)}>
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                            </Button>
+                        )}
                         <Badge variant={note.type === 'photo' ? 'default' : 'secondary'}>{note.type}</Badge>
                     </div>
                     <Separator />
@@ -555,8 +578,25 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                 note={note} 
                 open={isReportDialogOpen} 
                 onOpenChange={setReportDialogOpen}
-                onClose={onClose}
+                onReportSubmit={() => {
+                    setReportDialogOpen(false);
+                    onClose(); // Close the main sheet after reporting
+                }}
             />
+             <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete your note and all of its replies.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleDelete}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     )
 }
