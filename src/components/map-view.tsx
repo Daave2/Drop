@@ -41,9 +41,13 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 import { ThemeToggle } from './theme-toggle';
+import 'maplibre-gl/dist/maplibre-gl.css';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
+const MAP_STYLE = process.env.NEXT_PUBLIC_MAPTILER_KEY
+  ? `https://api.maptiler.com/maps/dataviz/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`
+  : 'https://demotiles.maplibre.org/style.json';
 
 
 function MapViewContent() {
@@ -251,8 +255,9 @@ function MapViewContent() {
     const layers = map.getStyle().layers;
     let labelLayerId;
     for (let i = 0; i < layers.length; i++) {
-        if (layers[i].type === 'symbol' && layers[i].layout?.['text-field']) {
-            labelLayerId = layers[i].id;
+        const layer: any = layers[i];
+        if (layer.type === 'symbol' && layer.layout?.['text-field']) {
+            labelLayerId = layer.id;
             break;
         }
     }
@@ -311,7 +316,7 @@ function MapViewContent() {
         onMove={evt => setViewState(evt.viewState)}
         onLoad={handleMapLoad}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={`https://api.maptiler.com/maps/dataviz/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`}
+        mapStyle={MAP_STYLE}
         antialias={true}
       >
         {location && (
