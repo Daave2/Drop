@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useRef } from 'react';
@@ -52,6 +53,7 @@ export default function MapView() {
   const [isCreatingNote, setCreatingNote] = useState(false);
   const [isCompassViewOpen, setCompassViewOpen] = useState(false);
   const mapRef = useRef<MapRef | null>(null);
+  const [searchCenter, setSearchCenter] = useState<[number, number]>([DEFAULT_CENTER.latitude, DEFAULT_CENTER.longitude]);
 
   const [viewState, setViewState] = useState<Partial<ViewState>>({
     longitude: DEFAULT_CENTER.longitude,
@@ -61,13 +63,18 @@ export default function MapView() {
   });
 
   useEffect(() => {
-    if (!location) return;
+    // When location becomes available, set it as the search center
+    if (location) {
+        setSearchCenter([location.latitude, location.longitude]);
+    }
+  }, [location]);
 
+  useEffect(() => {
+    // Fetch notes whenever the search center changes
     setLoadingNotes(true);
 
-    const center: [number, number] = [location.latitude, location.longitude];
     const radiusInM = 5000; // 5km search radius
-    const bounds = geohashQueryBounds(center, radiusInM);
+    const bounds = geohashQueryBounds(searchCenter, radiusInM);
     const MAX_NOTES = 50;
 
     const promises = bounds.map((b) =>
@@ -93,7 +100,7 @@ export default function MapView() {
             const data = doc.data();
             const distanceInKm = distanceBetween(
               [data.lat, data.lng],
-              center
+              searchCenter
             );
             if (distanceInKm * 1000 <= radiusInM) {
               seen.add(doc.id);
@@ -120,7 +127,7 @@ export default function MapView() {
         console.error("Error fetching notes: ", error);
         setLoadingNotes(false);
       });
-  }, [location]);
+  }, [searchCenter]);
 
   useEffect(() => {
     if(location && mapRef.current?.getCenter().lng.toFixed(4) === DEFAULT_CENTER.longitude.toFixed(4)) {
@@ -164,14 +171,13 @@ export default function MapView() {
     // No longer needed, onSnapshot will update the notes list
   };
 
-  if (permissionState !== 'granted') {
+  if (permissionState !== 'granted' && permissionState !== 'prompt') {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-secondary/50 p-4 text-center">
         <Logo className="mb-8 text-3xl"/>
         <Compass className="w-16 h-16 text-primary mb-4"/>
         <h2 className="text-2xl font-headline font-bold mb-2">Enable Location to Explore</h2>
         <p className="text-muted-foreground mb-6 max-w-sm">NoteDrop uses your location to show you nearby notes and allow you to reveal their content.</p>
-        {permissionState === 'prompt' && <Button onClick={requestPermission}>Grant Location Access</Button>}
         {permissionState === 'denied' && <p className="text-destructive-foreground bg-destructive p-3 rounded-md">Location access was denied. Please enable it in your browser settings to use NoteDrop.</p>}
       </div>
     );
@@ -241,7 +247,10 @@ export default function MapView() {
 
       <header className="absolute top-0 left-0 right-0 p-4 flex justify-between items-center bg-gradient-to-b from-background/80 to-transparent">
         <Logo />
-        <AuthButton />
+        <div className="flex items-center gap-2">
+            {permissionState === 'prompt' && <Button onClick={requestPermission} size="sm" variant="secondary">Enable Location</Button>}
+            <AuthButton />
+        </div>
       </header>
 
       <Button
@@ -323,3 +332,5 @@ function getDistance(coords1: {latitude: number, longitude: number}, coords2: {l
   
     return R * c;
   }
+
+    
