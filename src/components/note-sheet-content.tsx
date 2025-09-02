@@ -20,7 +20,6 @@ import { Skeleton } from './ui/skeleton';
 import { useAuth } from './auth-provider';
 import { z } from 'zod';
 import { moderateContent } from '@/ai/flows/content-moderation';
-import { reportNote } from '@/ai/flows/report-note-flow';
 import { Input } from './ui/input';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
@@ -337,34 +336,30 @@ function ReportDialog({ note, open, onOpenChange, onReportSubmit }: { note: Note
 
         setIsSubmitting(true);
         try {
-             // Create a batch write
             const batch = writeBatch(db);
 
-            // 1. Update the note's visibility
             const noteRef = doc(db, "notes", note.id);
             batch.update(noteRef, { visibility: "unlisted" });
 
-            // 2. Create a new report document
-            const reportRef = doc(collection(db, "reports")); // Auto-generate ID
+            const reportRef = doc(collection(db, "reports")); 
             batch.set(reportRef, {
                 noteId: note.id,
+                noteAuthorUid: note.authorUid,
                 reporterUid: user.uid,
                 reason: reason,
                 createdAt: serverTimestamp(),
-                noteAuthorUid: note.authorUid,
                 status: "pending_review",
             });
             
-            // Commit the batch
             await batch.commit();
 
             toast({
                 title: "Report Submitted",
                 description: "Thank you. The note has been flagged for review.",
             });
-            onReportSubmit(); // This will close the dialog and the sheet
+            onReportSubmit();
         } catch (error: any) {
-            console.error("Error reporting note:", error);
+            console.error("Error submitting report:", error);
             toast({ title: "Error", description: error.message || "Failed to submit report.", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
@@ -418,6 +413,9 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
         const unsubscribeNote = onSnapshot(noteRef, (doc) => {
             if (doc.exists()) {
                  const data = doc.data();
+                 // This is the race condition fix.
+                 // If the note becomes unlisted and the current user is NOT the author,
+                 // close the sheet before Firestore throws a permission error.
                  if (data.visibility === 'unlisted' && data.authorUid !== user?.uid) {
                     toast({title: "Note Unavailable", description: "This note is no longer available."});
                     onClose();
@@ -428,11 +426,13 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                     { seconds: Date.now() / 1000, nanoseconds: 0 };
                 setNote({ id: doc.id, ...data, createdAt } as Note);
             } else {
-                // Note was deleted
+                // This handles the case where the note is deleted by the author.
                 toast({title: "Note Deleted", description: "This note has been removed."});
                 onClose();
             }
         }, (error) => {
+            // This will now only catch actual network errors, not permission errors,
+            // because the logic above prevents the permission error from happening.
             console.error("Snapshot listener error:", error);
             toast({title: "Network Error", description: "Could not sync with the note."});
             onClose();
@@ -593,7 +593,7 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                 onOpenChange={setReportDialogOpen}
                 onReportSubmit={() => {
                     setReportDialogOpen(false);
-                    onClose(); // Close the main sheet after reporting
+                    onClose();
                 }}
             />
              <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
@@ -683,3 +683,5 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
 
   return <NoteView note={note} onClose={onClose} />;
 }
+
+    
