@@ -4,9 +4,9 @@ import { moderateContent } from '@/ai/flows/content-moderation';
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
-import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore';
 import { auth } from 'firebase-admin';
-import { getAuth } from 'firebase/auth';
+import { getAuth, updateProfile } from 'firebase/auth';
 
 const replySchema = z.object({
   noteId: z.string(),
@@ -21,6 +21,50 @@ const noteSchema = z.object({
   authorDisplayName: z.string().optional(),
 });
 
+const profileSchema = z.object({
+    uid: z.string().min(1),
+    displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters."),
+});
+
+type UpdateProfileFormState = {
+    message: string;
+    errors?: {
+        displayName?: string[];
+    };
+    success: boolean;
+};
+
+export async function updateDisplayName(prevState: UpdateProfileFormState, formData: FormData): Promise<UpdateProfileFormState> {
+    const validatedFields = profileSchema.safeParse({
+        uid: formData.get('uid'),
+        displayName: formData.get('displayName'),
+    });
+
+    if (!validatedFields.success) {
+        return {
+            errors: validatedFields.error.flatten().fieldErrors,
+            message: 'Invalid fields.',
+            success: false,
+        };
+    }
+
+    const { uid, displayName } = validatedFields.data;
+
+    try {
+        const profileRef = doc(db, 'profiles', uid);
+        await setDoc(profileRef, { pseudonym: displayName, uid: uid }, { merge: true });
+
+        revalidatePath('/profile');
+        return { message: 'Display name updated successfully!', success: true };
+    } catch (error: any) {
+        console.error("Error updating display name:", error);
+        return {
+            message: 'Failed to update display name.',
+            success: false,
+        };
+    }
+}
+
 
 type CreateNoteFormState = {
     message: string;
@@ -33,6 +77,31 @@ type CreateNoteFormState = {
     };
     success: boolean;
 }
+
+async function getOrCreatePseudonym(uid: string, requestedName?: string | null): Promise<string> {
+    const profileRef = doc(db, 'profiles', uid);
+    const profileSnap = await getDoc(profileRef);
+
+    if (profileSnap.exists() && profileSnap.data().pseudonym) {
+        return profileSnap.data().pseudonym;
+    }
+
+    if (requestedName) {
+        await setDoc(profileRef, { pseudonym: requestedName, uid, createdAt: serverTimestamp() }, { merge: true });
+        return requestedName;
+    }
+
+    const adjectives = ["Whispering", "Wandering", "Silent", "Hidden", "Forgotten", "Lost", "Secret", "Phantom"];
+    const nouns = ["Wombat", "Voyager", "Pilgrim", "Ghost", "Scribe", "Oracle", "Nomad", "Dreamer"];
+    const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
+    const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
+    const newPseudonym = `${randomAdjective} ${randomNoun}`;
+
+    await setDoc(profileRef, { pseudonym: newPseudonym, uid, createdAt: serverTimestamp() }, { merge: true });
+
+    return newPseudonym;
+}
+
 
 export async function createNote(prevState: CreateNoteFormState, formData: FormData): Promise<CreateNoteFormState> {
   const validatedFields = noteSchema.safeParse({
@@ -62,6 +131,8 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
         success: false,
       };
     }
+
+    const pseudonym = await getOrCreatePseudonym(authorUid, authorDisplayName);
     
     const newNote = {
       text,
@@ -69,7 +140,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
       lng,
       authorUid,
       createdAt: serverTimestamp(),
-      authorPseudonym: authorDisplayName || 'Wandering Wombat',
+      authorPseudonym: pseudonym,
       type: 'text',
       score: 0,
       teaser: text.substring(0, 30) + (text.length > 30 ? '...' : ''),

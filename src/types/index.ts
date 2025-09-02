@@ -47,7 +47,6 @@ export interface Reply {
 export interface Profile {
   uid: string;
   createdAt: { seconds: number; nanoseconds: number };
-  displayName?: string | null;
   pseudonym: string;
   trust: number;
   lastNoteAt?: { seconds: number; nanoseconds: number } | null;

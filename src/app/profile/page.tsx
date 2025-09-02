@@ -4,13 +4,82 @@ import { AuthButton } from "@/components/auth-button";
 import { useAuth } from "@/components/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User } from "lucide-react";
+import { User, Edit } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState, useActionState, useRef } from "react";
+import { updateDisplayName } from "@/app/actions";
+import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
+function UpdateProfileForm({ uid, currentDisplayName }: { uid: string, currentDisplayName: string }) {
+    const { toast } = useToast();
+    const formRef = useRef<HTMLFormElement>(null);
+    const initialState = { message: "", errors: {}, success: false };
+    const [state, formAction] = useActionState(updateDisplayName, initialState);
+    const [isEditing, setIsEditing] = useState(false);
+
+    useEffect(() => {
+        if (state.message) {
+            if (state.success) {
+                toast({ title: "Success!", description: state.message });
+                setIsEditing(false);
+            } else {
+                toast({ title: "Error", description: state.errors?.displayName?.[0] || state.message, variant: "destructive" });
+            }
+        }
+    }, [state, toast]);
+
+    if (!isEditing) {
+        return (
+            <Button variant="ghost" size="sm" onClick={() => setIsEditing(true)} className="flex items-center gap-2">
+                <Edit className="h-4 w-4" />
+                <span>Change Display Name</span>
+            </Button>
+        )
+    }
+
+    return (
+        <form ref={formRef} action={formAction} className="grid gap-4">
+            <input type="hidden" name="uid" value={uid} />
+            <Input
+                name="displayName"
+                defaultValue={currentDisplayName}
+                placeholder="Enter your new display name"
+                required
+                minLength={3}
+                maxLength={50}
+            />
+            {state.errors?.displayName && <p className="text-sm text-destructive">{state.errors.displayName[0]}</p>}
+            <div className="flex justify-end gap-2">
+                <Button type="button" variant="ghost" onClick={() => setIsEditing(false)}>Cancel</Button>
+                <Button type="submit">Save</Button>
+            </div>
+        </form>
+    )
+}
+
 
 export default function ProfilePage() {
   const { user } = useAuth();
+  const [profileData, setProfileData] = useState<{pseudonym?: string} | null>(null);
+
+  useEffect(() => {
+      if (user) {
+          const profileRef = doc(db, 'profiles', user.uid);
+          const unsubscribe = onSnapshot(profileRef, (doc) => {
+              if (doc.exists()) {
+                  setProfileData(doc.data());
+              }
+          });
+          return () => unsubscribe();
+      }
+  }, [user]);
+
+  const displayName = profileData?.pseudonym || user?.displayName || "Wandering Wombat";
 
   return (
     <div className="container mx-auto max-w-2xl py-12 px-4">
@@ -26,12 +95,12 @@ export default function ProfilePage() {
             <Avatar className="h-20 w-20">
               <AvatarImage src={user?.photoURL ?? ''} alt={user?.displayName ?? ''} />
               <AvatarFallback className="text-3xl">
-                {user?.isAnonymous ? <User /> : user?.displayName?.charAt(0) || <User />}
+                {user?.isAnonymous ? <User /> : displayName.charAt(0) || <User />}
               </AvatarFallback>
             </Avatar>
             <div className="flex-1">
                 <CardTitle className="text-3xl font-headline">
-                    {user?.isAnonymous ? "Wandering Wombat" : user?.displayName}
+                    {user?.isAnonymous ? "Wandering Wombat" : displayName}
                 </CardTitle>
                 <CardDescription>
                     {user?.isAnonymous ? "Anonymous User" : user?.email}
@@ -40,6 +109,12 @@ export default function ProfilePage() {
             <AuthButton />
         </CardHeader>
         <CardContent>
+            {user && !user.isAnonymous && (
+                <>
+                    <Separator className="my-4"/>
+                    <UpdateProfileForm uid={user.uid} currentDisplayName={displayName} />
+                </>
+            )}
             <Separator className="my-4"/>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                 <div className="bg-muted p-4 rounded-lg">
