@@ -16,7 +16,7 @@ import {
 
 // Server-side Firebase Admin SDK initialization
 import {initializeApp, getApps, cert} from 'firebase-admin/app';
-import {getFirestore, doc, getDoc, updateDoc} from 'firebase-admin/firestore';
+import {getFirestore} from 'firebase-admin/firestore';
 import {Note} from '@/types';
 
 // Initialize Firebase Admin SDK only if it hasn't been already
@@ -40,9 +40,9 @@ const getNoteContentTool = ai.defineTool(
     }),
   },
   async ({noteId}) => {
-    const noteRef = doc(adminDb, 'notes', noteId);
-    const noteSnap = await getDoc(noteRef);
-    if (!noteSnap.exists()) {
+    const noteRef = adminDb.doc(`notes/${noteId}`);
+    const noteSnap = await noteRef.get();
+    if (!noteSnap.exists) {
       throw new Error('Note not found.');
     }
     const note = noteSnap.data() as Note;
@@ -63,8 +63,8 @@ const flagNoteTool = ai.defineTool(
     outputSchema: z.void(),
   },
   async ({noteId, reason}) => {
-    const noteRef = doc(adminDb, 'notes', noteId);
-    await updateDoc(noteRef, {
+    const noteRef = adminDb.doc(`notes/${noteId}`);
+    await noteRef.update({
       visibility: 'unlisted',
       'review.status': 'pending',
       'review.reason': reason,
@@ -81,8 +81,8 @@ const removeNoteTool = ai.defineTool(
     outputSchema: z.void(),
   },
   async ({noteId, reason}) => {
-    const noteRef = doc(adminDb, 'notes', noteId);
-    await updateDoc(noteRef, {
+    const noteRef = adminDb.doc(`notes/${noteId}`);
+    await noteRef.update({
       visibility: 'unlisted',
       'review.status': 'removed',
       'review.reason': reason,
