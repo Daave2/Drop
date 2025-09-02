@@ -7,6 +7,14 @@ export default {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
+  safelist: [
+    // These are for dynamically generated pin sizes
+    'h-8', 'w-8', 'h-9', 'w-9', 'h-10', 'w-10', 'h-11', 'w-11', 
+    'h-12', 'w-12', 'h-13', 'w-13', 'h-14', 'w-14', 'h-15', 'w-15',
+    'h-16', 'w-16', 'h-17', 'w-17', 'h-18', 'w-18', 'h-19', 'w-19',
+    'h-20', 'w-20', 'h-21', 'w-21', 'h-22', 'w-22', 'h-23', 'w-23',
+    'h-24', 'w-24', 'h-25', 'w-25',
+  ],
   theme: {
     extend: {
       fontFamily: {

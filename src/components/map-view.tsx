@@ -106,10 +106,14 @@ function MapViewContent() {
 
   // Calculate dynamic properties for a note based on its score
   const getNoteDynamicProps = (score: number) => {
-    // Pin Size: Start at 8, max out at 24.
-    const size = 8 + Math.min(Math.floor(score / 2) * 2, 16); 
-    // Reveal Distance: Start at 35m, increase by 5m for every point, max out at 300m
-    const revealRadius = Math.min(BASE_REVEAL_RADIUS_M + score * 5, 300);
+    // Pin Size: Logarithmic scale.
+    // Base size 8, increases with score.
+    const size = Math.round(8 + Math.log(score + 1) * 2);
+    
+    // Reveal Distance: Logarithmic scale.
+    // Base 35m, increases with score. Cap at 500m.
+    const revealRadius = Math.min(BASE_REVEAL_RADIUS_M + Math.log(score + 1) * 50, 500);
+
     return {
         sizeClass: `h-${size} w-${size}`,
         revealRadius,
@@ -381,7 +385,7 @@ function MapViewContent() {
             <DialogHeader>
                 <DialogTitle className="font-headline text-2xl">Get Closer to Reveal</DialogTitle>
                 <DialogDescription>
-                    You need to be within {selectedNote && getNoteDynamicProps(selectedNote.score).revealRadius} meters and align your view to unlock this note.
+                    You need to be within {selectedNote && getNoteDynamicProps(selectedNote.score).revealRadius.toFixed(0)} meters and align your view to unlock this note.
                 </DialogDescription>
             </DialogHeader>
               {selectedNote && <CompassView
@@ -409,5 +413,3 @@ export default function MapView() {
         </React.Suspense>
     )
 }
-
-    
