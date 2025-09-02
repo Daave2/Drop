@@ -50,7 +50,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
   const { toast } = useToast();
   const [note, setNote] = useState<Note | null>(null);
   const [replies, setReplies] = useState<Reply[]>([]);
-  const [loadingNote, setLoadingNote] = useState(true);
+  const [loadingNote, setLoadingNote] = useState(false);
   const replyFormRef = useRef<HTMLFormElement>(null);
   const createNoteFormRef = useRef<HTMLFormElement>(null);
   
@@ -79,6 +79,8 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
         } finally {
           setLoadingNote(false);
         }
+      } else {
+        setNote(null);
       }
     }
     fetchNote();
