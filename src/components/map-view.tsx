@@ -228,20 +228,13 @@ export default function MapView() {
             <div className="w-4 h-4 bg-primary rounded-full border-2 border-white shadow-lg animate-pulse" />
           </Marker>
         )}
-        {!loadingNotes ? notes.map(note => (
+        {notes.map(note => (
             <Marker key={note.id} longitude={note.lng} latitude={note.lat} onClick={() => handleMarkerClick(note)}>
                 <button className="transform hover:scale-110 transition-transform">
                     <MapPin className={`h-8 w-8 drop-shadow-lg ${note.id === revealedNoteId ? 'text-accent' : 'text-primary/70'}`} fill="currentColor" />
                 </button>
             </Marker>
-        )) : (
-          <Marker longitude={viewState.longitude!} latitude={viewState.latitude!}>
-            <div className="flex items-center gap-2 bg-background/80 p-2 rounded-lg">
-                <Skeleton className="h-5 w-5 rounded-full" />
-                <Skeleton className="h-4 w-24" />
-            </div>
-          </Marker>
-        )}
+        ))}
 
         {selectedNote && !isCompassViewOpen && !isNoteSheetOpen && (
             <Popup
@@ -348,7 +341,3 @@ function getDistance(coords1: {latitude: number, longitude: number}, coords2: {l
   
     return R * c;
   }
-
-    
-
-    
