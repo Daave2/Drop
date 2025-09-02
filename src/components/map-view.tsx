@@ -36,7 +36,7 @@ import { geohashQueryBounds, distanceBetween } from 'geofire-common';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 
-const MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-nolabels-gl-style/style.json";
+const MAP_STYLE = "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
 
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
@@ -66,6 +66,7 @@ export default function MapView() {
   const fetchNotesForView = useCallback((center: [number, number]) => {
     if (!db) return;
     setLoadingNotes(true);
+    console.log("Fetching notes for center:", center);
 
     const radiusInM = 5000; // 5km search radius
     const bounds = geohashQueryBounds(center, radiusInM);
@@ -162,7 +163,16 @@ export default function MapView() {
 
 
   const handleMarkerClick = (note: GhostNote) => {
-    if (!location) return;
+    if (!location) {
+        // If location is not available, just show the note sheet.
+        // This can happen if user denies permission.
+        setSelectedNote(note);
+        setRevealedNoteId(note.id);
+        setCreatingNote(false);
+        setNoteSheetOpen(true);
+        return;
+    };
+    
     const distance = getDistance(
         location,
         { latitude: note.lat, longitude: note.lng }
@@ -286,7 +296,10 @@ export default function MapView() {
             noteId={selectedNote?.id ?? null} 
             isCreating={isCreatingNote} 
             userLocation={location}
-            onNoteCreated={handleNoteCreated}
+            onNoteCreated={() => {
+              handleNoteCreated();
+              onClose();
+            }}
             onClose={() => setNoteSheetOpen(false)}
           />
         </SheetContent>
@@ -333,9 +346,3 @@ function getDistance(coords1: {latitude: number, longitude: number}, coords2: {l
   
     return R * c;
   }
-
-    
-
-    
-
-    
