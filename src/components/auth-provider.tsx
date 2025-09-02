@@ -13,47 +13,51 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
 
+let hasAttemptedAnonymousSignIn = false;
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    let anonymousSignInAttempted = false;
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
         setLoading(false);
-      } else {
-        if (!anonymousSignInAttempted) {
-          anonymousSignInAttempted = true;
-          // Automatically sign in users anonymously
-          try {
-            await signInAnonymously(auth);
-            // The onAuthStateChanged listener will handle setting the user and loading state
-          } catch (error: any) {
-              if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
-                  toast({
-                      title: "Anonymous Sign-In Disabled",
-                      description: "For full functionality, please sign in with Google.",
-                      variant: "default"
-                  });
-              } else {
-                   toast({
-                      title: "Authentication Error",
-                      description: "Could not sign in anonymously. Please check your Firebase setup.",
-                      variant: "destructive"
-                  });
-              }
-              console.error("Anonymous sign-in error:", error);
-              // If anon sign-in fails, stop loading and let user proceed without a user object
-              setLoading(false); 
+        hasAttemptedAnonymousSignIn = true; // A user is present, no need for anonymous sign-in
+      } else if (!hasAttemptedAnonymousSignIn) {
+        hasAttemptedAnonymousSignIn = true;
+        try {
+          // Try to sign in anonymously only once per session
+          await signInAnonymously(auth);
+          // The listener will re-run with the new user, setting state appropriately.
+        } catch (error: any) {
+          // If anonymous sign-in is disabled, we expect this error.
+          // We can inform the user and then proceed without a signed-in user.
+          if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
+            toast({
+              title: "Anonymous Sign-In Disabled",
+              description: "For full functionality, please sign in with Google.",
+              variant: "default",
+            });
+          } else {
+            // For other unexpected errors
+            console.error("Anonymous sign-in error:", error);
+            toast({
+              title: "Authentication Error",
+              description: "An unexpected error occurred during sign-in.",
+              variant: "destructive",
+            });
           }
-        } else {
-            // If anon sign-in was already attempted and user is still null (e.g., after sign out)
-            // just stop loading. This prevents re-attempts on sign-out.
-            setLoading(false);
+          // In any error case, stop loading and proceed without a user.
+          setUser(null);
+          setLoading(false);
         }
+      } else {
+        // No user and we've already tried anonymous sign-in (or one was already present and signed out)
+        setUser(null);
+        setLoading(false);
       }
     });
 
