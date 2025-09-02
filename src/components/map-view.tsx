@@ -113,6 +113,7 @@ export default function MapView() {
           });
         });
 
+        console.log(`Fetched ${notesData.length} notes.`);
         setNotes(notesData.slice(0, MAX_NOTES));
       })
       .catch((error) => {
@@ -144,12 +145,11 @@ export default function MapView() {
   // Effect to center map on user location when it becomes available for the first time
   useEffect(() => {
     if (location && viewState.longitude === DEFAULT_CENTER.longitude && viewState.latitude === DEFAULT_CENTER.latitude) {
-      setViewState(current => ({
-        ...current,
-        longitude: location.longitude,
-        latitude: location.latitude,
+      mapRef.current?.flyTo({
+        center: [location.longitude, location.latitude],
         zoom: 17,
-      }));
+        duration: 2000
+      });
     }
   }, [location, viewState.longitude, viewState.latitude]);
 
@@ -348,5 +348,7 @@ function getDistance(coords1: {latitude: number, longitude: number}, coords2: {l
   
     return R * c;
   }
+
+    
 
     

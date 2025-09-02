@@ -23,6 +23,7 @@ import { moderateContent } from '@/ai/flows/content-moderation';
 import { Input } from './ui/input';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
+import { geohashForLocation } from 'geofire-common';
 
 
 function SubmitButton({label, pendingLabel, isSubmitting}: {label: string, pendingLabel: string, isSubmitting: boolean}) {
@@ -85,11 +86,15 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
             // 3. Get user pseudonym
             const pseudonym = await getOrCreatePseudonym(user.uid);
             
-            // 4. Prepare base note data
+            // 4. Calculate geohash
+            const geohash = geohashForLocation([userLocation.latitude, userLocation.longitude]);
+
+            // 5. Prepare base note data
              const newNote: Omit<Note, 'id' | 'createdAt'> & { createdAt: any } = {
               text,
               lat: userLocation.latitude,
               lng: userLocation.longitude,
+              geohash,
               authorUid: user.uid,
               createdAt: serverTimestamp(),
               authorPseudonym: pseudonym,
@@ -107,7 +112,7 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
               media: [],
             };
 
-            // 5. Handle image upload if present
+            // 6. Handle image upload if present
             if (imageFile) {
                 if (imageFile.size > 5 * 1024 * 1024) { // 5MB limit
                     toast({ title: "Image too large", description: "Image must be less than 5MB.", variant: "destructive" });
@@ -126,7 +131,7 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
                 }];
             }
 
-            // 6. Save note to Firestore
+            // 7. Save note to Firestore
             await addDoc(collection(db, 'notes'), newNote);
             
             toast({ title: "Success!", description: "Note dropped successfully!" });
@@ -527,3 +532,5 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
 
   return <NoteView note={note} />;
 }
+
+    
