@@ -11,7 +11,6 @@ const firebaseConfig = {
   storageBucket: "notedrop-location-based-notes.firebasestorage.app",
   messagingSenderId: "922876252155",
   appId: "1:922876252155:web:2938b56f8c5efb07f7c55e",
-  measurementId: "",
 };
 
 // Initialize Firebase
