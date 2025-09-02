@@ -42,9 +42,6 @@ import { Skeleton } from './ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 import { ThemeToggle } from './theme-toggle';
 
-const MAP_STYLE = "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
-
-
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
 
@@ -314,7 +311,7 @@ function MapViewContent() {
         onMove={evt => setViewState(evt.viewState)}
         onLoad={handleMapLoad}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={MAP_STYLE as MapStyle}
+        mapStyle={`https://api.maptiler.com/maps/dataviz/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`}
         antialias={true}
       >
         {location && (
