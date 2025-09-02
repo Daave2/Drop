@@ -19,31 +19,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    let anonymousSignInAttempted = false;
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         setUser(user);
+        setLoading(false);
       } else {
-        // Automatically sign in users anonymously
-        try {
-          await signInAnonymously(auth);
-        } catch (error: any) {
-            if (error.code === 'auth/operation-not-allowed') {
-                toast({
-                    title: "Anonymous Sign-In Disabled",
-                    description: "Please enable anonymous sign-in in your Firebase console.",
-                    variant: "destructive"
-                });
-            } else {
-                 toast({
-                    title: "Authentication Error",
-                    description: "Could not sign in anonymously. Please check your Firebase setup.",
-                    variant: "destructive"
-                });
-            }
-            console.error("Anonymous sign-in error:", error);
+        if (!anonymousSignInAttempted) {
+          anonymousSignInAttempted = true;
+          // Automatically sign in users anonymously
+          try {
+            await signInAnonymously(auth);
+            // The onAuthStateChanged listener will handle setting the user and loading state
+          } catch (error: any) {
+              if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
+                  toast({
+                      title: "Anonymous Sign-In Disabled",
+                      description: "For full functionality, please sign in with Google.",
+                      variant: "default"
+                  });
+              } else {
+                   toast({
+                      title: "Authentication Error",
+                      description: "Could not sign in anonymously. Please check your Firebase setup.",
+                      variant: "destructive"
+                  });
+              }
+              console.error("Anonymous sign-in error:", error);
+              // If anon sign-in fails, stop loading and let user proceed without a user object
+              setLoading(false); 
+          }
+        } else {
+            // If anon sign-in was already attempted and failed, just stop loading
+            setLoading(false);
         }
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
