@@ -57,7 +57,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
       };
     }
     
-    const newNoteDoc: Omit<Note, 'id' | 'createdAt'> = {
+    const newNoteDoc: Omit<Note, 'id' | 'createdAt' | 'geohash'> = {
       text,
       lat,
       lng,
@@ -65,7 +65,6 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
       score: 0,
       teaser: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
       authorPseudonym: 'Wandering Wombat',
-      geohash: '',
       visibility: 'public',
       trust: 0.5,
       placeMaskMeters: 10,
