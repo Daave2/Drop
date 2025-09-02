@@ -23,9 +23,7 @@ import {Note} from '@/types';
 
 // Initialize Firebase Admin SDK only if it hasn't been already
 if (!getApps().length) {
-  initializeApp({
-    // Assumes GOOGLE_APPLICATION_CREDENTIALS are set in the environment
-  });
+  initializeApp();
 }
 const adminDb = getFirestore();
 
