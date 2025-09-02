@@ -22,6 +22,7 @@ import { moderateContent } from '@/ai/flows/content-moderation';
 import { Input } from './ui/input';
 import Image from 'next/image';
 import { toggleLikeNote } from '@/app/actions';
+import { cn } from '@/lib/utils';
 
 
 async function getOrCreateClientSidePseudonym(uid: string): Promise<string> {
