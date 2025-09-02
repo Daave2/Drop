@@ -20,11 +20,6 @@ export type ReportNoteInput = z.infer<typeof ReportNoteInputSchema>;
 
 export const ReportNoteOutputSchema = z.object({
   success: z.boolean().describe('Whether the report was processed successfully.'),
-  actionTaken: z
-    .enum(['none', 'flagged', 'removed'])
-    .describe(
-      'The action taken based on the report. "none" if no action was taken, "flagged" for manual review, "removed" if the content was immediately hidden.'
-    ),
   message: z.string().describe('A message to show to the user.'),
 });
 export type ReportNoteOutput = z.infer<typeof ReportNoteOutputSchema>;

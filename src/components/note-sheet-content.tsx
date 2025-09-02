@@ -12,7 +12,7 @@ import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
-import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, runTransaction, where, deleteDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, runTransaction, where, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
 import { getOrCreatePseudonym } from '@/lib/pseudonym';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
@@ -337,28 +337,37 @@ function ReportDialog({ note, open, onOpenChange, onReportSubmit }: { note: Note
 
         setIsSubmitting(true);
         try {
-            const noteRef = doc(db, "notes", note.id);
-            // This client-side update requires appropriate security rules.
-            // e.g., allow users to update the 'visibility' field if they are authenticated.
-            await updateDoc(noteRef, {
-                visibility: 'unlisted'
-            });
+             // Create a batch write
+            const batch = writeBatch(db);
 
-            // TODO: In a real app, you would also create a 'reports' document
-            // for moderators to review, likely using a server-side Cloud Function
-            // to avoid complex security rules.
+            // 1. Update the note's visibility
+            const noteRef = doc(db, "notes", note.id);
+            batch.update(noteRef, { visibility: "unlisted" });
+
+            // 2. Create a new report document
+            const reportRef = doc(collection(db, "reports")); // Auto-generate ID
+            batch.set(reportRef, {
+                noteId: note.id,
+                reporterUid: user.uid,
+                reason: reason,
+                createdAt: serverTimestamp(),
+                noteAuthorUid: note.authorUid,
+                status: "pending_review",
+            });
+            
+            // Commit the batch
+            await batch.commit();
 
             toast({
                 title: "Report Submitted",
-                description: "Thank you for your report. The note has been flagged for review.",
+                description: "Thank you. The note has been flagged for review.",
             });
-            onReportSubmit(); 
+            onReportSubmit(); // This will close the dialog and the sheet
         } catch (error: any) {
             console.error("Error reporting note:", error);
-            toast({ title: "Error", description: error.message || "Failed to submit report. You may not have permission to perform this action.", variant: "destructive" });
+            toast({ title: "Error", description: error.message || "Failed to submit report.", variant: "destructive" });
         } finally {
             setIsSubmitting(false);
-            onOpenChange(false); // Close the dialog
         }
     };
 
@@ -423,6 +432,10 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                 toast({title: "Note Deleted", description: "This note has been removed."});
                 onClose();
             }
+        }, (error) => {
+            console.error("Snapshot listener error:", error);
+            toast({title: "Network Error", description: "Could not sync with the note."});
+            onClose();
         });
         
         return () => unsubscribeNote();
