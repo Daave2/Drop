@@ -159,7 +159,7 @@ export default function ProfilePage() {
       }
   }, [user, toast]);
   
-  const trustScore = useMemo(() => {
+  const communityStanding = useMemo(() => {
     if (!user || !profileData) return 0;
     
     // Base score for being a member
@@ -222,7 +222,7 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                 <StatCard title="Notes Dropped" value={notesDropped} isLoading={loadingStats} />
                 <StatCard title="Notes Revealed" value={notesRevealed} isLoading={loadingStats} />
-                <StatCard title="Trust Score" value={trustScore} isLoading={loadingStats} />
+                <StatCard title="Community Standing" value={communityStanding} isLoading={loadingStats} />
             </div>
         </CardContent>
       </Card>
