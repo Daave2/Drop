@@ -12,8 +12,9 @@ import { Separator } from './ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
-import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, setDoc, runTransaction, where, deleteDoc } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy, addDoc, serverTimestamp, runTransaction, where, deleteDoc } from 'firebase/firestore';
 import { db, storage } from '@/lib/firebase';
+import { getOrCreatePseudonym } from '@/lib/pseudonym';
 import { getDownloadURL, ref, uploadBytes } from 'firebase/storage';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from './auth-provider';
@@ -22,32 +23,6 @@ import { moderateContent } from '@/ai/flows/content-moderation';
 import { Input } from './ui/input';
 import Image from 'next/image';
 import { cn } from '@/lib/utils';
-
-
-async function getOrCreateClientSidePseudonym(uid: string): Promise<string> {
-    const profileRef = doc(db, 'profiles', uid);
-    try {
-        const profileSnap = await getDoc(profileRef);
-
-        if (profileSnap.exists() && profileSnap.data().pseudonym) {
-            return profileSnap.data().pseudonym;
-        }
-
-        const adjectives = ["Whispering", "Wandering", "Silent", "Hidden", "Forgotten", "Lost", "Secret", "Phantom"];
-        const nouns = ["Wombat", "Voyager", "Pilgrim", "Ghost", "Scribe", "Oracle", "Nomad", "Dreamer"];
-        const randomAdjective = adjectives[Math.floor(Math.random() * adjectives.length)];
-        const randomNoun = nouns[Math.floor(Math.random() * nouns.length)];
-        const newPseudonym = `${randomAdjective} ${randomNoun}`;
-        
-        await setDoc(profileRef, { pseudonym: newPseudonym, uid, createdAt: serverTimestamp() }, { merge: true });
-
-        return newPseudonym;
-    } catch (error) {
-        console.error("Error getting or creating pseudonym: ", error);
-        // Fallback pseudonym in case of error (e.g. security rules)
-        return "Anonymous Adventurer";
-    }
-}
 
 
 function SubmitButton({label, pendingLabel, isSubmitting}: {label: string, pendingLabel: string, isSubmitting: boolean}) {
@@ -107,7 +82,7 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
             }
 
             // 3. Get user pseudonym
-            const pseudonym = await getOrCreateClientSidePseudonym(user.uid);
+            const pseudonym = await getOrCreatePseudonym(user.uid);
             
             // 4. Prepare base note data
              const newNote: Omit<Note, 'id' | 'createdAt'> & { createdAt: any } = {
@@ -273,7 +248,7 @@ function ReplyForm({ noteId }: { noteId: string }) {
                 return;
             }
 
-            const pseudonym = await getOrCreateClientSidePseudonym(user.uid);
+            const pseudonym = await getOrCreatePseudonym(user.uid);
             const replyRef = collection(db, 'notes', noteId, 'replies');
             
             await addDoc(replyRef, {
