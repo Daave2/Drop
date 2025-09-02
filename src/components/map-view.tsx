@@ -106,10 +106,10 @@ function MapViewContent() {
 
   // Calculate dynamic properties for a note based on its score
   const getNoteDynamicProps = (score: number) => {
-    // Pin Size: Start at 8, max out at 14 (h-8 w-8 to h-14 w-14 in Tailwind)
-    const size = 8 + Math.min(Math.floor(score / 5), 6); 
-    // Reveal Distance: Start at 35m, increase by 5m for every point, max out at 100m
-    const revealRadius = Math.min(BASE_REVEAL_RADIUS_M + score * 5, 100);
+    // Pin Size: Start at 8, max out at 24.
+    const size = 8 + Math.min(Math.floor(score / 2) * 2, 16); 
+    // Reveal Distance: Start at 35m, increase by 5m for every point, max out at 300m
+    const revealRadius = Math.min(BASE_REVEAL_RADIUS_M + score * 5, 300);
     return {
         sizeClass: `h-${size} w-${size}`,
         revealRadius,
