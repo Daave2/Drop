@@ -6,7 +6,7 @@
  */
 
 import {ai} from '@/ai/genkit';
-import {z} from 'genkit';
+import {z} from 'zod';
 import {doc, getDoc, updateDoc} from 'firebase/firestore';
 import {db} from '@/lib/firebase';
 import {Note} from '@/types';
@@ -153,8 +153,5 @@ const reportNoteFlow = ai.defineFlow(
 );
 
 export async function reportNote(input: ReportNoteInput): Promise<ReportNoteOutput> {
-  if (!db) {
-    throw new Error('Firestore is not initialized.');
-  }
   return reportNoteFlow(input);
 }
