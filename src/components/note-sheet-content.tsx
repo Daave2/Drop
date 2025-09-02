@@ -65,6 +65,7 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
             <input type="hidden" name="lat" value={userLocation?.latitude ?? 0} />
             <input type="hidden" name="lng" value={userLocation?.longitude ?? 0} />
             <input type="hidden" name="authorUid" value={user.uid} />
+            <input type="hidden" name="authorDisplayName" value={user.displayName ?? ''} />
             <Textarea name="text" placeholder="What's on your mind? (Max 800 chars)" maxLength={800} rows={5} required />
             {state.errors?.text && <p className="text-sm text-destructive">{state.errors.text[0]}</p>}
             {state.errors?.server && <p className="text-sm text-destructive">{state.errors.server[0]}</p>}
@@ -154,7 +155,7 @@ function NoteView({ note }: {note: Note}) {
                     <div className="space-y-4">
                         {replies.map(reply => (
                             <div key={reply.id} className="flex gap-3">
-                                <Avatar className="h-8 w-8">
+                                <Avatar className="h-8 h-8">
                                     <AvatarFallback>{reply.authorPseudonym?.substring(0,2)}</AvatarFallback>
                                 </Avatar>
                                 <div className="bg-muted p-3 rounded-lg flex-1">

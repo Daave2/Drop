@@ -5,6 +5,8 @@ import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { db } from '@/lib/firebase';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { auth } from 'firebase-admin';
+import { getAuth } from 'firebase/auth';
 
 const replySchema = z.object({
   noteId: z.string(),
@@ -16,6 +18,7 @@ const noteSchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
   lng: z.coerce.number().min(-180).max(180),
   authorUid: z.string().min(1, "User must be authenticated."),
+  authorDisplayName: z.string().optional(),
 });
 
 
@@ -37,6 +40,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
     lat: formData.get('lat'),
     lng: formData.get('lng'),
     authorUid: formData.get('authorUid'),
+    authorDisplayName: formData.get('authorDisplayName'),
   });
 
   if (!validatedFields.success) {
@@ -47,7 +51,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
     };
   }
 
-  const { text, lat, lng, authorUid } = validatedFields.data;
+  const { text, lat, lng, authorUid, authorDisplayName } = validatedFields.data;
 
   try {
     const moderationResult = await moderateContent({ text });
@@ -65,7 +69,7 @@ export async function createNote(prevState: CreateNoteFormState, formData: FormD
       lng,
       authorUid,
       createdAt: serverTimestamp(),
-      authorPseudonym: 'Wandering Wombat', // Placeholder
+      authorPseudonym: authorDisplayName || 'Wandering Wombat',
       type: 'text',
       score: 0,
       teaser: text.substring(0, 30) + (text.length > 30 ? '...' : ''),
