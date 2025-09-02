@@ -4,12 +4,12 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCiYgHl8_QcQ2H-9P1B9BarusfjrRzjyvI",
-  authDomain: "notedrop-location-based-notes.firebaseapp.com",
-  projectId: "notedrop-location-based-notes",
-  storageBucket: "notedrop-location-based-notes.appspot.com",
-  messagingSenderId: "922876252155",
-  appId: "1:922876252155:web:2938b56f8c5efb07f7c55e",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase
