@@ -9,6 +9,7 @@ import { addDoc, collection, doc, getDoc, serverTimestamp, setDoc, updateDoc } f
 const replySchema = z.object({
   noteId: z.string(),
   text: z.string().min(1, "Reply cannot be empty.").max(120, "Reply cannot exceed 120 characters."),
+  authorUid: z.string().min(1, "User must be authenticated."),
 });
 
 const noteSchema = z.object({
@@ -134,6 +135,7 @@ export async function submitReply(prevState: ReplyFormState, formData: FormData)
   const validatedFields = replySchema.safeParse({
     noteId: formData.get('noteId'),
     text: formData.get('text'),
+    authorUid: formData.get('authorUid'),
   });
 
   if (!validatedFields.success) {
@@ -144,7 +146,7 @@ export async function submitReply(prevState: ReplyFormState, formData: FormData)
     };
   }
   
-  const { text, noteId } = validatedFields.data;
+  const { text, noteId, authorUid } = validatedFields.data;
 
   try {
     const moderationResult = await moderateContent({ text });
@@ -156,17 +158,28 @@ export async function submitReply(prevState: ReplyFormState, formData: FormData)
       };
     }
     
-    console.log('Reply is safe, saving to DB:', { noteId, text });
-    
-    // TODO: Actually save the reply to the database
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    const pseudonym = await getOrCreatePseudonym(authorUid, null);
+
+    const replyRef = collection(db, 'notes', noteId, 'replies');
+    await addDoc(replyRef, {
+        text,
+        noteId,
+        authorUid,
+        authorPseudonym: pseudonym,
+        createdAt: serverTimestamp(),
+    });
     
     revalidatePath(`/notes/${noteId}`);
 
     return { message: 'Reply posted successfully!', success: true };
     
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error submitting reply:", error);
-    return { message: 'An unexpected error occurred. Please try again.', success: false };
+    const errorMessage = error.message || 'An unknown error occurred.';
+    return { 
+      message: `Failed to post reply.`, 
+      success: false,
+      errors: { server: [errorMessage] }
+    };
   }
 }

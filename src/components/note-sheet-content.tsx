@@ -13,7 +13,7 @@ import { submitReply, createNote } from '@/app/actions';
 import { ScrollArea } from './ui/scroll-area';
 import { Coordinates } from '@/hooks/use-location';
 import { useFormStatus } from 'react-dom';
-import { doc, getDoc, Timestamp } from 'firebase/firestore';
+import { doc, getDoc, Timestamp, collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 import { useAuth } from './auth-provider';
@@ -84,6 +84,7 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
 
 
 function ReplyForm({ noteId }: { noteId: string }) {
+    const { user } = useAuth();
     const { toast } = useToast();
     const formRef = useRef<HTMLFormElement>(null);
     const initialState = { message: '', errors: {}, success: false };
@@ -92,7 +93,7 @@ function ReplyForm({ noteId }: { noteId: string }) {
     useEffect(() => {
         if (state.message) {
             if (!state.success) {
-                 toast({ title: state.message, description: state.errors?.text?.[0], variant: 'destructive' });
+                 toast({ title: "Error", description: state.errors?.text?.[0] || state.errors?.server?.[0] || 'Failed to post reply.', variant: 'destructive' });
             } else {
                 toast({ title: state.message });
                 if (state.success) {
@@ -101,10 +102,15 @@ function ReplyForm({ noteId }: { noteId: string }) {
             }
         }
     }, [state, toast]);
+    
+    if (!user) {
+        return <p className="text-sm text-center text-muted-foreground py-4">Please sign in to reply.</p>
+    }
 
     return (
-        <form id="reply-form" ref={formRef} action={formAction} className="flex items-start gap-2">
+        <form id="reply-form" ref={formRef} action={formAction} className="flex items-start gap-2 p-4">
             <input type="hidden" name="noteId" value={noteId} />
+            <input type="hidden" name="authorUid" value={user.uid} />
             <div className="flex-grow space-y-1">
                 <Textarea 
                     name="text"
@@ -124,51 +130,79 @@ function ReplyForm({ noteId }: { noteId: string }) {
 }
 
 function NoteView({ note }: {note: Note}) {
-    const [replies] = useState<Reply[]>([]); // Mock replies for now
+    const [replies, setReplies] = useState<Reply[]>([]);
+    const [loadingReplies, setLoadingReplies] = useState(true);
+
+    useEffect(() => {
+        const repliesRef = collection(db, 'notes', note.id, 'replies');
+        const q = query(repliesRef, orderBy('createdAt', 'asc'));
+
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const repliesData = querySnapshot.docs.map(doc => {
+                const data = doc.data();
+                const createdAt = data.createdAt instanceof Timestamp ? 
+                    { seconds: data.createdAt.seconds, nanoseconds: data.createdAt.nanoseconds } : 
+                    { seconds: Date.now() / 1000, nanoseconds: 0 };
+                return { id: doc.id, ...data, createdAt } as Reply;
+            });
+            setReplies(repliesData);
+            setLoadingReplies(false);
+        }, (error) => {
+            console.error("Error fetching replies:", error);
+            setLoadingReplies(false);
+        });
+
+        return () => unsubscribe();
+    }, [note.id]);
+
     return (
-        <ScrollArea className="h-[calc(100vh-10rem)] md:h-full">
-            <div className="p-4 space-y-6">
-                {note.media?.[0] && (
-                    <div className="rounded-lg overflow-hidden">
-                        <img src={note.media[0].path} alt="Note media" className="w-full h-auto object-cover" data-ai-hint="mural street art" />
+        <div className="flex flex-col h-full">
+            <ScrollArea className="flex-1">
+                <div className="p-4 space-y-6">
+                    {note.media?.[0] && (
+                        <div className="rounded-lg overflow-hidden">
+                            <img src={note.media[0].path} alt="Note media" className="w-full h-auto object-cover" data-ai-hint="mural street art" />
+                        </div>
+                    )}
+                    <p className="text-lg leading-relaxed">{note.text}</p>
+                    <div className="flex items-center justify-between text-muted-foreground text-sm">
+                        <div className="flex items-center gap-2">
+                            <Avatar className="w-8 h-8">
+                                <AvatarFallback>{note.authorPseudonym?.substring(0,2)}</AvatarFallback>
+                            </Avatar>
+                            <span>{note.authorPseudonym}</span>
+                        </div>
+                        <span>{note.createdAt ? new Date(note.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
                     </div>
-                )}
-                <p className="text-lg leading-relaxed">{note.text}</p>
-                <div className="flex items-center justify-between text-muted-foreground text-sm">
                     <div className="flex items-center gap-2">
-                        <Avatar className="w-8 h-8">
-                            <AvatarFallback>{note.authorPseudonym?.substring(0,2)}</AvatarFallback>
-                        </Avatar>
-                        <span>{note.authorPseudonym}</span>
+                        <Button variant="outline" size="sm"><Heart className="h-4 w-4 mr-2"/> {note.score}</Button>
+                        <Button variant="outline" size="sm"><Flag className="h-4 w-4 mr-2"/> Report</Button>
+                        <Badge variant="secondary">{note.type}</Badge>
                     </div>
-                    <span>{note.createdAt ? new Date(note.createdAt.seconds * 1000).toLocaleDateString() : 'Just now'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm"><Heart className="h-4 w-4 mr-2"/> {note.score}</Button>
-                    <Button variant="outline" size="sm"><Flag className="h-4 w-4 mr-2"/> Report</Button>
-                    <Badge variant="secondary">{note.type}</Badge>
-                </div>
-                <Separator />
-                <div className="space-y-4">
-                    <h3 className="font-headline text-xl">Replies ({replies.length})</h3>
-                    <ReplyForm noteId={note.id} />
+                    <Separator />
                     <div className="space-y-4">
-                        {replies.map(reply => (
-                            <div key={reply.id} className="flex gap-3">
-                                <Avatar className="h-8 h-8">
-                                    <AvatarFallback>{reply.authorPseudonym?.substring(0,2)}</AvatarFallback>
-                                </Avatar>
-                                <div className="bg-muted p-3 rounded-lg flex-1">
-                                    <p className="text-sm">{reply.text}</p>
-                                    <p className="text-xs text-muted-foreground mt-1">{reply.authorPseudonym} &middot; {new Date(reply.createdAt.seconds * 1000).toLocaleDateString()}</p>
+                        <h3 className="font-headline text-xl">Replies ({replies.length})</h3>
+                        <div className="space-y-4">
+                            {loadingReplies && <Skeleton className="h-16 w-full" />}
+                            {replies.map(reply => (
+                                <div key={reply.id} className="flex gap-3">
+                                    <Avatar className="h-8 h-8">
+                                        <AvatarFallback>{reply.authorPseudonym?.substring(0,2)}</AvatarFallback>
+                                    </Avatar>
+                                    <div className="bg-muted p-3 rounded-lg flex-1">
+                                        <p className="text-sm">{reply.text}</p>
+                                        <p className="text-xs text-muted-foreground mt-1">{reply.authorPseudonym} &middot; {new Date(reply.createdAt.seconds * 1000).toLocaleDateString()}</p>
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
-                        {replies.length === 0 && <p className="text-sm text-muted-foreground text-center">Be the first to reply!</p>}
+                            ))}
+                            {!loadingReplies && replies.length === 0 && <p className="text-sm text-muted-foreground text-center">Be the first to reply!</p>}
+                        </div>
                     </div>
                 </div>
-            </div>
-        </ScrollArea>
+            </ScrollArea>
+             <Separator />
+            <ReplyForm noteId={note.id} />
+        </div>
     )
 }
 
