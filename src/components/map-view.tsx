@@ -41,6 +41,7 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 import { ThemeToggle } from './theme-toggle';
+import { useTheme } from 'next-themes';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
@@ -59,6 +60,7 @@ function MapViewContent() {
   const mapRef = useRef<MapRef | null>(null);
   const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const searchParams = useSearchParams();
+  const { theme } = useTheme();
 
   const [viewState, setViewState] = useState<Partial<ViewState>>({
     longitude: DEFAULT_CENTER.longitude,
@@ -243,6 +245,11 @@ function MapViewContent() {
     }
   };
 
+  const mapStyleUrl = theme === 'dark' 
+    ? `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json`
+    : `https://tiles.stadiamaps.com/styles/alidade_smooth.json`;
+
+
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-secondary/50 p-4 text-center">
@@ -262,24 +269,7 @@ function MapViewContent() {
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={{
-          version: 8,
-          sources: {
-            'osm-tiles': {
-              type: 'raster',
-              tiles: ['https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'],
-              tileSize: 256,
-              attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            },
-          },
-          layers: [
-            {
-              id: 'osm-tiles',
-              type: 'raster',
-              source: 'osm-tiles',
-            },
-          ],
-        }}
+        mapStyle={mapStyleUrl}
         antialias={true}
       >
         {location && (
@@ -395,3 +385,5 @@ export default function MapView() {
         </React.Suspense>
     )
 }
+
+    
