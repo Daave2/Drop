@@ -304,11 +304,9 @@ function MapViewContent() {
             return (
                 <Marker key={note.id} longitude={note.lng} latitude={note.lat} onClick={() => handleMarkerClick(note)}>
                     <button className="transform hover:scale-110 transition-transform relative">
-                        {isHot && (
-                           <Flame className={cn('absolute -top-1/2 left-1/2 -translate-x-1/2 text-orange-500 animate-flame-flicker drop-shadow-lg', sizeClass)} />
-                        )}
                         <MapPin className={cn('drop-shadow-lg', 
                             sizeClass,
+                            isHot ? 'text-accent animate-flame-flicker' : 
                             note.id === revealedNoteId ? 'text-accent' : 
                             note.type === 'photo' ? 'text-secondary-foreground/70' : 'text-primary/70'
                         )} fill="currentColor" />
