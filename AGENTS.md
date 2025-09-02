@@ -7,6 +7,7 @@ This repository uses Next.js and TypeScript.
 - Keep code formatted with the existing style.
 - Favor functional, typed components in `src`.
 - Only commit to main branch; do not create new branches.
+- Ensure new UI remains mobile-optimized with responsive layouts.
 
 ## Checks
 

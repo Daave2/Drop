@@ -81,11 +81,11 @@ export default function CompassView({ userLocation, targetLocation, onAlignedAnd
 
   if (!permissionGranted) {
     return (
-      <div className="text-center p-4">
-        <h3 className="font-bold mb-2">Enable Motion Sensors</h3>
-        <p className="text-muted-foreground mb-4">NoteDrop needs access to your device's motion sensors for the compass feature.</p>
-        <Button onClick={requestPermission}>Enable Sensors</Button>
-      </div>
+        <div className="text-center p-4">
+          <h3 className="font-bold mb-2">Enable Motion Sensors</h3>
+          <p className="text-muted-foreground mb-4">NoteDrop needs access to your device&apos;s motion sensors for the compass feature.</p>
+          <Button onClick={requestPermission}>Enable Sensors</Button>
+        </div>
     );
   }
   
@@ -113,8 +113,8 @@ export default function CompassView({ userLocation, targetLocation, onAlignedAnd
       </div>
 
       <div className="w-full space-y-2">
-        {!isWithinRange && <p className="text-center text-accent font-semibold">Get closer to align!</p>}
-        {isWithinRange && <p className="text-center text-primary font-semibold">You're in range! Align your view.</p>}
+          {!isWithinRange && <p className="text-center text-accent font-semibold">Get closer to align!</p>}
+          {isWithinRange && <p className="text-center text-primary font-semibold">You&apos;re in range! Align your view.</p>}
         <Progress value={alignmentProgress} className="h-2" />
       </div>
     </div>

@@ -14,7 +14,7 @@ export default function LegalPage() {
           <p>Welcome to NoteDrop! By using our service, you agree to these terms. Please read them carefully.</p>
           <p><strong>1. Your Content:</strong> You retain ownership of content you post, but you grant us a license to display it. You are responsible for your content and must ensure it complies with our policies.</p>
           <p><strong>2. Responsible Use:</strong> Do not use NoteDrop to engage in illegal activities, harass others, or post harmful content. Always be aware of your surroundings; do not trespass or use the app while driving.</p>
-          <p><strong>3. Service Availability:</strong> Our services are provided "as is." We may modify or terminate our services at any time.</p>
+            <p><strong>3. Service Availability:</strong> Our services are provided &quot;as is.&quot; We may modify or terminate our services at any time.</p>
         </CardContent>
       </Card>
 
