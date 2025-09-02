@@ -11,12 +11,12 @@ interface CompassViewProps {
   userLocation: Coordinates | null;
   targetLocation: Coordinates;
   onAlignedAndClose: () => void;
+  revealRadius: number;
 }
 
-const REVEAL_RADIUS_M = 35;
 const REVEAL_ANGLE_DEG = 20;
 
-export default function CompassView({ userLocation, targetLocation, onAlignedAndClose }: CompassViewProps) {
+export default function CompassView({ userLocation, targetLocation, onAlignedAndClose, revealRadius }: CompassViewProps) {
   const { orientation, permissionGranted, requestPermission } = useOrientation();
   const [alignmentProgress, setAlignmentProgress] = useState(0);
 
@@ -50,7 +50,7 @@ export default function CompassView({ userLocation, targetLocation, onAlignedAnd
     };
   }, [userLocation, targetLocation]);
 
-  const isWithinRange = distance <= REVEAL_RADIUS_M;
+  const isWithinRange = distance <= revealRadius;
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -121,3 +121,5 @@ export default function CompassView({ userLocation, targetLocation, onAlignedAnd
     </div>
   );
 }
+
+    

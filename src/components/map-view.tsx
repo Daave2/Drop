@@ -46,6 +46,7 @@ import { cn } from '@/lib/utils';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
+const BASE_REVEAL_RADIUS_M = 35;
 
 
 function MapViewContent() {
@@ -102,6 +103,18 @@ function MapViewContent() {
     
       return R * c;
   }
+
+  // Calculate dynamic properties for a note based on its score
+  const getNoteDynamicProps = (score: number) => {
+    // Pin Size: Start at 8, max out at 14 (h-8 w-8 to h-14 w-14 in Tailwind)
+    const size = 8 + Math.min(Math.floor(score / 5), 6); 
+    // Reveal Distance: Start at 35m, increase by 5m for every point, max out at 100m
+    const revealRadius = Math.min(BASE_REVEAL_RADIUS_M + score * 5, 100);
+    return {
+        sizeClass: `h-${size} w-${size}`,
+        revealRadius,
+    };
+  };
 
   const fetchNotesForView = useCallback((center: [number, number]) => {
     if (!db) return;
@@ -221,7 +234,9 @@ function MapViewContent() {
     );
     setSelectedNote(note);
 
-    if (distance <= 35 || revealedNoteId === note.id) { // Proximity check passed or already revealed
+    const { revealRadius } = getNoteDynamicProps(note.score);
+
+    if (distance <= revealRadius || revealedNoteId === note.id) { // Proximity check passed or already revealed
         setRevealedNoteId(note.id);
         setCreatingNote(false);
         setNoteSheetOpen(true);
@@ -278,16 +293,20 @@ function MapViewContent() {
             <div className="w-4 h-4 bg-primary rounded-full border-2 border-white shadow-lg animate-pulse" />
           </Marker>
         )}
-        {notes.map(note => (
-            <Marker key={note.id} longitude={note.lng} latitude={note.lat} onClick={() => handleMarkerClick(note)}>
-                <button className="transform hover:scale-110 transition-transform">
-                    <MapPin className={cn('h-8 w-8 drop-shadow-lg', 
-                        note.id === revealedNoteId ? 'text-accent' : 
-                        note.type === 'photo' ? 'text-secondary-foreground/70' : 'text-primary/70'
-                    )} fill="currentColor" />
-                </button>
-            </Marker>
-        ))}
+        {notes.map(note => {
+            const { sizeClass } = getNoteDynamicProps(note.score);
+            return (
+                <Marker key={note.id} longitude={note.lng} latitude={note.lat} onClick={() => handleMarkerClick(note)}>
+                    <button className="transform hover:scale-110 transition-transform">
+                        <MapPin className={cn('drop-shadow-lg', 
+                            sizeClass,
+                            note.id === revealedNoteId ? 'text-accent' : 
+                            note.type === 'photo' ? 'text-secondary-foreground/70' : 'text-primary/70'
+                        )} fill="currentColor" />
+                    </button>
+                </Marker>
+            );
+        })}
 
         {selectedNote && !isCompassViewOpen && !isNoteSheetOpen && (
             <Popup
@@ -362,7 +381,7 @@ function MapViewContent() {
             <DialogHeader>
                 <DialogTitle className="font-headline text-2xl">Get Closer to Reveal</DialogTitle>
                 <DialogDescription>
-                    You need to be within 35 meters and align your view to unlock this note.
+                    You need to be within {selectedNote && getNoteDynamicProps(selectedNote.score).revealRadius} meters and align your view to unlock this note.
                 </DialogDescription>
             </DialogHeader>
               {selectedNote && <CompassView
@@ -374,6 +393,7 @@ function MapViewContent() {
                     setCreatingNote(false);
                     setNoteSheetOpen(true);
                 }}
+                revealRadius={getNoteDynamicProps(selectedNote.score).revealRadius}
             />}
         </DialogContent>
       </Dialog>
