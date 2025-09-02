@@ -35,11 +35,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } catch (error: any) {
           // If anonymous sign-in is disabled, we expect this error.
           // We can inform the user and then proceed without a signed-in user.
-          if (error.code === 'auth/operation-not-allowed' || error.code === 'auth/configuration-not-found') {
+          if (error.code === 'auth/operation-not-allowed') {
+             toast({
+              title: "Authentication Error",
+              description: "Anonymous sign-in is not enabled in your Firebase project. Please enable it in the Firebase console.",
+              variant: "destructive",
+            });
+          } else if (error.code === 'auth/requests-to-this-api-are-blocked') {
             toast({
-              title: "Anonymous Sign-In Disabled",
-              description: "For full functionality, please sign in with Google.",
-              variant: "default",
+              title: "Configuration Required",
+              description: "The Identity Platform API is not enabled. Please enable it in your Google Cloud project to use Firebase Authentication.",
+              variant: "destructive",
+              duration: 10000,
             });
           } else {
             // For other unexpected errors
