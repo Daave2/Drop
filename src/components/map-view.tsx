@@ -2,8 +2,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Map, { Marker, Popup } from 'react-map-gl/maplibre';
-import type { MapRef, ViewState, MapStyle } from 'react-map-gl/maplibre';
+import Map, { Marker, Popup, useMap } from 'react-map-gl/maplibre';
+import type { MapRef, ViewState, MapStyle, Layer } from 'react-map-gl/maplibre';
 import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
 import { useLocation } from '@/hooks/use-location';
 import { Button } from '@/components/ui/button';
@@ -68,6 +68,7 @@ function MapViewContent() {
     latitude: DEFAULT_CENTER.latitude,
     zoom: DEFAULT_ZOOM,
     pitch: 45,
+    bearing: -17.6,
   });
   
   // Effect to handle incoming location from URL params
@@ -245,6 +246,61 @@ function MapViewContent() {
     }
   };
 
+  const handleMapLoad = useCallback(() => {
+    const map = mapRef.current?.getMap();
+    if (!map) return;
+
+    // Insert the layer beneath any symbol layer.
+    const layers = map.getStyle().layers;
+    let labelLayerId;
+    for (let i = 0; i < layers.length; i++) {
+        if (layers[i].type === 'symbol' && layers[i].layout?.['text-field']) {
+            labelLayerId = layers[i].id;
+            break;
+        }
+    }
+    
+    // Add a source for the 3D building data
+    map.addSource('openfreemap', {
+        url: `https://tiles.openfreemap.org/planet`,
+        type: 'vector',
+    });
+
+    // Add the 3D building layer
+    map.addLayer(
+        {
+            'id': '3d-buildings',
+            'source': 'openfreemap',
+            'source-layer': 'building',
+            'type': 'fill-extrusion',
+            'minzoom': 15,
+            'filter': ['!=', ['get', 'hide_3d'], true],
+            'paint': {
+                'fill-extrusion-color': [
+                    'interpolate',
+                    ['linear'],
+                    ['get', 'render_height'], 0, 'lightgray', 200, 'royalblue', 400, 'lightblue'
+                ],
+                'fill-extrusion-height': [
+                    'interpolate',
+                    ['linear'],
+                    ['zoom'],
+                    15,
+                    0,
+                    16,
+                    ['get', 'render_height']
+                ],
+                'fill-extrusion-base': ['case',
+                    ['>=', ['get', 'zoom'], 16],
+                    ['get', 'render_min_height'], 0
+                ]
+            }
+        },
+        labelLayerId
+    );
+
+  }, []);
+
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
     return (
       <div className="flex flex-col items-center justify-center h-screen bg-secondary/50 p-4 text-center">
@@ -263,8 +319,10 @@ function MapViewContent() {
         ref={mapRef}
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
+        onLoad={handleMapLoad}
         style={{ width: '100%', height: '100%' }}
         mapStyle={MAP_STYLE as MapStyle}
+        antialias={true}
       >
         {location && (
           <Marker longitude={location.longitude} latitude={location.latitude}>
@@ -379,3 +437,5 @@ export default function MapView() {
         </React.Suspense>
     )
 }
+
+    
