@@ -68,7 +68,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
             const noteData = noteDoc.data();
             const createdAt = noteData.createdAt ? { seconds: noteData.createdAt.seconds, nanoseconds: noteData.createdAt.nanoseconds } : { seconds: Date.now() / 1000, nanoseconds: 0 };
             setNote({ id: noteDoc.id, ...noteData, createdAt } as Note);
-            setReplies(mockReplies);
+            // setReplies(mockReplies); // We'll add real replies later
           } else {
             console.error("No such document!");
             toast({ title: "Error", description: "Could not find the selected note.", variant: "destructive" });
@@ -83,6 +83,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
         }
       } else {
         setNote(null);
+        setReplies([]);
       }
     }
     fetchNote();
@@ -121,12 +122,13 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
             {createNoteState.errors?.text && <p className="text-sm text-destructive">{createNoteState.errors.text[0]}</p>}
 
             <div className="flex items-center justify-between">
-                <Button variant="outline" size="icon" type="button">
+                <Button variant="outline" size="icon" type="button" disabled>
                     <Camera className="h-4 w-4"/>
                 </Button>
                 <SubmitButton label="Drop Note" pendingLabel="Dropping..." />
             </div>
             {userLocation && <p className="text-xs text-muted-foreground">Location: {userLocation.latitude.toFixed(5)}, {userLocation.longitude.toFixed(5)}</p>}
+            {createNoteState.errors?.lat && <p className="text-sm text-destructive">Could not determine your location.</p>}
         </form>
       </div>
     );
@@ -210,6 +212,7 @@ export default function NoteSheetContent({ noteId, isCreating, userLocation, onN
                         </div>
                     </div>
                 ))}
+                {replies.length === 0 && <p className="text-sm text-muted-foreground text-center">Be the first to reply!</p>}
             </div>
         </div>
         </div>
