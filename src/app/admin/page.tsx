@@ -11,6 +11,8 @@ import { Note } from '@/types';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Report {
     id: string;
@@ -26,30 +28,58 @@ function ReportedNote({ noteId }: { noteId: string }) {
     const [note, setNote] = useState<Note | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [newScore, setNewScore] = useState('');
+    const { toast } = useToast();
+
+    const fetchNote = async () => {
+        setLoading(true);
+        try {
+            const noteRef = doc(db, 'notes', noteId);
+            const noteSnap = await getDoc(noteRef);
+            if (noteSnap.exists()) {
+                const noteData = { id: noteSnap.id, ...noteSnap.data() } as Note;
+                setNote(noteData);
+                setNewScore(noteData.score.toString());
+            } else {
+                setError("The reported note has been deleted.");
+            }
+        } catch (err) {
+            console.error("Error fetching reported note:", err);
+            setError("Failed to fetch the reported note.");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchNote = async () => {
-            try {
-                const noteRef = doc(db, 'notes', noteId);
-                const noteSnap = await getDoc(noteRef);
-                if (noteSnap.exists()) {
-                    setNote({ id: noteSnap.id, ...noteSnap.data() } as Note);
-                } else {
-                    setError("The reported note has been deleted.");
-                }
-            } catch (err) {
-                console.error("Error fetching reported note:", err);
-                setError("Failed to fetch the reported note.");
-            } finally {
-                setLoading(false);
-            }
-        };
-
         fetchNote();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [noteId]);
 
+    const handleUpdateScore = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!note) return;
+
+        const scoreValue = parseInt(newScore, 10);
+        if (isNaN(scoreValue)) {
+            toast({ title: "Invalid Score", description: "Please enter a valid number.", variant: "destructive" });
+            return;
+        }
+
+        try {
+            const noteRef = doc(db, 'notes', note.id);
+            await updateDoc(noteRef, { score: scoreValue });
+            toast({ title: "Score Updated", description: `Note score has been set to ${scoreValue}.` });
+            // Re-fetch note to show updated data, though local state update is faster
+            setNote(prev => prev ? { ...prev, score: scoreValue } : null);
+        } catch (error) {
+            console.error("Error updating score:", error);
+            toast({ title: "Error", description: "Could not update the score.", variant: "destructive" });
+        }
+    };
+
     if (loading) {
-        return <Skeleton className="h-24 w-full" />;
+        return <Skeleton className="h-40 w-full" />;
     }
 
     if (error) {
@@ -61,13 +91,29 @@ function ReportedNote({ noteId }: { noteId: string }) {
     }
 
     return (
-        <div className="bg-muted p-4 rounded-lg">
-            <h4 className="font-bold">Reported Note Content:</h4>
-            <p className="whitespace-pre-wrap mt-2">{note.text}</p>
-            {note.media?.[0]?.path && (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={note.media[0].path} alt="Reported media" className="mt-2 rounded-md max-h-48" />
-            )}
+        <div className="bg-muted p-4 rounded-lg space-y-4">
+            <div>
+                <h4 className="font-bold">Reported Note Content:</h4>
+                <p className="whitespace-pre-wrap mt-2">{note.text}</p>
+                {note.media?.[0]?.path && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={note.media[0].path} alt="Reported media" className="mt-2 rounded-md max-h-48" />
+                )}
+            </div>
+            <Separator />
+            <form onSubmit={handleUpdateScore} className="flex items-end gap-2">
+                <div className="flex-grow">
+                    <Label htmlFor={`score-${note.id}`}>Score (Likes)</Label>
+                    <Input
+                        id={`score-${note.id}`}
+                        type="number"
+                        value={newScore}
+                        onChange={(e) => setNewScore(e.target.value)}
+                        className="mt-1"
+                    />
+                </div>
+                <Button type="submit">Update Score</Button>
+            </form>
         </div>
     );
 }
@@ -98,7 +144,8 @@ export default function AdminPage() {
 
     useEffect(() => {
         fetchReports();
-    }, [toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleDismissReport = async (reportId: string, noteId: string) => {
         try {
