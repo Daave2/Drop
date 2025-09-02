@@ -1,10 +1,11 @@
+
 "use client";
 
 import { AuthButton } from "@/components/auth-button";
 import { useAuth } from "@/components/auth-provider";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { User, Edit } from "lucide-react";
 import Link from "next/link";
@@ -14,6 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { doc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { z } from "zod";
+import { getNotesDroppedCount, getNotesRevealedCount } from "@/app/actions";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const profileSchema = z.object({
     displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters."),
@@ -93,10 +96,26 @@ function UpdateProfileForm({ uid, currentDisplayName }: { uid: string, currentDi
     )
 }
 
+function StatCard({ title, value, isLoading }: { title: string, value: number | string, isLoading: boolean }) {
+    return (
+        <div className="bg-muted p-4 rounded-lg">
+            {isLoading ? (
+                <Skeleton className="h-9 w-1/2 mx-auto" />
+            ) : (
+                <p className="text-3xl font-bold">{value}</p>
+            )}
+            <p className="text-sm text-muted-foreground">{title}</p>
+        </div>
+    )
+}
+
 
 export default function ProfilePage() {
   const { user } = useAuth();
   const [profileData, setProfileData] = useState<{pseudonym?: string} | null>(null);
+  const [notesDropped, setNotesDropped] = useState(0);
+  const [notesRevealed, setNotesRevealed] = useState(0);
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
       if (user) {
@@ -106,6 +125,24 @@ export default function ProfilePage() {
                   setProfileData(doc.data());
               }
           });
+
+          const fetchStats = async () => {
+            setLoadingStats(true);
+            try {
+                const [droppedCount, revealedCount] = await Promise.all([
+                    getNotesDroppedCount(user.uid),
+                    getNotesRevealedCount(user.uid)
+                ]);
+                setNotesDropped(droppedCount);
+                setNotesRevealed(revealedCount);
+            } catch (error) {
+                console.error("Failed to fetch stats:", error);
+            } finally {
+                setLoadingStats(false);
+            }
+          }
+          fetchStats();
+
           return () => unsubscribe();
       }
   }, [user]);
@@ -148,18 +185,9 @@ export default function ProfilePage() {
             )}
             <Separator className="my-4"/>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <div className="bg-muted p-4 rounded-lg">
-                    <p className="text-3xl font-bold">12</p>
-                    <p className="text-sm text-muted-foreground">Notes Dropped</p>
-                </div>
-                <div className="bg-muted p-4 rounded-lg">
-                    <p className="text-3xl font-bold">42</p>
-                    <p className="text-sm text-muted-foreground">Notes Revealed</p>
-                </div>
-                <div className="bg-muted p-4 rounded-lg">
-                    <p className="text-3xl font-bold">0.75</p>
-                    <p className="text-sm text-muted-foreground">Trust Score</p>
-                </div>
+                <StatCard title="Notes Dropped" value={notesDropped} isLoading={loadingStats} />
+                <StatCard title="Notes Revealed" value={notesRevealed} isLoading={loadingStats} />
+                <StatCard title="Trust Score" value={0.75} isLoading={loadingStats} />
             </div>
         </CardContent>
       </Card>
