@@ -35,7 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // The listener will re-run with the new user, setting state appropriately.
         } catch (error: any) {
           // If anonymous sign-in is disabled, we expect this error.
-          // We can inform the user and then proceed without a signed-in user.
           if (error.code === 'auth/operation-not-allowed') {
              toast({
               title: "Authentication Error",
