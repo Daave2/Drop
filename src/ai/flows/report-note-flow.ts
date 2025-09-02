@@ -19,9 +19,12 @@ import {initializeApp, getApps, cert} from 'firebase-admin/app';
 import {getFirestore} from 'firebase-admin/firestore';
 import {Note} from '@/types';
 
+
 // Initialize Firebase Admin SDK only if it hasn't been already
 if (!getApps().length) {
   try {
+    // When running on Google Cloud, the Admin SDK can automatically detect the
+    // project's service account credentials.
     initializeApp();
   } catch (e) {
     console.error('Firebase Admin SDK initialization failed:', e);
