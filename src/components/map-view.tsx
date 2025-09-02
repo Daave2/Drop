@@ -40,6 +40,7 @@ import { geohashQueryBounds, distanceBetween } from 'geofire-common';
 import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 import { useSearchParams } from 'next/navigation';
+import { ThemeToggle } from './theme-toggle';
 
 const MAP_STYLE = "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
 
@@ -298,8 +299,9 @@ function MapViewContent() {
 
       <header className="absolute top-0 left-0 right-0 p-2 sm:p-4 flex justify-between items-center bg-gradient-to-b from-background/80 to-transparent">
         <Logo />
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 bg-background/80 p-1 rounded-full">
             {permissionState === 'prompt' && <Button onClick={requestPermission} size="sm" variant="secondary">Enable Location</Button>}
+            <ThemeToggle />
             <AuthButton />
         </div>
       </header>
