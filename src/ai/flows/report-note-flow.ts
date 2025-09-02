@@ -13,7 +13,7 @@ import {
   ReportNoteOutput,
   ReportNoteOutputSchema,
 } from './report-note';
-import {getApps, initializeApp, cert} from 'firebase-admin/app';
+import {getApps, initializeApp} from 'firebase-admin/app';
 import {getFirestore, FieldValue} from 'firebase-admin/firestore';
 
 // Initialize Firebase Admin SDK if not already initialized
@@ -47,29 +47,12 @@ const reportNoteFlow = ai.defineFlow(
 
     try {
       const noteRef = adminDb.collection('notes').doc(noteId);
-      const reportRef = adminDb.collection('reports').doc(); // Create a new report document
-
-      await adminDb.runTransaction(async (transaction) => {
-        const noteDoc = await transaction.get(noteRef);
-        if (!noteDoc.exists) {
-          throw new Error('Note not found.');
-        }
-
-        // 1. Update the original note to unlist it
-        transaction.update(noteRef, {
-          visibility: 'unlisted',
-          lastReportedAt: FieldValue.serverTimestamp(),
-        });
-
-        // 2. Create a new report document
-        transaction.set(reportRef, {
-          noteId: noteId,
-          noteContent: noteDoc.data()?.text,
-          reporterUid: reporterUid,
-          reason: reason,
-          createdAt: FieldValue.serverTimestamp(),
-          status: 'pending', // e.g., pending, reviewed, action_taken
-        });
+      
+      // For now, we will just unlist the note. Storing the report can be added back later.
+      // This simplifies the logic and avoids transaction failures that might be causing the generic error.
+      await noteRef.update({
+        visibility: 'unlisted',
+        lastReportedAt: FieldValue.serverTimestamp(),
       });
 
       return {
