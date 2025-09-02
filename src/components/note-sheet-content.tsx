@@ -77,10 +77,14 @@ function ReplyForm({ noteId }: { noteId: string }) {
     const [state, formAction] = useActionState(submitReply, { message: '', errors: {} });
 
     useEffect(() => {
-        if (state.message && !state.errors?.text) {
-            toast({ title: state.message });
-            if (state.reset) {
-                formRef.current?.reset();
+        if (state.message) {
+            if (state.errors?.text) {
+                 toast({ title: state.message, description: state.errors.text[0], variant: 'destructive' });
+            } else {
+                toast({ title: state.message });
+                if (state.reset) {
+                    formRef.current?.reset();
+                }
             }
         }
     }, [state, toast]);
@@ -88,24 +92,26 @@ function ReplyForm({ noteId }: { noteId: string }) {
     return (
         <form id="reply-form" ref={formRef} action={formAction} className="flex items-start gap-2">
             <input type="hidden" name="noteId" value={noteId} />
-            <Textarea 
-                name="text"
-                placeholder="Add a reply... (Max 120 chars)" 
-                maxLength={120} 
-                rows={1} 
-                required
-                className="flex-grow min-h-0"
-            />
+            <div className="flex-grow space-y-1">
+                <Textarea 
+                    name="text"
+                    placeholder="Add a reply... (Max 120 chars)" 
+                    maxLength={120} 
+                    rows={1} 
+                    required
+                    className="flex-grow min-h-0"
+                />
+                {state.errors?.text && <p className="text-sm text-destructive mt-1">{state.errors.text[0]}</p>}
+            </div>
             <Button type="submit" size="icon" className="h-full">
                 <Send className="h-4 w-4" />
             </Button>
-            {state.errors?.text && <p className="text-sm text-destructive mt-1">{state.errors.text[0]}</p>}
         </form>
     );
 }
 
 function NoteView({ note }: {note: Note}) {
-    const [replies, setReplies] = useState<Reply[]>([]); // Mock replies for now
+    const [replies] = useState<Reply[]>([]); // Mock replies for now
     return (
         <ScrollArea className="h-[calc(100vh-10rem)] md:h-full">
             <div className="p-4 space-y-6">

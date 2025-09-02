@@ -14,8 +14,8 @@ const replySchema = z.object({
 
 const noteSchema = z.object({
   text: z.string().min(1, "Note cannot be empty.").max(800, "Note cannot exceed 800 characters."),
-  lat: z.coerce.number(),
-  lng: z.coerce.number(),
+  lat: z.coerce.number().min(-90).max(90),
+  lng: z.coerce.number().min(-180).max(180),
 });
 
 
@@ -130,6 +130,7 @@ export async function submitReply(prevState: ReplyFormState, formData: FormData)
     
     console.log('Reply is safe, saving to DB:', { noteId, text });
     
+    // TODO: Actually save the reply to the database
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     return { message: 'Reply posted successfully!', errors: {}, reset: true };
