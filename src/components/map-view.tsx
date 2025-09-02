@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState, MapStyle } from 'react-map-gl/maplibre';
 import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
