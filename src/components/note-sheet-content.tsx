@@ -124,7 +124,7 @@ function CreateNoteForm({ userLocation, onClose }: { userLocation: Coordinates |
                 }
                 const storageRef = ref(storage, `notes/${user.uid}/${Date.now()}-${imageFile.name}`);
                 
-                const UPLOAD_TIMEOUT = 15000; // 15 seconds
+                const UPLOAD_TIMEOUT = 30000; // 30 seconds
                 const uploadPromise = uploadBytes(storageRef, imageFile);
                 
                 const timeoutPromise = new Promise((_, reject) => 
