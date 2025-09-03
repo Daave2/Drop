@@ -1,11 +1,12 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import Map, { Marker, Popup, useMap } from 'react-map-gl/maplibre';
-import type { MapRef, ViewState, MapStyle, Layer } from 'react-map-gl/maplibre';
-import { Plus, MapPin, Compass, LocateFixed, Flame } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import Map, { Marker, Popup } from 'react-map-gl/maplibre';
+import type { MapRef, ViewState } from 'react-map-gl/maplibre';
+import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
 import { useLocation } from '@/hooks/use-location';
+import { useNotes } from '@/hooks/use-notes';
 import { Button } from '@/components/ui/button';
 import { GhostNote } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
@@ -21,24 +22,7 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from './ui/badge';
 import CompassView from './compass-view';
-import { useAuth } from './auth-provider';
-import {
-  collection,
-  query,
-  orderBy,
-  startAt,
-  endAt,
-  limit,
-  getDocs,
-  Timestamp,
-  QuerySnapshot,
-  QueryDocumentSnapshot,
-  DocumentData,
-  where,
-} from 'firebase/firestore';
-import { geohashQueryBounds, distanceBetween } from 'geofire-common';
-import { db } from '@/lib/firebase';
-import { Skeleton } from './ui/skeleton';
+import { distanceBetween } from 'geofire-common';
 import { useSearchParams } from 'next/navigation';
 import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
@@ -51,10 +35,8 @@ const HOT_POST_THRESHOLD = 50;
 
 
 function MapViewContent() {
-  const { location, error: locationError, permissionState, requestPermission } = useLocation();
-  const { user } = useAuth();
-  const [notes, setNotes] = useState<GhostNote[]>([]);
-  const [loadingNotes, setLoadingNotes] = useState(true);
+  const { location, permissionState, requestPermission } = useLocation();
+  const { notes, fetchNotes } = useNotes();
   const [selectedNote, setSelectedNote] = useState<GhostNote | null>(null);
   const [revealedNoteId, setRevealedNoteId] = useState<string | null>(null);
   const [isNoteSheetOpen, setNoteSheetOpen] = useState(false);
@@ -114,68 +96,6 @@ function MapViewContent() {
     };
   };
 
-  const fetchNotesForView = useCallback((center: [number, number]) => {
-    if (!db) return;
-    setLoadingNotes(true);
-    console.log("Fetching notes for center:", center);
-
-    const radiusInM = 5000;
-    const bounds = geohashQueryBounds(center, radiusInM);
-    const MAX_NOTES = 50;
-
-    const promises = bounds.map((b: [string, string]) =>
-      getDocs(
-        query(
-          collection(db, "notes"),
-          where("visibility", "==", "public"),
-          orderBy("geohash"),
-          startAt(b[0]),
-          endAt(b[1]),
-          limit(MAX_NOTES)
-        )
-      )
-    );
-
-    Promise.all(promises)
-      .then((snapshots: QuerySnapshot<DocumentData>[]) => {
-        const notesData: GhostNote[] = [];
-        const seen = new Set<string>();
-
-        snapshots.forEach((snap: QuerySnapshot<DocumentData>) => {
-          snap.docs.forEach((doc: QueryDocumentSnapshot<DocumentData>) => {
-            if (seen.has(doc.id)) return;
-            const data = doc.data();
-            const distanceInKm = distanceBetween(
-              [data.lat, data.lng],
-              center
-            );
-            if (distanceInKm * 1000 <= radiusInM) {
-              seen.add(doc.id);
-              const createdAtTimestamp = data.createdAt as Timestamp | null;
-              notesData.push({
-                id: doc.id,
-                lat: data.lat,
-                lng: data.lng,
-                teaser: data.teaser,
-                type: data.type,
-                score: data.score,
-                createdAt: createdAtTimestamp
-                  ? { seconds: createdAtTimestamp.seconds, nanoseconds: createdAtTimestamp.nanoseconds }
-                  : { seconds: Date.now() / 1000, nanoseconds: 0 },
-              });
-            }
-          });
-        });
-
-        console.log(`Fetched ${notesData.length} notes.`);
-        setNotes(notesData.slice(0, MAX_NOTES));
-      })
-      .catch((error) => {
-        console.error("Error fetching notes: ", error);
-      }).finally(() => {
-        setLoadingNotes(false);
-      });
-  }, []);
 
   useEffect(() => {
     if (moveTimeoutRef.current) {
@@ -189,7 +109,7 @@ function MapViewContent() {
           prevCenter ? distanceBetween(prevCenter, newCenter) * 1000 : Infinity;
         if (movedMeters >= 50) {
           lastFetchCenterRef.current = newCenter;
-          fetchNotesForView(newCenter);
+          fetchNotes(newCenter);
         }
       }
     }, 500);
@@ -199,7 +119,7 @@ function MapViewContent() {
         clearTimeout(moveTimeoutRef.current);
       }
     };
-  }, [viewState.latitude, viewState.longitude, fetchNotesForView]);
+  }, [viewState.latitude, viewState.longitude, fetchNotes]);
   
 
   useEffect(() => {
@@ -257,7 +177,7 @@ function MapViewContent() {
   
   const handleNoteCreated = () => {
     if (viewState.latitude && viewState.longitude) {
-      fetchNotesForView([viewState.latitude, viewState.longitude]);
+      fetchNotes([viewState.latitude, viewState.longitude]);
     }
     setNoteSheetOpen(false);
   };
