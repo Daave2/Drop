@@ -8,6 +8,7 @@ This repository uses Next.js and TypeScript.
 - Favor functional, typed components in `src`.
 - Only commit to main branch; do not create new branches.
 - Ensure new UI remains mobile-optimized with responsive layouts.
+- Include unit tests for hooks and utilities using Vitest when adding new logic.
 
 ## Checks
 
