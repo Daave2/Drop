@@ -25,6 +25,7 @@ const MAX_NOTES = 50;
 export function useNotes() {
   const [notes, setNotes] = useState<GhostNote[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const fetchNotes = useCallback(async (center: [number, number]) => {
     if (!db) return;
@@ -77,13 +78,15 @@ export function useNotes() {
       });
 
       setNotes(notesData.slice(0, MAX_NOTES));
-    } catch (error) {
-      console.error("Error fetching notes: ", error);
+      setError(null);
+    } catch (err) {
+      console.error("Error fetching notes: ", err);
+      setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
     }
   }, []);
 
-  return { notes, loading, fetchNotes };
+  return { notes, loading, fetchNotes, error };
 }
 
