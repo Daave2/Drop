@@ -177,10 +177,6 @@ function MapViewContent() {
       });
   }, []);
 
-<<<<<<< HEAD
-=======
-  // Effect to fetch notes when the map view changes significantly
->>>>>>> 3beadab512200630349fa1e6310c9f4f753db9aa
   useEffect(() => {
     if (moveTimeoutRef.current) {
       clearTimeout(moveTimeoutRef.current);
@@ -196,13 +192,8 @@ function MapViewContent() {
           fetchNotesForView(newCenter);
         }
       }
-<<<<<<< HEAD
     }, 500);
   
-=======
-    }, 500); // Debounce for 500ms
-
->>>>>>> 3beadab512200630349fa1e6310c9f4f753db9aa
     return () => {
       if (moveTimeoutRef.current) {
         clearTimeout(moveTimeoutRef.current);
@@ -271,16 +262,10 @@ function MapViewContent() {
     setNoteSheetOpen(false);
   };
 
-<<<<<<< HEAD
   const mapStyleUrl = theme === 'dark' 
     ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
     : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
   
-=======
-  const mapStyleUrl = theme === 'dark'
-    ? `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json`
-    : `https://tiles.stadiamaps.com/styles/alidade_smooth.json`;
->>>>>>> 3beadab512200630349fa1e6310c9f4f753db9aa
 
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
     return (

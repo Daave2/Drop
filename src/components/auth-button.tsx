@@ -37,15 +37,13 @@ export function AuthButton() {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       const errorCode = error.code as string | undefined;
-<<<<<<< HEAD
 
+      // Silently ignore user cancelling the sign-in
       if (errorCode === 'auth/cancelled-popup-request' || errorCode === 'auth/popup-closed-by-user') {
-        // Silently ignore user cancelling the sign-in
         return;
       }
       
-=======
->>>>>>> 3beadab512200630349fa1e6310c9f4f753db9aa
+      // Handle popup blocked by trying redirect
       if (errorCode === "auth/popup-blocked") {
         try {
           await signInWithRedirect(auth, provider);
@@ -61,14 +59,14 @@ export function AuthButton() {
           });
         }
       } else {
+        // Handle other errors
         const errorMessages: Record<string, string> = {
           "auth/unauthorized-domain": "This domain is not authorized for sign-in.",
           "auth/operation-not-supported-in-this-environment": "Sign-in is not supported in this environment.",
         };
 
-        if (errorCode !== "auth/cancelled-popup-request") {
-          console.error(`Error signing in with Google (${errorCode}):`, error);
-        }
+        console.error(`Error signing in with Google (${errorCode}):`, error);
+        
         toast({
           title: "Authentication Error",
           description:
