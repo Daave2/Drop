@@ -46,6 +46,12 @@ self.addEventListener('fetch', (event) => {
 
   // Network-first for note API
   if (url.pathname.startsWith('/api/notes')) {
+    // Only cache GET requests; forward all other methods to the network
+    if (event.request.method !== 'GET') {
+      event.respondWith(fetch(event.request));
+      return;
+    }
+
     event.respondWith(
       caches.open(API_CACHE).then((cache) =>
         fetch(event.request)
