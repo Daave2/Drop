@@ -1,10 +1,11 @@
 "use client";
 
-import { GoogleAuthProvider, signInWithPopup, signOut } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signOut, signInWithRedirect } from "firebase/auth";
 import { LogIn, LogOut, User as UserIcon, UserCog } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/components/auth-provider";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,17 +19,41 @@ import Link from "next/link";
 
 export function AuthButton() {
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const handleSignIn = async () => {
     if (!auth) {
       console.error("Firebase is not configured. Unable to sign in.");
+      toast({
+        title: "Authentication Error",
+        description: "Firebase is not configured.",
+        variant: "destructive",
+      });
       return;
     }
     const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
-    } catch (error) {
-      console.error("Error signing in with Google: ", error);
+    } catch (error: any) {
+      if (error.code === "auth/popup-blocked") {
+        try {
+          await signInWithRedirect(auth, provider);
+        } catch (redirectError) {
+          console.error("Error signing in with redirect:", redirectError);
+          toast({
+            title: "Authentication Error",
+            description: "Unable to sign in.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        console.error("Error signing in with Google: ", error);
+        toast({
+          title: "Authentication Error",
+          description: "Unable to sign in with Google.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
