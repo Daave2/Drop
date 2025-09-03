@@ -198,7 +198,7 @@ function MapViewContent() {
     if (location && mapRef.current) {
       if (
         !searchParams.get('lat') &&
-        viewState.longitude === DEFAULT_center.longitude &&
+        viewState.longitude === DEFAULT_CENTER.longitude &&
         viewState.latitude === DEFAULT_CENTER.latitude
       ) {
         mapRef.current.flyTo({
@@ -255,8 +255,8 @@ function MapViewContent() {
   };
 
   const mapStyleUrl = theme === 'dark' 
-    ? "https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json"
-    : "https://tiles.stadiamaps.com/styles/alidade_smooth.json";
+    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"
+    : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png";
 
 
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
@@ -278,7 +278,24 @@ function MapViewContent() {
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={mapStyleUrl}
+        mapStyle={{
+            version: 8,
+            sources: {
+                'raster-tiles': {
+                    type: 'raster',
+                    tiles: [mapStyleUrl],
+                    tileSize: 256,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+                }
+            },
+            layers: [{
+                id: 'simple-tiles',
+                type: 'raster',
+                source: 'raster-tiles',
+                minzoom: 0,
+                maxzoom: 22
+            }]
+        }}
         antialias={true}
       >
         {location && (
@@ -395,5 +412,3 @@ export default function MapView() {
         </React.Suspense>
     )
 }
-
-    
