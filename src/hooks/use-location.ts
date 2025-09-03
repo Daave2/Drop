@@ -14,6 +14,9 @@ export function useLocation() {
   const [error, setError] = useState<string | null>(null);
   const [permissionState, setPermissionState] = useState<PermissionState>('prompt');
 
+  const normalizeHeading = (heading: number | null | undefined) =>
+    typeof heading === 'number' && Number.isFinite(heading) ? heading : null;
+
   useEffect(() => {
     if (!navigator.geolocation) {
       setError('Geolocation is not supported by your browser.');
@@ -37,7 +40,7 @@ export function useLocation() {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
         accuracy: position.coords.accuracy,
-        heading: position.coords.heading ?? null,
+        heading: normalizeHeading(position.coords.heading),
       });
       setError(null);
       setPermissionState('granted');
@@ -82,7 +85,7 @@ export function useLocation() {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
                 accuracy: position.coords.accuracy,
-                heading: position.coords.heading ?? null,
+                heading: normalizeHeading(position.coords.heading),
             });
             setError(null);
             setPermissionState('granted');

@@ -38,6 +38,29 @@ describe('useLocation', () => {
     expect(mockClear).toHaveBeenCalledWith(1)
   })
 
+  test('normalizes non-finite heading to null', async () => {
+    const mockWatch = vi.fn((success: any) => {
+      success({ coords: { latitude: 7, longitude: 8, accuracy: 9, heading: NaN } })
+      return 1
+    })
+    const mockPermissions = { query: vi.fn().mockResolvedValue({ state: 'granted', onchange: null }) }
+    Object.defineProperty(navigator, 'geolocation', {
+      value: { watchPosition: mockWatch, clearWatch: vi.fn(), getCurrentPosition: vi.fn() },
+      configurable: true,
+    })
+    Object.defineProperty(navigator, 'permissions', { value: mockPermissions, configurable: true })
+
+    const { result } = renderHook(() => useLocation())
+    await waitFor(() =>
+      expect(result.current.location).toEqual({
+        latitude: 7,
+        longitude: 8,
+        accuracy: 9,
+        heading: null,
+      }),
+    )
+  })
+
   test('handles permission denial on request', async () => {
     const error = { code: 1, message: 'Denied', PERMISSION_DENIED: 1 }
     Object.defineProperty(navigator, 'geolocation', {
