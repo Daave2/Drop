@@ -20,16 +20,13 @@ export function useLocation() {
       return;
     }
     
-    const permissions = (navigator as any).permissions
-    // Check initial permission status if the Permissions API is supported
-    if (permissions?.query) {
-      permissions.query({ name: 'geolocation' }).then((permissionStatus: PermissionStatus) => {
+    // Check initial permission status
+    navigator.permissions.query({ name: 'geolocation' }).then((permissionStatus) => {
         setPermissionState(permissionStatus.state);
         permissionStatus.onchange = () => {
-          setPermissionState(permissionStatus.state);
+            setPermissionState(permissionStatus.state);
         };
-      });
-    }
+    });
 
     const successHandler = (position: GeolocationPosition) => {
       setLocation({
@@ -38,27 +35,15 @@ export function useLocation() {
         accuracy: position.coords.accuracy,
       });
       setError(null);
-      setPermissionState('granted');
     };
 
     const errorHandler = (error: GeolocationPositionError) => {
       setError(`Error getting location: ${error.message}`);
-      if (error.code === error.PERMISSION_DENIED) {
-        setPermissionState('denied');
-      }
     };
+    
+    let watchId: number;
 
-    let watchId: number | undefined;
-
-    if (permissions?.query) {
-      if (permissionState === 'granted') {
-        watchId = navigator.geolocation.watchPosition(successHandler, errorHandler, {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-        });
-      }
-    } else {
+    if (permissionState === 'granted') {
       watchId = navigator.geolocation.watchPosition(successHandler, errorHandler, {
         enableHighAccuracy: true,
         timeout: 10000,

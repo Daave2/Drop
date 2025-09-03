@@ -7,8 +7,6 @@ import type { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
 import { useLocation } from '@/hooks/use-location';
 import { useNotes } from '@/hooks/use-notes';
-import { useProximityNotifications } from '@/hooks/use-proximity-notifications';
-import { useSettings } from '@/hooks/use-settings';
 import { Button } from '@/components/ui/button';
 import { GhostNote } from '@/types';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -29,17 +27,16 @@ import { useSearchParams } from 'next/navigation';
 import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
-import { NotificationsButton } from './notifications-button';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
 const BASE_REVEAL_RADIUS_M = 35;
 const HOT_POST_THRESHOLD = 50;
+
+
 function MapViewContent() {
   const { location, permissionState, requestPermission } = useLocation();
   const { notes, fetchNotes } = useNotes();
-  const { proximityRadiusM } = useSettings();
-  useProximityNotifications(notes, location, proximityRadiusM);
   const [selectedNote, setSelectedNote] = useState<GhostNote | null>(null);
   const [revealedNoteId, setRevealedNoteId] = useState<string | null>(null);
   const [isNoteSheetOpen, setNoteSheetOpen] = useState(false);
@@ -279,7 +276,6 @@ function MapViewContent() {
         <div className="flex items-center gap-2 bg-background/80 p-1 rounded-full">
             {permissionState === 'prompt' && <Button onClick={requestPermission} size="sm" variant="secondary">Enable Location</Button>}
             <ThemeToggle />
-            <NotificationsButton />
             <AuthButton />
         </div>
       </header>

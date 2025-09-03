@@ -23,7 +23,6 @@ export interface Note {
   peekable: boolean;
   limitedDrop?: { enabled: boolean; endsAt?: any } | null;
   dmAllowed: boolean;
-  reportCount?: number;
 }
 
 export interface GhostNote {
@@ -43,17 +42,6 @@ export interface Reply {
   authorPseudonym?: string;
   text: string;
   createdAt: { seconds: number; nanoseconds: number };
-}
-
-export interface Notification {
-  id: string;
-  userId: string;
-  type: 'like' | 'reply';
-  noteId: string;
-  actorUid: string;
-  actorPseudonym: string;
-  createdAt: { seconds: number; nanoseconds: number };
-  read: boolean;
 }
 
 export interface Profile {
