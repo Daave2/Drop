@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from './ui/label';
 import { SheetFooter, SheetHeader, SheetTitle } from './ui/sheet';
+import { calculateReportUpdate } from '@/lib/reporting';
 
 
 function SubmitButton({label, pendingLabel, isSubmitting}: {label: string, pendingLabel: string, isSubmitting: boolean}) {
@@ -363,22 +364,26 @@ function ReportDialog({ note, open, onOpenChange, onReportSubmit }: { note: Note
 
         setIsSubmitting(true);
         try {
-            const batch = writeBatch(db);
+            await runTransaction(db, async (transaction) => {
+                const noteRef = doc(db, "notes", note.id);
+                const noteSnap = await transaction.get(noteRef);
+                const { newCount, hide } = calculateReportUpdate(noteSnap.data()?.reportCount ?? 0);
+                const updates: any = { reportCount: newCount };
+                if (hide) {
+                    updates.visibility = "unlisted";
+                }
+                transaction.update(noteRef, updates);
 
-            const noteRef = doc(db, "notes", note.id);
-            batch.update(noteRef, { visibility: "unlisted" });
-
-            const reportRef = doc(collection(db, "reports")); 
-            batch.set(reportRef, {
-                noteId: note.id,
-                noteAuthorUid: note.authorUid,
-                reporterUid: user.uid,
-                reason: reason,
-                createdAt: serverTimestamp(),
-                status: "pending_review",
+                const reportRef = doc(collection(db, "reports"));
+                transaction.set(reportRef, {
+                    noteId: note.id,
+                    noteAuthorUid: note.authorUid,
+                    reporterUid: user.uid,
+                    reason: reason,
+                    createdAt: serverTimestamp(),
+                    status: "pending_review",
+                });
             });
-            
-            await batch.commit();
 
             toast({
                 title: "Report Submitted",
