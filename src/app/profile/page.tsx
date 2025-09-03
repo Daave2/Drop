@@ -12,11 +12,12 @@ import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { doc, onSnapshot, setDoc, collection, query, where, getCountFromServer, Timestamp, getDocs, orderBy } from "firebase/firestore";
+import { doc, onSnapshot, setDoc, collection, query, where, getCountFromServer, Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { z } from "zod";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Note } from "@/types";
+import { useUserNotes } from "@/hooks/use-user-notes";
 
 const profileSchema = z.object({
     displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters."),
@@ -110,29 +111,13 @@ function StatCard({ title, value, isLoading }: { title: string, value: number | 
 }
 
 function MyNotesList({ uid }: { uid: string }) {
-    const [notes, setNotes] = useState<Note[]>([]);
-    const [loading, setLoading] = useState(true);
+    const { notes, loading, hasMore, loadMore } = useUserNotes(uid);
 
     useEffect(() => {
-        const fetchNotes = async () => {
-            setLoading(true);
-            try {
-                const notesRef = collection(db, 'notes');
-                const q = query(notesRef, where("authorUid", "==", uid), orderBy("createdAt", "desc"));
-                const querySnapshot = await getDocs(q);
-                const userNotes = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Note));
-                setNotes(userNotes);
-            } catch (error) {
-                console.error("Error fetching user notes:", error);
-            } finally {
-                setLoading(false);
-            }
-        };
+        loadMore();
+    }, [loadMore]);
 
-        fetchNotes();
-    }, [uid]);
-
-    if (loading) {
+    if (loading && notes.length === 0) {
         return (
             <div className="space-y-2">
                 <Skeleton className="h-16 w-full" />
@@ -141,8 +126,8 @@ function MyNotesList({ uid }: { uid: string }) {
             </div>
         )
     }
-    
-    if (notes.length === 0) {
+
+    if (!loading && notes.length === 0) {
         return <p className="text-muted-foreground text-center py-4">You haven&apos;t dropped any notes yet.</p>
     }
 
@@ -164,6 +149,11 @@ function MyNotesList({ uid }: { uid: string }) {
                     </div>
                 </div>
             ))}
+            {hasMore && (
+                <Button onClick={loadMore} disabled={loading} className="w-full" variant="outline">
+                    {loading ? 'Loading...' : 'Load more'}
+                </Button>
+            )}
         </div>
     )
 }
