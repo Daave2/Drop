@@ -41,7 +41,6 @@ import { db } from '@/lib/firebase';
 import { Skeleton } from './ui/skeleton';
 import { useSearchParams } from 'next/navigation';
 import { ThemeToggle } from './theme-toggle';
-import 'maplibre-gl/dist/maplibre-gl.css';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
