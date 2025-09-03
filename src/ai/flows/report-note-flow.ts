@@ -6,17 +6,16 @@
  * - reportNote - A function that handles the note reporting process.
  */
 
-import {ai} from '@/ai/genkit';
+import { ai } from '@/ai/genkit';
 import {
   ReportNoteInput,
   ReportNoteInputSchema,
   ReportNoteOutput,
   ReportNoteOutputSchema,
 } from './report-note';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getApps, initializeApp } from 'firebase-admin/app';
 
-// This flow is intentionally left empty to prevent server crashes due to
-// persistent Firebase Admin SDK authentication issues in this environment.
-// The reporting logic has been moved to the client-side in NoteSheetContent.
 const reportNoteFlow = ai.defineFlow(
   {
     name: 'reportNoteFlow',
@@ -24,13 +23,28 @@ const reportNoteFlow = ai.defineFlow(
     outputSchema: ReportNoteOutputSchema,
   },
   async (input) => {
-    console.warn("reportNoteFlow is not implemented on the server. Client-side logic should be used.");
-    return {
-      success: false,
-      actionTaken: 'none',
-      message:
-        'Reporting is not configured on the server. Please implement client-side logic.',
-    };
+    const parsed = ReportNoteInputSchema.safeParse(input);
+    if (!parsed.success) {
+      return { success: false, message: parsed.error.message };
+    }
+
+    try {
+      if (!getApps().length) {
+        initializeApp();
+      }
+      const db = getFirestore();
+      await db.collection('reports').add({
+        noteId: parsed.data.noteId,
+        reason: parsed.data.reason,
+        reporterUid: parsed.data.reporterUid,
+        createdAt: FieldValue.serverTimestamp(),
+        status: 'pending_review',
+      });
+      return { success: true, message: 'Report submitted successfully.' };
+    } catch (err) {
+      console.error('Error recording report', err);
+      return { success: false, message: 'Failed to submit report.' };
+    }
   }
 );
 
