@@ -302,7 +302,10 @@ function MapViewContent() {
       </Button>
 
       <Sheet open={isNoteSheetOpen} onOpenChange={setNoteSheetOpen}>
-        <SheetContent side="bottom" className="md:max-w-md md:right-0 md:left-auto md:top-0 md:h-full md:rounded-l-2xl">
+        <SheetContent
+          side="bottom"
+          className="max-h-[90vh] overflow-y-auto md:max-h-none md:right-0 md:left-auto md:top-0 md:h-full md:rounded-l-2xl md:max-w-md lg:max-w-lg xl:max-w-xl"
+        >
           <NoteSheetContent
             noteId={selectedNote?.id ?? null}
             isCreating={isCreatingNote}
