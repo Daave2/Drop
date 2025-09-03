@@ -1,27 +1,42 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
 import { GhostNote } from "@/types";
-import { useLocation } from "@/hooks/use-location";
-import { latLngToLocal } from "@/lib/geo";
+import { useLocation, Coordinates } from "@/hooks/use-location";
+import { latLngToLocal, localToLatLng } from "@/lib/geo";
 import { distanceBetween } from "geofire-common";
 
 interface ARViewProps {
   notes: GhostNote[];
   onSelectNote: (note: GhostNote) => void;
   onReturnToMap: () => void;
+  onCreateNote: (coords: Coordinates) => void;
 }
 
-export default function ARView({ notes, onSelectNote, onReturnToMap }: ARViewProps) {
+export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNote }: ARViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene>();
   const cameraRef = useRef<THREE.PerspectiveCamera>();
   const rendererRef = useRef<THREE.WebGLRenderer>();
   const noteMeshes = useRef<Record<string, THREE.Group>>({});
   const badgeTextures = useRef<Record<string, THREE.CanvasTexture>>({});
+  const hitTestSourceRef = useRef<any>(null);
+  const localSpaceRef = useRef<any>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const isCreatingRef = useRef(false);
   const { location } = useLocation();
+  const locationRef = useRef(location);
+  const onCreateNoteRef = useRef(onCreateNote);
+
+  useEffect(() => {
+    locationRef.current = location;
+  }, [location]);
+
+  useEffect(() => {
+    onCreateNoteRef.current = onCreateNote;
+  }, [onCreateNote]);
 
   // initialize three.js and WebXR renderer
   useEffect(() => {
@@ -37,7 +52,9 @@ export default function ARView({ notes, onSelectNote, onReturnToMap }: ARViewPro
     cameraRef.current = camera;
 
     containerRef.current.appendChild(renderer.domElement);
-    const arButton = ARButton.createButton(renderer, { requiredFeatures: ["local"] });
+    const arButton = ARButton.createButton(renderer, {
+      requiredFeatures: ["local", "hit-test"],
+    });
     containerRef.current.appendChild(arButton);
 
     renderer.setAnimationLoop(() => {
@@ -47,9 +64,45 @@ export default function ARView({ notes, onSelectNote, onReturnToMap }: ARViewPro
     const controller = renderer.xr.getController(0);
     scene.add(controller);
 
+    renderer.xr.addEventListener("sessionstart", async () => {
+      const session = renderer.xr.getSession();
+      if (!session) return;
+      localSpaceRef.current = renderer.xr.getReferenceSpace();
+      const viewerSpace = await (session as any).requestReferenceSpace("viewer");
+      hitTestSourceRef.current = await (session as any).requestHitTestSource({ space: viewerSpace });
+    });
+
+    renderer.xr.addEventListener("sessionend", () => {
+      hitTestSourceRef.current?.cancel?.();
+      hitTestSourceRef.current = null;
+      localSpaceRef.current = null;
+    });
+
     const raycaster = new THREE.Raycaster();
     const tempMatrix = new THREE.Matrix4();
-    const onSelect = () => {
+    const onSelect = (event: any) => {
+      if (isCreatingRef.current && hitTestSourceRef.current && localSpaceRef.current && locationRef.current) {
+        const results = event.frame.getHitTestResults(hitTestSourceRef.current);
+        if (results.length > 0) {
+          const pose = results[0].getPose(localSpaceRef.current);
+          if (pose) {
+            const { x, z } = pose.transform.position;
+            const latLng = localToLatLng(
+              { lat: locationRef.current.latitude, lng: locationRef.current.longitude },
+              new THREE.Vector3(x, 0, z),
+            );
+            onCreateNoteRef.current({
+              latitude: latLng.lat,
+              longitude: latLng.lng,
+              accuracy: locationRef.current.accuracy,
+            });
+            isCreatingRef.current = false;
+            setIsCreating(false);
+          }
+        }
+        return;
+      }
+
       tempMatrix.identity().extractRotation(controller.matrixWorld);
       raycaster.ray.origin.setFromMatrixPosition(controller.matrixWorld);
       raycaster.ray.direction.set(0, 0, -1).applyMatrix4(tempMatrix);
@@ -193,7 +246,32 @@ export default function ARView({ notes, onSelectNote, onReturnToMap }: ARViewPro
       >
         Return to Map
       </button>
+      <ARCreateButton
+        isCreating={isCreating}
+        onToggle={() => {
+          const next = !isCreatingRef.current;
+          isCreatingRef.current = next;
+          setIsCreating(next);
+        }}
+      />
     </div>
+  );
+}
+
+function ARCreateButton({
+  isCreating,
+  onToggle,
+}: {
+  isCreating: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-background/80 text-foreground px-3 py-1 rounded-md"
+    >
+      {isCreating ? "Cancel" : "Create Note"}
+    </button>
   );
 }
 

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { latLngToLocal } from "./geo";
+import { latLngToLocal, localToLatLng } from "./geo";
 
 describe("latLngToLocal", () => {
   test("returns zero vector at origin", () => {
@@ -22,6 +22,17 @@ describe("latLngToLocal", () => {
       { lat: 0.000008983, lng: 0 }, // ≈1m north
     );
     expect(v.z).toBeLessThan(0);
+  });
+});
+
+describe("localToLatLng", () => {
+  test("is inverse of latLngToLocal", () => {
+    const origin = { lat: 0, lng: 0 };
+    const target = { lat: 0.000008983, lng: 0.000008983 }; // ≈1m north-east
+    const local = latLngToLocal(origin, target);
+    const result = localToLatLng(origin, local);
+    expect(result.lat).toBeCloseTo(target.lat);
+    expect(result.lng).toBeCloseTo(target.lng);
   });
 });
 
