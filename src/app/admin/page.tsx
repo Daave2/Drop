@@ -2,7 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, doc, getDoc, writeBatch, Timestamp, updateDoc, deleteDoc, query, orderBy, limit, where } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, writeBatch, Timestamp, updateDoc, deleteDoc, query, orderBy, limit, where, runTransaction } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -24,6 +24,8 @@ interface Report {
     reason: string;
     createdAt: Timestamp;
     status: 'pending_review' | 'resolved';
+    noteVisibility?: 'public' | 'group' | 'unlisted';
+    reportCount?: number;
 }
 
 function EditableNote({ noteId, onDelete }: { noteId: string, onDelete?: () => void }) {
@@ -156,7 +158,20 @@ export function ReportsTab() {
                 orderBy('createdAt', 'desc')
             );
             const reportSnapshot = await getDocs(q);
-            const reportsList = reportSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report));
+            const reportsList = await Promise.all(
+                reportSnapshot.docs.map(async (docSnap) => {
+                    const data = docSnap.data();
+                    const noteRef = doc(db, 'notes', data.noteId);
+                    const noteSnap = await getDoc(noteRef);
+                    const noteData = noteSnap.exists() ? noteSnap.data() as Note : null;
+                    return {
+                        id: docSnap.id,
+                        ...data,
+                        noteVisibility: noteData?.visibility,
+                        reportCount: noteData?.reportCount ?? 0,
+                    } as Report;
+                })
+            );
             setReports(reportsList);
         } catch (error) {
             console.error("Error fetching reports:", error);
@@ -177,14 +192,16 @@ export function ReportsTab() {
 
     const handleDismissReport = async (reportId: string, noteId: string) => {
         try {
-            const batch = writeBatch(db);
-            const reportRef = doc(db, 'reports', reportId);
-            batch.delete(reportRef);
+            await runTransaction(db, async (transaction) => {
+                const reportRef = doc(db, 'reports', reportId);
+                transaction.delete(reportRef);
 
-            const noteRef = doc(db, 'notes', noteId);
-            batch.update(noteRef, { visibility: 'public' });
-
-            await batch.commit();
+                const noteRef = doc(db, 'notes', noteId);
+                const noteSnap = await transaction.get(noteRef);
+                const current = noteSnap.data()?.reportCount ?? 1;
+                const newCount = Math.max(current - 1, 0);
+                transaction.update(noteRef, { visibility: 'public', reportCount: newCount });
+            });
 
             toast({ title: "Report Dismissed", description: "The note is now public again." });
             fetchReports();
@@ -234,6 +251,8 @@ export function ReportsTab() {
                             <p className="text-sm text-muted-foreground">
                                 Reported by: {report.reporterUid} on {report.createdAt.toDate().toLocaleDateString()}
                             </p>
+                            <p className="text-sm">Status: {report.noteVisibility === 'unlisted' ? 'Hidden' : 'Pending'}</p>
+                            <p className="text-sm">Reports: {report.reportCount}</p>
                         </div>
                         <Separator />
                         <EditableNote noteId={report.noteId} onDelete={fetchReports} />

@@ -23,6 +23,7 @@ export interface Note {
   peekable: boolean;
   limitedDrop?: { enabled: boolean; endsAt?: any } | null;
   dmAllowed: boolean;
+  reportCount?: number;
 }
 
 export interface GhostNote {
