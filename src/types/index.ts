@@ -44,6 +44,17 @@ export interface Reply {
   createdAt: { seconds: number; nanoseconds: number };
 }
 
+export interface Notification {
+  id: string;
+  userId: string;
+  type: 'like' | 'reply';
+  noteId: string;
+  actorUid: string;
+  actorPseudonym: string;
+  createdAt: { seconds: number; nanoseconds: number };
+  read: boolean;
+}
+
 export interface Profile {
   uid: string;
   createdAt: { seconds: number; nanoseconds: number };

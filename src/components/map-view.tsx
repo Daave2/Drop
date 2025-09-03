@@ -27,6 +27,7 @@ import { useSearchParams } from 'next/navigation';
 import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
+import { NotificationsButton } from './notifications-button';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
@@ -276,6 +277,7 @@ function MapViewContent() {
         <div className="flex items-center gap-2 bg-background/80 p-1 rounded-full">
             {permissionState === 'prompt' && <Button onClick={requestPermission} size="sm" variant="secondary">Enable Location</Button>}
             <ThemeToggle />
+            <NotificationsButton />
             <AuthButton />
         </div>
       </header>

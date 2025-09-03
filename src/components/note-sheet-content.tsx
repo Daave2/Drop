@@ -260,12 +260,12 @@ const replySchema = z.object({
   text: z.string().min(1, "Reply cannot be empty.").max(120, "Reply cannot exceed 120 characters."),
 });
 
-function ReplyForm({ noteId }: { noteId: string }) {
-    const { user } = useAuth();
-    const { toast } = useToast();
-    const [text, setText] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [error, setError] = useState<string | null>(null);
+function ReplyForm({ noteId, noteAuthorUid }: { noteId: string, noteAuthorUid?: string | null }) {
+     const { user } = useAuth();
+     const { toast } = useToast();
+     const [text, setText] = useState("");
+     const [isSubmitting, setIsSubmitting] = useState(false);
+     const [error, setError] = useState<string | null>(null);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
@@ -284,19 +284,32 @@ function ReplyForm({ noteId }: { noteId: string }) {
         setIsSubmitting(true);
 
         try {
-            const pseudonym = await getOrCreatePseudonym(user.uid);
-            const replyRef = collection(db, 'notes', noteId, 'replies');
-            
-            await addDoc(replyRef, {
-                text,
-                noteId,
-                authorUid: user.uid,
-                authorPseudonym: pseudonym,
-                createdAt: serverTimestamp(),
-            });
+             const pseudonym = await getOrCreatePseudonym(user.uid);
+             const replyRef = collection(db, 'notes', noteId, 'replies');
 
-            setText("");
-            toast({ title: "Reply posted successfully!" });
+             await addDoc(replyRef, {
+                 text,
+                 noteId,
+                 authorUid: user.uid,
+                 authorPseudonym: pseudonym,
+                 createdAt: serverTimestamp(),
+             });
+
+             if (noteAuthorUid && noteAuthorUid !== user.uid) {
+                 const notificationsRef = collection(db, 'notifications');
+                 await addDoc(notificationsRef, {
+                     userId: noteAuthorUid,
+                     type: 'reply',
+                     noteId,
+                     actorUid: user.uid,
+                     actorPseudonym: pseudonym,
+                     createdAt: serverTimestamp(),
+                     read: false,
+                 });
+             }
+
+             setText("");
+             toast({ title: "Reply posted successfully!" });
 
         } catch (err: any) {
             console.error("Error submitting reply:", err);
@@ -488,39 +501,54 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
         }
         setIsLiking(true);
 
-        const noteRef = doc(db, 'notes', note.id);
-        const likeId = `${user.uid}_${note.id}`;
-        const likeRef = doc(db, 'likes', likeId);
+      const noteRef = doc(db, 'notes', note.id);
+      const likeId = `${user.uid}_${note.id}`;
+      const likeRef = doc(db, 'likes', likeId);
 
-        try {
-            await runTransaction(db, async (transaction) => {
-                const likeDoc = await transaction.get(likeRef);
-                const noteDoc = await transaction.get(noteRef);
+      let addedLike = false;
+      try {
+          await runTransaction(db, async (transaction) => {
+              const likeDoc = await transaction.get(likeRef);
+              const noteDoc = await transaction.get(noteRef);
 
-                if (!noteDoc.exists()) {
-                    throw new Error("Note does not exist!");
-                }
+              if (!noteDoc.exists()) {
+                  throw new Error("Note does not exist!");
+              }
 
-                const currentScore = noteDoc.data().score || 0;
+              const currentScore = noteDoc.data().score || 0;
 
-                if (likeDoc.exists()) {
-                    transaction.delete(likeRef);
-                    transaction.update(noteRef, { score: currentScore - 1 });
-                } else {
-                    transaction.set(likeRef, { 
-                        userId: user.uid, 
-                        noteId: note.id,
-                        createdAt: serverTimestamp() 
-                    });
-                    transaction.update(noteRef, { score: currentScore + 1 });
-                }
-            });
-        } catch (error: any) {
-            console.error("Transaction failed: ", error);
-            toast({ title: "Error", description: error.message || "Failed to update like status.", variant: "destructive" });
-        } finally {
-            setIsLiking(false);
-        }
+              if (likeDoc.exists()) {
+                  transaction.delete(likeRef);
+                  transaction.update(noteRef, { score: currentScore - 1 });
+              } else {
+                  transaction.set(likeRef, {
+                      userId: user.uid,
+                      noteId: note.id,
+                      createdAt: serverTimestamp()
+                  });
+                  transaction.update(noteRef, { score: currentScore + 1 });
+                  addedLike = true;
+              }
+          });
+
+          if (addedLike && note.authorUid && note.authorUid !== user.uid) {
+              const pseudonym = await getOrCreatePseudonym(user.uid);
+              await addDoc(collection(db, 'notifications'), {
+                  userId: note.authorUid,
+                  type: 'like',
+                  noteId: note.id,
+                  actorUid: user.uid,
+                  actorPseudonym: pseudonym,
+                  createdAt: serverTimestamp(),
+                  read: false,
+              });
+          }
+      } catch (error: any) {
+          console.error("Transaction failed: ", error);
+          toast({ title: "Error", description: error.message || "Failed to update like status.", variant: "destructive" });
+      } finally {
+          setIsLiking(false);
+      }
     };
     
     const handleDelete = async () => {
@@ -597,7 +625,7 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                 </div>
             </ScrollArea>
             <SheetFooter className="pt-2">
-                <ReplyForm noteId={note.id} />
+                <ReplyForm noteId={note.id} noteAuthorUid={note.authorUid} />
             </SheetFooter>
 
             <ReportDialog 
