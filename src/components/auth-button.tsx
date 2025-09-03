@@ -36,13 +36,6 @@ export function AuthButton() {
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-<<<<<<< HEAD
-      // Don't log an error if the user cancels the popup
-      if (error.code === 'auth/cancelled-popup-request') {
-        return;
-      }
-      console.error("Error signing in with Google: ", error);
-=======
       const errorCode = error.code as string | undefined;
       if (errorCode === "auth/popup-blocked") {
         try {
@@ -79,7 +72,9 @@ export function AuthButton() {
             "Sign-in request was cancelled. Please try again.",
         };
 
-        console.error(`Error signing in with Google (${errorCode}):`, error);
+        if (errorCode !== "auth/cancelled-popup-request") {
+          console.error(`Error signing in with Google (${errorCode}):`, error);
+        }
         toast({
           title: "Authentication Error",
           description:
@@ -94,7 +89,6 @@ export function AuthButton() {
           });
         }
       }
->>>>>>> 3dc5c2476a829a3d04044e0ed325b762b2737c72
     }
   };
 
