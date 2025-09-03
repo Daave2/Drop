@@ -1,9 +1,28 @@
 // @vitest-environment jsdom
 import React from 'react'
 import { render, screen } from '@testing-library/react'
-import ARView from './ar-view'
 import { describe, expect, test, vi } from 'vitest'
 import { GhostNote } from '@/types'
+
+vi.mock('@/hooks/use-location', () => ({
+  useLocation: () => ({
+    location: { latitude: 0, longitude: 0, accuracy: 0 },
+    error: null,
+    permissionState: 'granted',
+    requestPermission: vi.fn(),
+  }),
+}))
+
+vi.mock('@/hooks/use-orientation', () => ({
+  useOrientation: () => ({
+    orientation: { alpha: 0, beta: 0, gamma: 0 },
+    error: null,
+    permissionGranted: true,
+    requestPermission: vi.fn(),
+  }),
+}))
+
+import ARView from './ar-view'
 
 describe('ARView', () => {
   test('shows camera feed with notes overlay', async () => {
@@ -25,10 +44,9 @@ describe('ARView', () => {
     ]
 
     const { container, unmount } = render(<ARView notes={notes} />)
-    expect(await screen.findByText('Hello')).toBeTruthy()
+    const noteEl = await screen.findByText('Hello')
+    expect(noteEl.style.left).toBe('50%')
     expect(getUserMedia).toHaveBeenCalled()
-    const overlay = container.querySelector('.h-2\\/3')
-    expect(overlay).not.toBeNull()
     const video = container.querySelector('video')
     expect(video).not.toBeNull()
     unmount()

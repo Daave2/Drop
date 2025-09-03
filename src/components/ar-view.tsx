@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef } from "react";
 import { GhostNote } from "@/types";
+import { useLocation } from "@/hooks/use-location";
+import { useOrientation } from "@/hooks/use-orientation";
 
 interface ARViewProps {
   notes: GhostNote[];
@@ -9,6 +11,8 @@ interface ARViewProps {
 
 export default function ARView({ notes }: ARViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { location } = useLocation();
+  const { orientation } = useOrientation();
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -33,15 +37,51 @@ export default function ARView({ notes }: ARViewProps) {
     };
   }, []);
 
+  const heading = orientation.alpha ?? 0;
+  const toRad = (x: number) => (x * Math.PI) / 180;
+  const toDeg = (x: number) => (x * 180) / Math.PI;
+
+  const getBearing = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const dLon = toRad(lon2 - lon1);
+    const y = Math.sin(dLon) * Math.cos(toRad(lat2));
+    const x =
+      Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
+      Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
+    return (toDeg(Math.atan2(y, x)) + 360) % 360;
+  };
+
   return (
-    <div className="absolute inset-0 z-50 flex">
-      <video ref={videoRef} className="object-cover w-full h-full" autoPlay playsInline muted />
-      <div className="absolute top-0 left-0 right-0 h-2/3 p-4 space-y-2 pointer-events-none">
-        {notes.map((note) => (
-          <div key={note.id} className="bg-background/80 text-foreground p-2 rounded">
-            {note.teaser || "Note"}
-          </div>
-        ))}
+    <div className="absolute inset-0 z-50">
+      <video
+        ref={videoRef}
+        className="object-cover w-full h-full"
+        autoPlay
+        playsInline
+        muted
+      />
+      <div className="absolute inset-0 pointer-events-none">
+        {location &&
+          notes.map((note) => {
+            const bearing = getBearing(
+              location.latitude,
+              location.longitude,
+              note.lat,
+              note.lng
+            );
+            const diff = ((bearing - heading + 540) % 360) - 180;
+            const fov = 60;
+            const left = 50 + (diff / fov) * 50;
+            if (left < 0 || left > 100) return null;
+            return (
+              <div
+                key={note.id}
+                className="absolute top-10 bg-background/80 text-foreground p-2 rounded -translate-x-1/2"
+                style={{ left: `${left}%` }}
+              >
+                {note.teaser || "Note"}
+              </div>
+            );
+          })}
       </div>
     </div>
   );
