@@ -46,14 +46,8 @@ import { cn } from '@/lib/utils';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
-<<<<<<< HEAD
 const BASE_REVEAL_RADIUS_M = 35;
 const HOT_POST_THRESHOLD = 50;
-=======
-const MAP_STYLE = process.env.NEXT_PUBLIC_MAPTILER_KEY
-  ? `https://api.maptiler.com/maps/dataviz/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`
-  : 'https://demotiles.maplibre.org/style.json';
->>>>>>> 3dc5c2476a829a3d04044e0ed325b762b2737c72
 
 
 function MapViewContent() {
@@ -68,6 +62,7 @@ function MapViewContent() {
   const [isCompassViewOpen, setCompassViewOpen] = useState(false);
   const mapRef = useRef<MapRef | null>(null);
   const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchCenterRef = useRef<[number, number] | null>(null);
   const searchParams = useSearchParams();
   const { theme } = useTheme();
 
@@ -190,17 +185,24 @@ function MapViewContent() {
       });
   }, []);
 
-  // Effect to fetch notes when the map view changes
+  // Effect to fetch notes when the map view changes significantly
   useEffect(() => {
     if (moveTimeoutRef.current) {
       clearTimeout(moveTimeoutRef.current);
     }
     moveTimeoutRef.current = setTimeout(() => {
       if (viewState.latitude && viewState.longitude) {
-        fetchNotesForView([viewState.latitude, viewState.longitude]);
+        const newCenter: [number, number] = [viewState.latitude, viewState.longitude];
+        const prevCenter = lastFetchCenterRef.current;
+        const movedMeters =
+          prevCenter ? distanceBetween(prevCenter, newCenter) * 1000 : Infinity;
+        if (movedMeters >= 50) {
+          lastFetchCenterRef.current = newCenter;
+          fetchNotesForView(newCenter);
+        }
       }
     }, 500); // Debounce for 500ms
-  
+
     return () => {
       if (moveTimeoutRef.current) {
         clearTimeout(moveTimeoutRef.current);
@@ -273,57 +275,9 @@ function MapViewContent() {
     setNoteSheetOpen(false);
   };
 
-  const mapStyleUrl = theme === 'dark' 
+  const mapStyleUrl = theme === 'dark'
     ? `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json`
     : `https://tiles.stadiamaps.com/styles/alidade_smooth.json`;
-
-<<<<<<< HEAD
-=======
-    // Insert the layer beneath any symbol layer.
-    const layers = map.getStyle().layers;
-    let labelLayerId;
-    for (let i = 0; i < layers.length; i++) {
-        const layer: any = layers[i];
-        if (layer.type === 'symbol' && layer.layout?.['text-field']) {
-            labelLayerId = layer.id;
-            break;
-        }
-    }
-    
-    // Add a source for the 3D building data
-    map.addSource('openmaptiles', {
-        url: `https://api.maptiler.com/tiles/v3/tiles.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`,
-        type: 'vector',
-    });
-
-    // Add the 3D building layer
-    map.addLayer(
-        {
-            'id': '3d-buildings',
-            'source': 'openmaptiles',
-            'source-layer': 'building',
-            'type': 'fill-extrusion',
-            'minzoom': 15,
-            'paint': {
-                'fill-extrusion-color': '#aaa',
-                'fill-extrusion-height': [
-                    'interpolate',
-                    ['linear'],
-                    ['zoom'],
-                    15,
-                    0,
-                    15.05,
-                    ['get', 'height']
-                ],
-                'fill-extrusion-base': 0,
-                'fill-extrusion-opacity': 0.6
-            }
-        },
-        labelLayerId
-    );
-
-  }, []);
->>>>>>> 3dc5c2476a829a3d04044e0ed325b762b2737c72
 
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
     return (
@@ -344,11 +298,7 @@ function MapViewContent() {
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
         style={{ width: '100%', height: '100%' }}
-<<<<<<< HEAD
         mapStyle={mapStyleUrl}
-=======
-        mapStyle={MAP_STYLE}
->>>>>>> 3dc5c2476a829a3d04044e0ed325b762b2737c72
         antialias={true}
       >
         {location && (
