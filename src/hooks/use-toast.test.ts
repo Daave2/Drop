@@ -30,7 +30,7 @@ describe("toast reducer", () => {
     let state = { toasts: [toast1, toast2] } as any
     state = reducer(state, { type: "DISMISS_TOAST" } as any)
     expect(state.toasts).toHaveLength(2)
-    expect(state.toasts.every((t) => t.open === false)).toBe(true)
+    expect(state.toasts.every((t: any) => t.open === false)).toBe(true)
   })
 
   it("removes a toast", () => {
