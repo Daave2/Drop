@@ -257,6 +257,9 @@ function MapViewContent() {
   const mapStyleUrl = theme === 'dark' 
     ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"
     : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png";
+  
+  const tileSubdomains = ['a', 'b', 'c', 'd'];
+  const tileUrls = tileSubdomains.map(s => mapStyleUrl.replace('{s}', s));
 
 
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
@@ -283,7 +286,7 @@ function MapViewContent() {
             sources: {
                 'raster-tiles': {
                     type: 'raster',
-                    tiles: [mapStyleUrl],
+                    tiles: tileUrls,
                     tileSize: 256,
                     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
                 }
