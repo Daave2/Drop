@@ -9,7 +9,7 @@ import { useLocation } from '@/hooks/use-location';
 import { useNotes } from '@/hooks/use-notes';
 import { Button } from '@/components/ui/button';
 import { GhostNote } from '@/types';
-import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import NoteSheetContent from './note-sheet-content';
 import { Logo } from './ui/logo';
 import { AuthButton } from './auth-button';
@@ -306,6 +306,9 @@ function MapViewContent() {
           side="bottom"
           className="max-h-[90vh] overflow-y-auto md:max-h-none md:right-0 md:left-auto md:top-0 md:h-full md:rounded-l-2xl md:max-w-md lg:max-w-lg xl:max-w-xl"
         >
+          <SheetHeader>
+            <SheetTitle>Note Details</SheetTitle>
+          </SheetHeader>
           <NoteSheetContent
             noteId={selectedNote?.id ?? null}
             isCreating={isCreatingNote}
