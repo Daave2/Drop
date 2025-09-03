@@ -44,6 +44,7 @@ function MapViewContent() {
   const [isCompassViewOpen, setCompassViewOpen] = useState(false);
   const mapRef = useRef<MapRef | null>(null);
   const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchCenterRef = useRef<[number, number] | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
   const searchParams = useSearchParams();
@@ -108,18 +109,34 @@ function MapViewContent() {
         const prevCenter = lastFetchCenterRef.current;
         const movedMeters =
           prevCenter ? distanceBetween(prevCenter, newCenter) * 1000 : Infinity;
-        const now = Date.now();
-        if (movedMeters >= 50 && now - lastFetchTimeRef.current > 5000) {
+        if (movedMeters >= 50) {
           lastFetchCenterRef.current = newCenter;
-          lastFetchTimeRef.current = now;
-          fetchNotes(newCenter);
+          const now = Date.now();
+          const elapsed = now - lastFetchTimeRef.current;
+          if (elapsed > 5000) {
+            lastFetchTimeRef.current = now;
+            fetchNotes(newCenter);
+          } else {
+            if (fetchTimeoutRef.current) {
+              clearTimeout(fetchTimeoutRef.current);
+            }
+            fetchTimeoutRef.current = setTimeout(() => {
+              lastFetchTimeRef.current = Date.now();
+              if (lastFetchCenterRef.current) {
+                fetchNotes(lastFetchCenterRef.current);
+              }
+            }, 5000 - elapsed);
+          }
         }
       }
     }, 500);
-  
+
     return () => {
       if (moveTimeoutRef.current) {
         clearTimeout(moveTimeoutRef.current);
+      }
+      if (fetchTimeoutRef.current) {
+        clearTimeout(fetchTimeoutRef.current);
       }
     };
   }, [viewState.latitude, viewState.longitude, fetchNotes]);
