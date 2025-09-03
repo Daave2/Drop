@@ -198,7 +198,7 @@ function MapViewContent() {
     if (location && mapRef.current) {
       if (
         !searchParams.get('lat') &&
-        viewState.longitude === DEFAULT_CENTER.longitude &&
+        viewState.longitude === DEFAULT_center.longitude &&
         viewState.latitude === DEFAULT_CENTER.latitude
       ) {
         mapRef.current.flyTo({
@@ -255,8 +255,8 @@ function MapViewContent() {
   };
 
   const mapStyleUrl = theme === 'dark' 
-    ? `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`
-    : `https://api.maptiler.com/maps/dataviz/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`;
+    ? "https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json"
+    : "https://tiles.stadiamaps.com/styles/alidade_smooth.json";
 
 
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
@@ -395,3 +395,5 @@ export default function MapView() {
         </React.Suspense>
     )
 }
+
+    
