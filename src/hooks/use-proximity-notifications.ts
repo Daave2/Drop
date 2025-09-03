@@ -2,15 +2,37 @@
 
 import { useEffect, useRef } from "react";
 import { distanceBetween } from "geofire-common";
+import { useAuth } from "@/components/auth-provider";
 import { GhostNote } from "@/types";
 import type { Coordinates } from "./use-location";
 
 export function useProximityNotifications(
   notes: GhostNote[],
   location: Coordinates | null,
-  radiusM: number = 50
+  radiusM: number = 50,
+  cooldownMs: number = 60000
 ) {
+  const { user } = useAuth();
   const notifiedRef = useRef<Set<string>>(new Set());
+  const lastNotificationRef = useRef(0);
+  const storageKey = user ? `proximityNotified:${user.uid}` : null;
+
+  useEffect(() => {
+    if (!storageKey) {
+      notifiedRef.current = new Set();
+      return;
+    }
+    try {
+      const stored = window.localStorage.getItem(storageKey);
+      if (stored) {
+        notifiedRef.current = new Set(JSON.parse(stored) as string[]);
+      } else {
+        notifiedRef.current = new Set();
+      }
+    } catch {
+      notifiedRef.current = new Set();
+    }
+  }, [storageKey]);
 
   useEffect(() => {
     if (!location) return;
@@ -18,6 +40,7 @@ export function useProximityNotifications(
 
     for (const note of notes) {
       if (notifiedRef.current.has(note.id)) continue;
+      if (Date.now() - lastNotificationRef.current < cooldownMs) continue;
       const distance =
         distanceBetween(
           [location.latitude, location.longitude],
@@ -42,8 +65,15 @@ export function useProximityNotifications(
           });
         }
         notifiedRef.current.add(note.id);
+        lastNotificationRef.current = Date.now();
+        if (storageKey) {
+          window.localStorage.setItem(
+            storageKey,
+            JSON.stringify(Array.from(notifiedRef.current))
+          );
+        }
       }
     }
-  }, [notes, location, radiusM]);
+  }, [notes, location, radiusM, cooldownMs, storageKey]);
 }
 
