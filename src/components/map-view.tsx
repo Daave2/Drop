@@ -73,7 +73,6 @@ function MapViewContent() {
     bearing: -17.6,
   });
   
-  // Effect to handle incoming location from URL params
   useEffect(() => {
     const lat = searchParams.get('lat');
     const lng = searchParams.get('lng');
@@ -87,7 +86,6 @@ function MapViewContent() {
     }
   }, [searchParams]);
 
-  // Haversine distance function
   const getDistance = (coords1: {latitude: number, longitude: number}, coords2: {latitude: number, longitude: number}) => {
       const toRad = (x: number) => (x * Math.PI) / 180;
       const R = 6371e3; // metres
@@ -105,14 +103,8 @@ function MapViewContent() {
       return R * c;
   }
 
-  // Calculate dynamic properties for a note based on its score
   const getNoteDynamicProps = (score: number) => {
-    // Pin Size: Logarithmic scale.
-    // Base size 8, increases with score.
     const size = Math.round(8 + Math.log(score + 1) * 2);
-    
-    // Reveal Distance: Logarithmic scale.
-    // Base 35m, increases with score. Cap at 500m.
     const revealRadius = Math.min(BASE_REVEAL_RADIUS_M + Math.log(score + 1) * 50, 500);
 
     return {
@@ -126,7 +118,7 @@ function MapViewContent() {
     setLoadingNotes(true);
     console.log("Fetching notes for center:", center);
 
-    const radiusInM = 5000; // 5km search radius
+    const radiusInM = 5000;
     const bounds = geohashQueryBounds(center, radiusInM);
     const MAX_NOTES = 50;
 
@@ -184,7 +176,6 @@ function MapViewContent() {
       });
   }, []);
 
-  // Effect to fetch notes when the map view changes
   useEffect(() => {
     if (moveTimeoutRef.current) {
       clearTimeout(moveTimeoutRef.current);
@@ -193,7 +184,7 @@ function MapViewContent() {
       if (viewState.latitude && viewState.longitude) {
         fetchNotesForView([viewState.latitude, viewState.longitude]);
       }
-    }, 500); // Debounce for 500ms
+    }, 500);
   
     return () => {
       if (moveTimeoutRef.current) {
@@ -203,10 +194,8 @@ function MapViewContent() {
   }, [viewState.latitude, viewState.longitude, fetchNotesForView]);
   
 
-  // Effect to center map on user location when it becomes available for the first time
   useEffect(() => {
     if (location && mapRef.current) {
-      // Check if the map is still at the default location and not being controlled by URL params
       if (
         !searchParams.get('lat') &&
         viewState.longitude === DEFAULT_CENTER.longitude &&
@@ -224,8 +213,6 @@ function MapViewContent() {
 
   const handleMarkerClick = (note: GhostNote) => {
     if (!location) {
-        // If location is not available, just show the note sheet.
-        // This can happen if user denies permission.
         setSelectedNote(note);
         setRevealedNoteId(note.id);
         setCreatingNote(false);
@@ -241,7 +228,7 @@ function MapViewContent() {
 
     const { revealRadius } = getNoteDynamicProps(note.score);
 
-    if (distance <= revealRadius || revealedNoteId === note.id) { // Proximity check passed or already revealed
+    if (distance <= revealRadius || revealedNoteId === note.id) {
         setRevealedNoteId(note.id);
         setCreatingNote(false);
         setNoteSheetOpen(true);
@@ -382,7 +369,7 @@ function MapViewContent() {
                 <DialogTitle className="font-headline text-2xl">Get Closer to Reveal</DialogTitle>
                 <DialogDescription>
                     You need to be within {selectedNote && getNoteDynamicProps(selectedNote.score).revealRadius.toFixed(0)} meters and align your view to unlock this note.
-                </Dialog.Description>
+                </DialogDescription>
             </DialogHeader>
               {selectedNote && <CompassView
                 userLocation={location}
@@ -401,7 +388,6 @@ function MapViewContent() {
   );
 }
 
-// The page needs to be wrapped in a Suspense boundary because it uses useSearchParams
 export default function MapView() {
     return (
         <React.Suspense fallback={<div>Loading...</div>}>
