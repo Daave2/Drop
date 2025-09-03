@@ -30,6 +30,8 @@ import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { NotificationsButton } from './notifications-button';
+import ARView from './ar-view';
+import { useARMode } from '@/hooks/use-ar-mode';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
@@ -52,6 +54,7 @@ function MapViewContent() {
   const lastFetchTimeRef = useRef<number>(0);
   const searchParams = useSearchParams();
   const { theme } = useTheme();
+  const { isARActive } = useARMode();
 
   const [viewState, setViewState] = useState<Partial<ViewState>>({
     longitude: DEFAULT_CENTER.longitude,
@@ -226,6 +229,7 @@ function MapViewContent() {
 
   return (
     <div className="h-screen w-screen relative">
+      {isARActive && <ARView notes={notes} />}
       <Map
         ref={mapRef}
         {...viewState}
