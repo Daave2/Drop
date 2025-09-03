@@ -255,8 +255,8 @@ function MapViewContent() {
   };
 
   const mapStyleUrl = theme === 'dark' 
-    ? `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json`
-    : `https://tiles.stadiamaps.com/styles/alidade_smooth.json`;
+    ? `https://api.maptiler.com/maps/dataviz-dark/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`
+    : `https://api.maptiler.com/maps/dataviz/style.json?key=${process.env.NEXT_PUBLIC_MAPTILER_KEY}`;
 
 
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
@@ -366,7 +366,7 @@ function MapViewContent() {
       <Dialog open={isCompassViewOpen} onOpenChange={setCompassViewOpen}>
         <DialogContent>
             <DialogHeader>
-                <DialogTitle className="font-headline text-2xl">Get Closer to Reveal</DialogTitle>
+                <DialogTitle>Get Closer to Reveal</DialogTitle>
                 <DialogDescription>
                     You need to be within {selectedNote && getNoteDynamicProps(selectedNote.score).revealRadius.toFixed(0)} meters and align your view to unlock this note.
                 </DialogDescription>
