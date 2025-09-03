@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Pwa } from '@/components/pwa';
+import { SettingsProvider } from '@/hooks/use-settings';
 
 export const metadata: Metadata = {
   title: 'NoteDrop: Location-Based Notes',
@@ -45,11 +46,13 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <AuthProvider>
-            {children}
-            <Toaster />
-            <Pwa />
-          </AuthProvider>
+          <SettingsProvider>
+            <AuthProvider>
+              {children}
+              <Toaster />
+              <Pwa />
+            </AuthProvider>
+          </SettingsProvider>
         </ThemeProvider>
       </body>
     </html>
