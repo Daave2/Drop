@@ -40,5 +40,21 @@ describe('useProximityNotifications', () => {
       expect(showNotification).toHaveBeenCalledWith('Note nearby', { body: 'You are near a note' })
     )
   })
+
+  test('falls back to Notification API when service worker lacks showNotification', async () => {
+    const notes: GhostNote[] = [
+      { id: '1', lat: 0, lng: 0, teaser: 'hi', type: 'text', score: 0, createdAt: { seconds: 0, nanoseconds: 0 } },
+    ]
+    const location: Coordinates = { latitude: 0, longitude: 0, accuracy: 0 }
+    const notificationSpy = vi.fn()
+    ;(notificationSpy as any).permission = 'granted'
+    ;(global as any).Notification = notificationSpy
+    ;(navigator as any).serviceWorker.ready = Promise.resolve({})
+    renderHook(() => useProximityNotifications(notes, location, 100))
+    await waitFor(() =>
+      expect(notificationSpy).toHaveBeenCalledWith('Note nearby', { body: 'hi' })
+    )
+    expect(showNotification).not.toHaveBeenCalled()
+  })
 })
 
