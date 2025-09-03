@@ -29,7 +29,7 @@ NoteDrop is an experimental location-based note taking application built with Ne
 Set environment variables in a `.env.local` file to customize behavior. `NEXT_PUBLIC_PROXIMITY_RADIUS_M` defines the default distance (in meters) for proximity notifications, but users can adjust the radius later in their profile settings.
 
 ```bash
-NEXT_PUBLIC_PROXIMITY_RADIUS_M=100
+NEXT_PUBLIC_PROXIMITY_RADIUS_M=100 
 ```
 
 If not provided, the default radius is 50 meters.
