@@ -4,7 +4,7 @@
 
 - Ghost Pin Display: Display 'ghost pins' on the map for nearby notes within 50m, using MapLibre GL JS with OpenStreetMap raster tiles.
 - Travel-to-Reveal: Reveal full note content only when the user is within 35m and sightline is aligned (client-side UX), validated with cellToken exchange and proximity on server.
-- Note Creation and Expiration: Allow users to create text or photo notes with optional expiration (default 7d). Enforce rate limits (5 notes/day for anonymous users) with Firebase App Check and time-bucket counters.  Compute and validate the geohash using Cloud Functions
+- Note Creation and Expiration: Allow users to create text or photo notes with optional expiration (default 7d). Enforce rate limits (5 notes/day for anonymous users) with Firebase App Check and time-bucket counters. Compute and validate the geohash using Cloud Functions.
 - Short Replies: Enable users to add short text replies (<=120 chars) to revealed notes.
 - Note Reactions & Reporting: Implement 'like' and 'report' actions on notes, managed in Firestore. Auto-hide notes after 3 reports and track score.
 - Safety Filter: Use an LLM to ensure that all the comments conform to the expected usage (no hate speech, abusive content, spam or private information). If this is not possible the comment is flagged for review by human moderators.
