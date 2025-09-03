@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from "react";
 import { GhostNote } from "@/types";
 import { useLocation } from "@/hooks/use-location";
 import { useOrientation } from "@/hooks/use-orientation";
+import { Button } from "./ui/button";
 
 interface ARViewProps {
   notes: GhostNote[];
@@ -12,14 +13,17 @@ interface ARViewProps {
 export default function ARView({ notes }: ARViewProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { location } = useLocation();
-  const { orientation } = useOrientation();
+  const { orientation, permissionGranted, requestPermission } =
+    useOrientation();
 
   useEffect(() => {
     let stream: MediaStream | null = null;
 
     async function startCamera() {
       try {
-        stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "environment" },
+        });
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
         }
@@ -37,11 +41,20 @@ export default function ARView({ notes }: ARViewProps) {
     };
   }, []);
 
-  const heading = orientation.alpha ?? 0;
+  useEffect(() => {
+    requestPermission();
+  }, [requestPermission]);
+
+  const heading = orientation.alpha;
   const toRad = (x: number) => (x * Math.PI) / 180;
   const toDeg = (x: number) => (x * 180) / Math.PI;
 
-  const getBearing = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+  const getBearing = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number,
+  ) => {
     const dLon = toRad(lon2 - lon1);
     const y = Math.sin(dLon) * Math.cos(toRad(lat2));
     const x =
@@ -59,14 +72,14 @@ export default function ARView({ notes }: ARViewProps) {
         playsInline
         muted
       />
-      <div className="absolute inset-0 pointer-events-none">
-        {location &&
-          notes.map((note) => {
+      {permissionGranted && heading !== null && location && (
+        <div className="absolute inset-0 pointer-events-none">
+          {notes.map((note) => {
             const bearing = getBearing(
               location.latitude,
               location.longitude,
               note.lat,
-              note.lng
+              note.lng,
             );
             const diff = ((bearing - heading + 540) % 360) - 180;
             const fov = 60;
@@ -82,8 +95,15 @@ export default function ARView({ notes }: ARViewProps) {
               </div>
             );
           })}
-      </div>
+        </div>
+      )}
+      {!permissionGranted && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+          <Button onClick={requestPermission} className="pointer-events-auto">
+            Enable Motion Sensors
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
-
