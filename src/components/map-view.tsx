@@ -59,6 +59,7 @@ function MapViewContent() {
     permissionGranted: arPermissionGranted,
     requestPermission: requestARPermission,
   } = useARMode();
+  const [arDismissed, setArDismissed] = useState(false);
 
   const [viewState, setViewState] = useState<Partial<ViewState>>({
     longitude: DEFAULT_CENTER.longitude,
@@ -168,6 +169,12 @@ function MapViewContent() {
     }
   }, [location, viewState.longitude, viewState.latitude, searchParams]);
 
+  useEffect(() => {
+    if (!isARActive) {
+      setArDismissed(false);
+    }
+  }, [isARActive]);
+
 
   const handleMarkerClick = (note: GhostNote) => {
     if (!location) {
@@ -233,7 +240,13 @@ function MapViewContent() {
 
   return (
     <div className="h-screen w-screen relative">
-      {isARActive && arPermissionGranted && <ARView notes={notes} />}
+      {isARActive && arPermissionGranted && !arDismissed && (
+        <ARView
+          notes={notes}
+          onSelectNote={handleMarkerClick}
+          onReturnToMap={() => setArDismissed(true)}
+        />
+      )}
       <Map
         ref={mapRef}
         {...viewState}
