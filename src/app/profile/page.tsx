@@ -143,7 +143,7 @@ function MyNotesList({ uid }: { uid: string }) {
     }
     
     if (notes.length === 0) {
-        return <p className="text-muted-foreground text-center py-4">You haven't dropped any notes yet.</p>
+        return <p className="text-muted-foreground text-center py-4">You haven&apos;t dropped any notes yet.</p>
     }
 
     return (
