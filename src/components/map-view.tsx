@@ -255,12 +255,9 @@ function MapViewContent() {
   };
 
   const mapStyleUrl = theme === 'dark' 
-    ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}@2x.png"
-    : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png";
+    ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
+    : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
   
-  const tileSubdomains = ['a', 'b', 'c', 'd'];
-  const tileUrls = tileSubdomains.map(s => mapStyleUrl.replace('{s}', s));
-
 
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
     return (
@@ -281,24 +278,7 @@ function MapViewContent() {
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
         style={{ width: '100%', height: '100%' }}
-        mapStyle={{
-            version: 8,
-            sources: {
-                'raster-tiles': {
-                    type: 'raster',
-                    tiles: tileUrls,
-                    tileSize: 256,
-                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                }
-            },
-            layers: [{
-                id: 'simple-tiles',
-                type: 'raster',
-                source: 'raster-tiles',
-                minzoom: 0,
-                maxzoom: 22
-            }]
-        }}
+        mapStyle={mapStyleUrl}
         antialias={true}
       >
         {location && (
