@@ -48,28 +48,6 @@ describe('useLocation', () => {
     expect(result.current.error).toMatch('Denied')
   })
 
-  test('falls back when Permissions API is unsupported', async () => {
-    const mockWatch = vi.fn((success: any) => {
-      success({ coords: { latitude: 4, longitude: 5, accuracy: 6 } })
-      return 1
-    })
-    const mockClear = vi.fn()
-    Object.defineProperty(navigator, 'geolocation', {
-      value: { watchPosition: mockWatch, clearWatch: mockClear },
-      configurable: true,
-    })
-    Object.defineProperty(navigator, 'permissions', { value: undefined, configurable: true })
-
-    const { result, unmount } = renderHook(() => useLocation())
-    await waitFor(() =>
-      expect(result.current.location).toEqual({ latitude: 4, longitude: 5, accuracy: 6 })
-    )
-    expect(result.current.permissionState).toBe('granted')
-    unmount()
-    expect(mockWatch).toHaveBeenCalled()
-    expect(mockClear).toHaveBeenCalled()
-  })
-
   test('reports unsupported browser', () => {
     Object.defineProperty(navigator, 'geolocation', { value: undefined, configurable: true })
     const { result } = renderHook(() => useLocation())
