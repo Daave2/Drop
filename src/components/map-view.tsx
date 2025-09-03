@@ -45,6 +45,7 @@ function MapViewContent() {
   const mapRef = useRef<MapRef | null>(null);
   const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchCenterRef = useRef<[number, number] | null>(null);
+  const lastFetchTimeRef = useRef<number>(0);
   const searchParams = useSearchParams();
   const { theme } = useTheme();
 
@@ -107,8 +108,10 @@ function MapViewContent() {
         const prevCenter = lastFetchCenterRef.current;
         const movedMeters =
           prevCenter ? distanceBetween(prevCenter, newCenter) * 1000 : Infinity;
-        if (movedMeters >= 50) {
+        const now = Date.now();
+        if (movedMeters >= 50 && now - lastFetchTimeRef.current > 5000) {
           lastFetchCenterRef.current = newCenter;
+          lastFetchTimeRef.current = now;
           fetchNotes(newCenter);
         }
       }
