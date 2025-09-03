@@ -5,11 +5,16 @@ import { AuthProvider } from '@/components/auth-provider';
 import { cn } from '@/lib/utils';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { ThemeProvider } from '@/components/theme-provider';
+import { Pwa } from '@/components/pwa';
 
 export const metadata: Metadata = {
   title: 'NoteDrop: Location-Based Notes',
   description: 'Leave and discover location-anchored virtual post-its.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/icon-512.png',
+    apple: '/icon-512.png',
+  },
 };
 
 export const viewport: Viewport = {
@@ -32,7 +37,6 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
       </head>
       <body className={cn('font-body antialiased', 'min-h-screen bg-background')}>
         <ThemeProvider
@@ -44,6 +48,7 @@ export default function RootLayout({
           <AuthProvider>
             {children}
             <Toaster />
+            <Pwa />
           </AuthProvider>
         </ThemeProvider>
       </body>
