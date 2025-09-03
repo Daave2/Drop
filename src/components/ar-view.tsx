@@ -1,109 +1,102 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import * as THREE from "three";
+import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
 import { GhostNote } from "@/types";
 import { useLocation } from "@/hooks/use-location";
-import { useOrientation } from "@/hooks/use-orientation";
-import { Button } from "./ui/button";
+import { latLngToLocal } from "@/lib/geo";
 
 interface ARViewProps {
   notes: GhostNote[];
 }
 
 export default function ARView({ notes }: ARViewProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<THREE.Scene>();
+  const cameraRef = useRef<THREE.PerspectiveCamera>();
+  const rendererRef = useRef<THREE.WebGLRenderer>();
+  const noteMeshes = useRef<Record<string, THREE.Object3D>>({});
   const { location } = useLocation();
-  const { orientation, permissionGranted, requestPermission } =
-    useOrientation();
 
+  // initialize three.js and WebXR renderer
   useEffect(() => {
-    let stream: MediaStream | null = null;
+    if (!containerRef.current) return;
 
-    async function startCamera() {
-      try {
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-        });
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
-      } catch (err) {
-        console.error("Error accessing camera", err);
-      }
-    }
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera();
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.xr.enabled = true;
+    rendererRef.current = renderer;
+    sceneRef.current = scene;
+    cameraRef.current = camera;
 
-    startCamera();
+    containerRef.current.appendChild(renderer.domElement);
+    const arButton = ARButton.createButton(renderer, { requiredFeatures: ["local"] });
+    containerRef.current.appendChild(arButton);
+
+    renderer.setAnimationLoop(() => {
+      renderer.render(scene, camera);
+    });
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
-      }
+      renderer.setAnimationLoop(null);
+      arButton.remove();
+      renderer.dispose();
     };
   }, []);
 
+  // create note meshes when notes change
   useEffect(() => {
-    requestPermission();
-  }, [requestPermission]);
+    const scene = sceneRef.current;
+    if (!scene) return;
 
-  const heading = orientation.alpha;
-  const toRad = (x: number) => (x * Math.PI) / 180;
-  const toDeg = (x: number) => (x * 180) / Math.PI;
+    // remove existing meshes
+    Object.values(noteMeshes.current).forEach((mesh) => scene.remove(mesh));
+    noteMeshes.current = {};
 
-  const getBearing = (
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number,
-  ) => {
-    const dLon = toRad(lon2 - lon1);
-    const y = Math.sin(dLon) * Math.cos(toRad(lat2));
-    const x =
-      Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) -
-      Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
-    return (toDeg(Math.atan2(y, x)) + 360) % 360;
-  };
+    notes.forEach((note) => {
+      const canvas = document.createElement("canvas");
+      canvas.width = 256;
+      canvas.height = 128;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        ctx.fillStyle = "white";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = "black";
+        ctx.font = "24px sans-serif";
+        ctx.fillText(note.teaser || "Note", 10, 64);
+      }
+      const texture = new THREE.CanvasTexture(canvas);
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        side: THREE.DoubleSide,
+        transparent: true,
+      });
+      const geometry = new THREE.PlaneGeometry(1, 0.5);
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(0, 0, -2); // default; will update with location
+      scene.add(mesh);
+      noteMeshes.current[note.id] = mesh;
+    });
+  }, [notes]);
 
-  return (
-    <div className="absolute inset-0 z-50">
-      <video
-        ref={videoRef}
-        className="object-cover w-full h-full"
-        autoPlay
-        playsInline
-        muted
-      />
-      {permissionGranted && heading !== null && location && (
-        <div className="absolute inset-0 pointer-events-none">
-          {notes.map((note) => {
-            const bearing = getBearing(
-              location.latitude,
-              location.longitude,
-              note.lat,
-              note.lng,
-            );
-            const diff = ((bearing - heading + 540) % 360) - 180;
-            const fov = 60;
-            const left = 50 + (diff / fov) * 50;
-            if (left < 0 || left > 100) return null;
-            return (
-              <div
-                key={note.id}
-                className="absolute top-10 bg-background/80 text-foreground p-2 rounded -translate-x-1/2"
-                style={{ left: `${left}%` }}
-              >
-                {note.teaser || "Note"}
-              </div>
-            );
-          })}
-        </div>
-      )}
-      {!permissionGranted && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/50">
-          <Button onClick={requestPermission} className="pointer-events-auto">
-            Enable Motion Sensors
-          </Button>
-        </div>
-      )}
-    </div>
-  );
+  // update note positions when device location changes
+  useEffect(() => {
+    if (!location) return;
+    notes.forEach((note) => {
+      const mesh = noteMeshes.current[note.id];
+      if (mesh) {
+        const pos = latLngToLocal(
+          { lat: location.latitude, lng: location.longitude },
+          { lat: note.lat, lng: note.lng },
+        );
+        mesh.position.copy(pos);
+      }
+    });
+  }, [location, notes]);
+
+  return <div ref={containerRef} className="absolute inset-0" />;
 }
+
