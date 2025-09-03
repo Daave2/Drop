@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
-import { useLocation } from '@/hooks/use-location';
+import { useLocation, Coordinates } from '@/hooks/use-location';
 import { useNotes } from '@/hooks/use-notes';
 import { useProximityNotifications } from '@/hooks/use-proximity-notifications';
 import { useSettings } from '@/hooks/use-settings';
@@ -46,6 +46,7 @@ function MapViewContent() {
   const [revealedNoteId, setRevealedNoteId] = useState<string | null>(null);
   const [isNoteSheetOpen, setNoteSheetOpen] = useState(false);
   const [isCreatingNote, setCreatingNote] = useState(false);
+  const [newNoteLocation, setNewNoteLocation] = useState<Coordinates | null>(null);
   const [isCompassViewOpen, setCompassViewOpen] = useState(false);
   const mapRef = useRef<MapRef | null>(null);
   const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -211,15 +212,26 @@ function MapViewContent() {
       });
     }
   };
-  
+
+  const handleARCreateNote = (coords: Coordinates) => {
+    setCreatingNote(true);
+    setSelectedNote(null);
+    setNewNoteLocation(coords);
+    setNoteSheetOpen(true);
+  };
+
   const handleNoteCreated = () => {
     if (viewState.latitude && viewState.longitude) {
       fetchNotes([viewState.latitude, viewState.longitude]);
     }
     setNoteSheetOpen(false);
+    setNewNoteLocation(null);
   };
 
-  const handleCloseSheet = useCallback(() => setNoteSheetOpen(false), []);
+  const handleCloseSheet = useCallback(() => {
+    setNoteSheetOpen(false);
+    setNewNoteLocation(null);
+  }, []);
 
   const mapStyleUrl = theme === 'dark' 
     ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
@@ -245,6 +257,7 @@ function MapViewContent() {
           notes={notes}
           onSelectNote={handleMarkerClick}
           onReturnToMap={() => setArDismissed(true)}
+          onCreateNote={handleARCreateNote}
         />
       )}
       <Map
@@ -319,6 +332,7 @@ function MapViewContent() {
         onClick={() => {
             setCreatingNote(true);
             setSelectedNote(null);
+            setNewNoteLocation(location);
             setNoteSheetOpen(true);
         }}
       >
@@ -346,7 +360,7 @@ function MapViewContent() {
           <NoteSheetContent
             noteId={selectedNote?.id ?? null}
             isCreating={isCreatingNote}
-            userLocation={isCreatingNote ? location : null}
+            userLocation={isCreatingNote ? newNoteLocation : null}
             onNoteCreated={handleNoteCreated}
             onClose={handleCloseSheet}
           />

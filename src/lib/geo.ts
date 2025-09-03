@@ -19,3 +19,16 @@ export function latLngToLocal(origin: LatLng, target: LatLng): THREE.Vector3 {
   return new THREE.Vector3(x, 0, z);
 }
 
+/**
+ * Convert local Cartesian coordinates back to latitude/longitude relative to an origin.
+ * Accepts a vector using meters in the X (east) and Z (south) axes.
+ */
+export function localToLatLng(origin: LatLng, point: THREE.Vector3): LatLng {
+  const dLat = -point.z / EARTH_RADIUS;
+  const dLon = point.x / (EARTH_RADIUS * Math.cos(THREE.MathUtils.degToRad(origin.lat)));
+  return {
+    lat: origin.lat + THREE.MathUtils.radToDeg(dLat),
+    lng: origin.lng + THREE.MathUtils.radToDeg(dLon),
+  };
+}
+
