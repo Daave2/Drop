@@ -14,7 +14,7 @@ afterEach(() => {
 describe('useLocation', () => {
   test('updates location and cleans up watcher', async () => {
     const mockWatch = vi.fn((success: any) => {
-      success({ coords: { latitude: 1, longitude: 2, accuracy: 3 } })
+      success({ coords: { latitude: 1, longitude: 2, accuracy: 3, heading: 45 } })
       return 1
     })
     const mockClear = vi.fn()
@@ -26,7 +26,14 @@ describe('useLocation', () => {
     Object.defineProperty(navigator, 'permissions', { value: mockPermissions, configurable: true })
 
     const { result, unmount } = renderHook(() => useLocation())
-    await waitFor(() => expect(result.current.location).toEqual({ latitude: 1, longitude: 2, accuracy: 3 }))
+    await waitFor(() =>
+      expect(result.current.location).toEqual({
+        latitude: 1,
+        longitude: 2,
+        accuracy: 3,
+        heading: 45,
+      }),
+    )
     unmount()
     expect(mockClear).toHaveBeenCalledWith(1)
   })
@@ -50,7 +57,7 @@ describe('useLocation', () => {
 
   test('falls back when Permissions API is unsupported', async () => {
     const mockWatch = vi.fn((success: any) => {
-      success({ coords: { latitude: 4, longitude: 5, accuracy: 6 } })
+      success({ coords: { latitude: 4, longitude: 5, accuracy: 6, heading: 90 } })
       return 1
     })
     const mockClear = vi.fn()
@@ -62,7 +69,12 @@ describe('useLocation', () => {
 
     const { result, unmount } = renderHook(() => useLocation())
     await waitFor(() =>
-      expect(result.current.location).toEqual({ latitude: 4, longitude: 5, accuracy: 6 })
+      expect(result.current.location).toEqual({
+        latitude: 4,
+        longitude: 5,
+        accuracy: 6,
+        heading: 90,
+      }),
     )
     expect(result.current.permissionState).toBe('granted')
     unmount()
