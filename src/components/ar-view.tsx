@@ -24,6 +24,7 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
   const badgeTextures = useRef<Record<string, THREE.CanvasTexture>>({});
   const hitTestSourceRef = useRef<any>(null);
   const localSpaceRef = useRef<any>(null);
+  const startHeadingRef = useRef(0);
   const [isCreating, setIsCreating] = useState(false);
   const isCreatingRef = useRef(false);
   const { location } = useLocation();
@@ -70,6 +71,7 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
       localSpaceRef.current = renderer.xr.getReferenceSpace();
       const viewerSpace = await (session as any).requestReferenceSpace("viewer");
       hitTestSourceRef.current = await (session as any).requestHitTestSource({ space: viewerSpace });
+      startHeadingRef.current = locationRef.current?.heading ?? 0;
     });
 
     renderer.xr.addEventListener("sessionend", () => {
@@ -87,14 +89,20 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
           const pose = results[0].getPose(localSpaceRef.current);
           if (pose) {
             const { x, z } = pose.transform.position;
+            const point = new THREE.Vector3(x, 0, z);
+            point.applyAxisAngle(
+              new THREE.Vector3(0, 1, 0),
+              THREE.MathUtils.degToRad(startHeadingRef.current),
+            );
             const latLng = localToLatLng(
               { lat: locationRef.current.latitude, lng: locationRef.current.longitude },
-              new THREE.Vector3(x, 0, z),
+              point,
             );
             onCreateNoteRef.current({
               latitude: latLng.lat,
               longitude: latLng.lng,
               accuracy: locationRef.current.accuracy,
+              heading: locationRef.current.heading,
             });
             isCreatingRef.current = false;
             setIsCreating(false);

@@ -6,6 +6,7 @@ export interface Coordinates {
   latitude: number;
   longitude: number;
   accuracy: number;
+  heading?: number | null;
 }
 
 export function useLocation() {
@@ -36,6 +37,7 @@ export function useLocation() {
         latitude: position.coords.latitude,
         longitude: position.coords.longitude,
         accuracy: position.coords.accuracy,
+        heading: position.coords.heading ?? null,
       });
       setError(null);
       setPermissionState('granted');
@@ -80,6 +82,7 @@ export function useLocation() {
                 latitude: position.coords.latitude,
                 longitude: position.coords.longitude,
                 accuracy: position.coords.accuracy,
+                heading: position.coords.heading ?? null,
             });
             setError(null);
             setPermissionState('granted');
