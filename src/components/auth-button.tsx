@@ -37,12 +37,15 @@ export function AuthButton() {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
       const errorCode = error.code as string | undefined;
+<<<<<<< HEAD
 
       if (errorCode === 'auth/cancelled-popup-request' || errorCode === 'auth/popup-closed-by-user') {
         // Silently ignore user cancelling the sign-in
         return;
       }
       
+=======
+>>>>>>> 3beadab512200630349fa1e6310c9f4f753db9aa
       if (errorCode === "auth/popup-blocked") {
         try {
           await signInWithRedirect(auth, provider);
@@ -63,7 +66,9 @@ export function AuthButton() {
           "auth/operation-not-supported-in-this-environment": "Sign-in is not supported in this environment.",
         };
 
-        console.error(`Error signing in with Google (${errorCode}):`, error);
+        if (errorCode !== "auth/cancelled-popup-request") {
+          console.error(`Error signing in with Google (${errorCode}):`, error);
+        }
         toast({
           title: "Authentication Error",
           description:

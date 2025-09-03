@@ -62,6 +62,7 @@ function MapViewContent() {
   const [isCompassViewOpen, setCompassViewOpen] = useState(false);
   const mapRef = useRef<MapRef | null>(null);
   const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastFetchCenterRef = useRef<[number, number] | null>(null);
   const searchParams = useSearchParams();
   const { theme } = useTheme();
 
@@ -176,16 +177,32 @@ function MapViewContent() {
       });
   }, []);
 
+<<<<<<< HEAD
+=======
+  // Effect to fetch notes when the map view changes significantly
+>>>>>>> 3beadab512200630349fa1e6310c9f4f753db9aa
   useEffect(() => {
     if (moveTimeoutRef.current) {
       clearTimeout(moveTimeoutRef.current);
     }
     moveTimeoutRef.current = setTimeout(() => {
       if (viewState.latitude && viewState.longitude) {
-        fetchNotesForView([viewState.latitude, viewState.longitude]);
+        const newCenter: [number, number] = [viewState.latitude, viewState.longitude];
+        const prevCenter = lastFetchCenterRef.current;
+        const movedMeters =
+          prevCenter ? distanceBetween(prevCenter, newCenter) * 1000 : Infinity;
+        if (movedMeters >= 50) {
+          lastFetchCenterRef.current = newCenter;
+          fetchNotesForView(newCenter);
+        }
       }
+<<<<<<< HEAD
     }, 500);
   
+=======
+    }, 500); // Debounce for 500ms
+
+>>>>>>> 3beadab512200630349fa1e6310c9f4f753db9aa
     return () => {
       if (moveTimeoutRef.current) {
         clearTimeout(moveTimeoutRef.current);
@@ -254,10 +271,16 @@ function MapViewContent() {
     setNoteSheetOpen(false);
   };
 
+<<<<<<< HEAD
   const mapStyleUrl = theme === 'dark' 
     ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
     : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
   
+=======
+  const mapStyleUrl = theme === 'dark'
+    ? `https://tiles.stadiamaps.com/styles/alidade_smooth_dark.json`
+    : `https://tiles.stadiamaps.com/styles/alidade_smooth.json`;
+>>>>>>> 3beadab512200630349fa1e6310c9f4f753db9aa
 
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
     return (

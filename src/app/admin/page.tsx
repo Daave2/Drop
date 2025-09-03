@@ -118,7 +118,7 @@ function EditableNote({ noteId, onDelete }: { noteId: string, onDelete?: () => v
             </div>
             <div className="text-sm text-muted-foreground">
                 <p>Author: {note.authorPseudonym} ({note.authorUid})</p>
-                <p>Created: {note.createdAt.toDate().toLocaleString()}</p>
+                <p>Created: {new Date(note.createdAt.seconds * 1000).toLocaleString()}</p>
             </div>
             <Separator />
             <div className="flex justify-between items-end gap-2">
