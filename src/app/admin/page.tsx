@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
-import { collection, getDocs, doc, getDoc, writeBatch, Timestamp, updateDoc, deleteDoc, query, orderBy, limit } from 'firebase/firestore';
+import React, { useEffect, useState } from 'react';
+import { collection, getDocs, doc, getDoc, writeBatch, Timestamp, updateDoc, deleteDoc, query, orderBy, limit, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
@@ -141,7 +141,7 @@ function EditableNote({ noteId, onDelete }: { noteId: string, onDelete?: () => v
     );
 }
 
-function ReportsTab() {
+export function ReportsTab() {
     const [reports, setReports] = useState<Report[]>([]);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
@@ -150,7 +150,12 @@ function ReportsTab() {
         setLoading(true);
         try {
             const reportsCollection = collection(db, 'reports');
-            const reportSnapshot = await getDocs(reportsCollection);
+            const q = query(
+                reportsCollection,
+                where('status', '==', 'pending_review'),
+                orderBy('createdAt', 'desc')
+            );
+            const reportSnapshot = await getDocs(q);
             const reportsList = reportSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Report));
             setReports(reportsList);
         } catch (error) {
@@ -220,7 +225,7 @@ function ReportsTab() {
             <CardContent className="space-y-6">
                 {loading && <Skeleton className="h-48 w-full" />}
                 {!loading && reports.length === 0 && (
-                    <p className="text-muted-foreground text-center py-8">No pending reports. Great job!</p>
+                    <p className="text-muted-foreground text-center py-8">No reports pending review.</p>
                 )}
                 {reports.map((report) => (
                     <div key={report.id} className="border p-4 rounded-lg space-y-4">
