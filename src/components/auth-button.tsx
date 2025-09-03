@@ -36,14 +36,13 @@ export function AuthButton() {
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-<<<<<<< HEAD
-      // Don't log an error if the user cancels the popup
-      if (error.code === 'auth/cancelled-popup-request') {
+      const errorCode = error.code as string | undefined;
+
+      if (errorCode === 'auth/cancelled-popup-request' || errorCode === 'auth/popup-closed-by-user') {
+        // Silently ignore user cancelling the sign-in
         return;
       }
-      console.error("Error signing in with Google: ", error);
-=======
-      const errorCode = error.code as string | undefined;
+      
       if (errorCode === "auth/popup-blocked") {
         try {
           await signInWithRedirect(auth, provider);
@@ -57,26 +56,11 @@ export function AuthButton() {
             description: "Unable to sign in.",
             variant: "destructive",
           });
-          if (
-            process.env.NODE_ENV === "development" &&
-            redirectError.code
-          ) {
-            toast({
-              title: "Debug Info",
-              description: redirectError.code,
-            });
-          }
         }
       } else {
         const errorMessages: Record<string, string> = {
-          "auth/unauthorized-domain":
-            "This domain is not authorized for sign-in.",
-          "auth/operation-not-supported-in-this-environment":
-            "Sign-in is not supported in this environment.",
-          "auth/popup-closed-by-user":
-            "The sign-in popup was closed before completing.",
-          "auth/cancelled-popup-request":
-            "Sign-in request was cancelled. Please try again.",
+          "auth/unauthorized-domain": "This domain is not authorized for sign-in.",
+          "auth/operation-not-supported-in-this-environment": "Sign-in is not supported in this environment.",
         };
 
         console.error(`Error signing in with Google (${errorCode}):`, error);
@@ -87,14 +71,7 @@ export function AuthButton() {
             "Unable to sign in with Google.",
           variant: "destructive",
         });
-        if (process.env.NODE_ENV === "development" && errorCode) {
-          toast({
-            title: "Debug Info",
-            description: errorCode,
-          });
-        }
       }
->>>>>>> 3dc5c2476a829a3d04044e0ed325b762b2737c72
     }
   };
 
