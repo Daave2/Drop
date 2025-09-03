@@ -18,6 +18,9 @@ import { z } from "zod";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Note } from "@/types";
 import { useUserNotes } from "@/hooks/use-user-notes";
+import { useSettings } from "@/hooks/use-settings";
+import { Slider } from "@/components/ui/slider";
+import { Label } from "@/components/ui/label";
 
 const profileSchema = z.object({
     displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters."),
@@ -166,6 +169,7 @@ export default function ProfilePage() {
   const [notesRevealed, setNotesRevealed] = useState(0);
   const [loadingStats, setLoadingStats] = useState(true);
   const { toast } = useToast();
+  const { proximityRadiusM, setProximityRadiusM } = useSettings();
 
   useEffect(() => {
       if (user) {
@@ -274,6 +278,30 @@ export default function ProfilePage() {
                 <StatCard title="Notes Revealed" value={notesRevealed} isLoading={loadingStats} />
                 <StatCard title="Community Standing" value={communityStanding} isLoading={loadingStats} />
             </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-8">
+        <CardHeader>
+          <CardTitle>Settings</CardTitle>
+          <CardDescription>Customize your experience.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="proximityRadius">
+                Proximity Alert Radius ({proximityRadiusM}m)
+              </Label>
+              <Slider
+                id="proximityRadius"
+                min={10}
+                max={200}
+                step={5}
+                value={[proximityRadiusM]}
+                onValueChange={([v]) => setProximityRadiusM(v)}
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
