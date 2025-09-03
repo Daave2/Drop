@@ -16,5 +16,6 @@ Run the following commands and ensure they pass before committing:
 ```bash
 npm run lint
 npm run typecheck
+npm test
 ```
 
