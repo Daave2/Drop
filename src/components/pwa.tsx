@@ -3,9 +3,11 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { useInstallPrompt } from '@/hooks/use-install-prompt';
+import { useFcmToken } from '@/hooks/use-fcm-token';
 
 export function Pwa() {
   const { isInstallable, promptInstall } = useInstallPrompt();
+  useFcmToken();
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {

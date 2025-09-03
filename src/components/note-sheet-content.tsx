@@ -306,6 +306,16 @@ function ReplyForm({ noteId, noteAuthorUid }: { noteId: string, noteAuthorUid?: 
                      createdAt: serverTimestamp(),
                      read: false,
                  });
+                 fetch('/api/notify', {
+                     method: 'POST',
+                     headers: { 'Content-Type': 'application/json' },
+                     body: JSON.stringify({
+                         userId: noteAuthorUid,
+                         title: 'New reply',
+                         body: `${pseudonym} replied to your note`,
+                         data: { noteId, type: 'reply' }
+                     })
+                 }).catch(() => {});
              }
 
              setText("");
@@ -542,6 +552,16 @@ function NoteView({ note: initialNote, onClose }: {note: Note, onClose: () => vo
                   createdAt: serverTimestamp(),
                   read: false,
               });
+              fetch('/api/notify', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                      userId: note.authorUid,
+                      title: 'New like',
+                      body: `${pseudonym} liked your note`,
+                      data: { noteId: note.id, type: 'like' }
+                  })
+              }).catch(() => {});
           }
       } catch (error: any) {
           console.error("Transaction failed: ", error);
