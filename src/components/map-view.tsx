@@ -38,7 +38,7 @@ const DEFAULT_ZOOM = 16;
 const BASE_REVEAL_RADIUS_M = 35;
 const HOT_POST_THRESHOLD = 50;
 function MapViewContent() {
-  const { location, permissionState, requestPermission } = useLocation();
+  const { location, permissionState, requestPermission: requestLocationPermission } = useLocation();
   const { notes, fetchNotes } = useNotes();
   const { proximityRadiusM } = useSettings();
   useProximityNotifications(notes, location, proximityRadiusM);
@@ -54,7 +54,11 @@ function MapViewContent() {
   const lastFetchTimeRef = useRef<number>(0);
   const searchParams = useSearchParams();
   const { theme } = useTheme();
-  const { isARActive } = useARMode();
+  const {
+    isARActive,
+    permissionGranted: arPermissionGranted,
+    requestPermission: requestOrientationPermission,
+  } = useARMode();
 
   const [viewState, setViewState] = useState<Partial<ViewState>>({
     longitude: DEFAULT_CENTER.longitude,
@@ -281,7 +285,16 @@ function MapViewContent() {
       <header className="absolute top-0 left-0 right-0 p-2 sm:p-4 flex justify-between items-center bg-gradient-to-b from-background/80 to-transparent">
         <Logo />
         <div className="flex items-center gap-2 bg-background/80 p-1 rounded-full">
-            {permissionState === 'prompt' && <Button onClick={requestPermission} size="sm" variant="secondary">Enable Location</Button>}
+            {permissionState === 'prompt' && (
+              <Button onClick={requestLocationPermission} size="sm" variant="secondary">
+                Enable Location
+              </Button>
+            )}
+            {!arPermissionGranted && (
+              <Button onClick={requestOrientationPermission} size="sm" variant="secondary">
+                Enable AR
+              </Button>
+            )}
             <ThemeToggle />
             <NotificationsButton />
             <AuthButton />
