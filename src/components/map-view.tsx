@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
@@ -202,6 +202,8 @@ function MapViewContent() {
     setNoteSheetOpen(false);
   };
 
+  const handleCloseSheet = useCallback(() => setNoteSheetOpen(false), []);
+
   const mapStyleUrl = theme === 'dark' 
     ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
     : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
@@ -302,11 +304,11 @@ function MapViewContent() {
       <Sheet open={isNoteSheetOpen} onOpenChange={setNoteSheetOpen}>
         <SheetContent side="bottom" className="md:max-w-md md:right-0 md:left-auto md:top-0 md:h-full md:rounded-l-2xl">
           <NoteSheetContent
-            noteId={selectedNote?.id ?? null} 
-            isCreating={isCreatingNote} 
-            userLocation={location}
+            noteId={selectedNote?.id ?? null}
+            isCreating={isCreatingNote}
+            userLocation={isCreatingNote ? location : null}
             onNoteCreated={handleNoteCreated}
-            onClose={() => setNoteSheetOpen(false)}
+            onClose={handleCloseSheet}
           />
         </SheetContent>
       </Sheet>
