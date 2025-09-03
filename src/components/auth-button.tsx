@@ -35,24 +35,56 @@ export function AuthButton() {
     try {
       await signInWithPopup(auth, provider);
     } catch (error: any) {
-      if (error.code === "auth/popup-blocked") {
+      const errorCode = error.code as string | undefined;
+      if (errorCode === "auth/popup-blocked") {
         try {
           await signInWithRedirect(auth, provider);
-        } catch (redirectError) {
-          console.error("Error signing in with redirect:", redirectError);
+        } catch (redirectError: any) {
+          console.error(
+            `Error signing in with redirect (${redirectError.code}):`,
+            redirectError
+          );
           toast({
             title: "Authentication Error",
             description: "Unable to sign in.",
             variant: "destructive",
           });
+          if (
+            process.env.NODE_ENV === "development" &&
+            redirectError.code
+          ) {
+            toast({
+              title: "Debug Info",
+              description: redirectError.code,
+            });
+          }
         }
       } else {
-        console.error("Error signing in with Google: ", error);
+        const errorMessages: Record<string, string> = {
+          "auth/unauthorized-domain":
+            "This domain is not authorized for sign-in.",
+          "auth/operation-not-supported-in-this-environment":
+            "Sign-in is not supported in this environment.",
+          "auth/popup-closed-by-user":
+            "The sign-in popup was closed before completing.",
+          "auth/cancelled-popup-request":
+            "Sign-in request was cancelled. Please try again.",
+        };
+
+        console.error(`Error signing in with Google (${errorCode}):`, error);
         toast({
           title: "Authentication Error",
-          description: "Unable to sign in with Google.",
+          description:
+            errorMessages[errorCode ?? ""] ||
+            "Unable to sign in with Google.",
           variant: "destructive",
         });
+        if (process.env.NODE_ENV === "development" && errorCode) {
+          toast({
+            title: "Debug Info",
+            description: errorCode,
+          });
+        }
       }
     }
   };
