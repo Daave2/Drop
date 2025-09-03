@@ -24,9 +24,17 @@ export function useProximityNotifications(
           [note.lat, note.lng]
         ) * 1000;
       if (distance <= radiusM) {
-        new Notification("Note nearby", {
-          body: note.teaser || "You are near a note",
-        });
+        if ("serviceWorker" in navigator) {
+          void navigator.serviceWorker.ready.then((reg) => {
+            reg.showNotification("Note nearby", {
+              body: note.teaser || "You are near a note",
+            });
+          });
+        } else {
+          new Notification("Note nearby", {
+            body: note.teaser || "You are near a note",
+          });
+        }
         notifiedRef.current.add(note.id);
       }
     }
