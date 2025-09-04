@@ -57,10 +57,18 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
     cameraRef.current = camera;
 
     containerRef.current.appendChild(renderer.domElement);
+    
+    // ARButton creates a button that handles entering an AR session.
+    // We create it, but immediately remove it from the DOM as we have our own UI.
+    // We pass an empty onUnsupported callback to prevent it from showing its own error message.
     const arButton = ARButton.createButton(renderer, {
       requiredFeatures: ["local", "hit-test"],
+      onUnsupported: () => {},
     });
-    containerRef.current.appendChild(arButton);
+    // We hide the default button and use our own UI.
+    arButton.style.display = 'none';
+    document.body.appendChild(arButton);
+
 
     const frustum = new THREE.Frustum();
     const projScreenMatrix = new THREE.Matrix4();
