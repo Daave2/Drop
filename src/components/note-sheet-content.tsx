@@ -11,6 +11,7 @@ import { Note } from "@/types";
 import { Skeleton } from "./ui/skeleton";
 import CreateNoteForm from "./create-note-form";
 import NoteView from "./note-view";
+import { SheetHeader, SheetTitle } from "./ui/sheet";
 
 interface NoteSheetContentProps {
   noteId: string | null;
@@ -68,20 +69,33 @@ export default function NoteSheetContent({
 
   if (loadingNote) {
     return (
-      <div className="p-4 space-y-6">
-        <Skeleton className="h-64 w-full rounded-lg" />
-        <Skeleton className="h-6 w-3/4" />
-        <Skeleton className="h-4 w-1/2" />
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-10 w-24" />
-          <Skeleton className="h-10 w-24" />
+      <>
+        <SheetHeader>
+          <SheetTitle>Loading Note...</SheetTitle>
+        </SheetHeader>
+        <div className="p-4 space-y-6">
+          <Skeleton className="h-64 w-full rounded-lg" />
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-4 w-1/2" />
+          <div className="flex items-center justify-between">
+            <Skeleton className="h-10 w-24" />
+            <Skeleton className="h-10 w-24" />
+          </div>
         </div>
+      </>
+    );
+  }
+
+  if (!note) {
+    return (
+      <div className="p-4 text-center">
+        <SheetHeader>
+          <SheetTitle>Note</SheetTitle>
+        </SheetHeader>
+        Select a note to view its contents.
       </div>
     );
   }
 
-  if (!note) return <div className="p-4 text-center">Select a note to view its contents.</div>;
-
   return <NoteView note={note} onClose={onClose} />;
 }
-

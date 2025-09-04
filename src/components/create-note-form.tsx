@@ -272,9 +272,14 @@ export default function CreateNoteForm({
 
   if (!user) {
     return (
-      <div className="p-4 text-center text-muted-foreground">
-        You must be signed in to drop a note.
-      </div>
+      <>
+        <SheetHeader>
+          <SheetTitle className="font-headline text-2xl">Sign In Required</SheetTitle>
+        </SheetHeader>
+        <div className="p-4 text-center text-muted-foreground">
+          You must be signed in to drop a note.
+        </div>
+      </>
     );
   }
 
@@ -284,7 +289,7 @@ export default function CreateNoteForm({
         <SheetTitle className="font-headline text-2xl">Drop a New Note</SheetTitle>
       </SheetHeader>
       <ScrollArea className="flex-1 -mx-6">
-        <form ref={formRef} onSubmit={handleSubmit} className="px-6 pt-4 space-y-4">
+        <form ref={formRef} onSubmit={handleSubmit} className="px-6 pt-4 space-y-4" id="create-note-form">
           <Textarea
             name="text"
             placeholder="What's on your mind? (Max 800 chars)"
@@ -367,4 +372,3 @@ export default function CreateNoteForm({
     </>
   );
 }
-
