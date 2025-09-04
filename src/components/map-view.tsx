@@ -223,11 +223,20 @@ function MapViewContent() {
   };
 
   const handleEnableAR = async () => {
+    if (!(navigator as any).xr) {
+      toast({
+        title: 'AR Not Supported',
+        description: 'Your browser does not support WebXR.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     const hasPermission = await requestARPermission();
     if (hasPermission) {
-        setARViewVisible(true);
-        const enterARButton = document.getElementById('enter-ar-button');
-        enterARButton?.click();
+      setARViewVisible(true);
+      const enterARButton = document.getElementById('enter-ar-button');
+      enterARButton?.click();
     }
   }
 

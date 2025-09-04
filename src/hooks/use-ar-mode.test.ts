@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+// @ts-nocheck
 import { renderHook, act } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 import { useARMode } from './use-ar-mode'
