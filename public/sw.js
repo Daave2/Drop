@@ -26,3 +26,35 @@ messaging.onBackgroundMessage((payload) => {
 
   self.registration.showNotification(notificationTitle, notificationOptions);
 });
+
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
+
+  if (url.hostname === 'tile.openstreetmap.org') {
+    event.respondWith(
+      caches.open('tiles').then(async (cache) => {
+        const cached = await cache.match(event.request);
+        if (cached) return cached;
+        const res = await fetch(event.request);
+        cache.put(event.request, res.clone());
+        return res;
+      })
+    );
+    return;
+  }
+
+  if (url.pathname.startsWith('/api/notes')) {
+    event.respondWith(
+      caches.open('api').then(async (cache) => {
+        try {
+          const res = await fetch(event.request);
+          cache.put(event.request, res.clone());
+          return res;
+        } catch {
+          const cached = await cache.match(event.request);
+          return cached || new Response('', { status: 500 });
+        }
+      })
+    );
+  }
+});
