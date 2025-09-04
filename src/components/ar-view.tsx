@@ -8,6 +8,9 @@ import { useLocation, Coordinates } from "@/hooks/use-location";
 import { latLngToLocal, localToLatLng } from "@/lib/geo";
 import { distanceBetween } from "geofire-common";
 
+const DETAIL_DISTANCE = 30; // meters at which to show full detail
+const MAX_DISTANCE = 100; // meters beyond which notes are hidden
+
 interface ARViewProps {
   notes: GhostNote[];
   onSelectNote: (note: GhostNote) => void;
@@ -58,7 +61,33 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
     });
     containerRef.current.appendChild(arButton);
 
+    const frustum = new THREE.Frustum();
+    const projScreenMatrix = new THREE.Matrix4();
+    const updateVisibility = () => {
+      camera.updateMatrixWorld();
+      projScreenMatrix.multiplyMatrices(
+        camera.projectionMatrix,
+        camera.matrixWorldInverse,
+      );
+      frustum.setFromProjectionMatrix(projScreenMatrix);
+      Object.values(noteMeshes.current).forEach((group) => {
+        const distance = camera.position.distanceTo(group.position);
+        const inFrustum = frustum.containsPoint(group.position);
+        const visible = inFrustum && distance <= MAX_DISTANCE;
+        group.visible = visible;
+        const label = group.getObjectByName("label");
+        const badge = group.getObjectByName("badge");
+        if (label) {
+          label.visible = distance <= DETAIL_DISTANCE;
+        }
+        if (badge) {
+          badge.visible = visible;
+        }
+      });
+    };
+
     renderer.setAnimationLoop(() => {
+      updateVisibility();
       renderer.render(scene, camera);
     });
 
@@ -173,6 +202,7 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
       });
       const geometry = new THREE.PlaneGeometry(1, 0.5);
       const mesh = new THREE.Mesh(geometry, material);
+      mesh.name = "label";
       group.add(mesh);
 
       const badgeCanvas = document.createElement("canvas");
@@ -283,7 +313,7 @@ function ARCreateButton({
   );
 }
 
-function getBearing(
+export function getBearing(
   from: { latitude: number; longitude: number },
   to: { latitude: number; longitude: number },
 ) {
