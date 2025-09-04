@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useOrientation } from "./use-orientation";
 import { trackEvent } from "@/lib/analytics";
 
-export function useARMode(threshold: number = 60) {
+export function useARMode(threshold: number = 60, hysteresis: number = 5) {
   const {
     orientation,
     permissionGranted: orientationGranted,
@@ -14,10 +14,12 @@ export function useARMode(threshold: number = 60) {
   const [isARActive, setIsARActive] = useState(false);
 
   useEffect(() => {
-    if (orientation.beta !== null) {
-      setIsARActive(orientation.beta > threshold);
-    }
-  }, [orientation.beta, threshold]);
+    const beta = orientation.beta;
+    if (beta === null) return;
+    setIsARActive((prev) =>
+      prev ? beta > threshold - hysteresis : beta > threshold
+    );
+  }, [orientation.beta, threshold, hysteresis]);
 
   const permissionGranted = orientationGranted && cameraPermissionGranted;
 

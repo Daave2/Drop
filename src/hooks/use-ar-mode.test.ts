@@ -30,6 +30,32 @@ describe('useARMode', () => {
     expect(result.current.isARActive).toBe(true)
   })
 
+  test('prevents flicker around threshold', () => {
+    mockedUseOrientation.mockReturnValue({
+      orientation: { alpha: 0, beta: 80, gamma: 0 },
+      permissionGranted: true,
+      requestPermission: vi.fn().mockResolvedValue(true)
+    })
+    const { result, rerender } = renderHook(() => useARMode(60, 5))
+    expect(result.current.isARActive).toBe(true)
+
+    mockedUseOrientation.mockReturnValue({
+      orientation: { alpha: 0, beta: 58, gamma: 0 },
+      permissionGranted: true,
+      requestPermission: vi.fn().mockResolvedValue(true)
+    })
+    rerender()
+    expect(result.current.isARActive).toBe(true)
+
+    mockedUseOrientation.mockReturnValue({
+      orientation: { alpha: 0, beta: 40, gamma: 0 },
+      permissionGranted: true,
+      requestPermission: vi.fn().mockResolvedValue(true)
+    })
+    rerender()
+    expect(result.current.isARActive).toBe(false)
+  })
+
   test('requests camera permission', async () => {
     const stopSpy = vi.fn()
     const removeTrackSpy = vi.fn()
