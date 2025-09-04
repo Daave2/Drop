@@ -9,6 +9,8 @@ export interface Orientation {
   gamma: number | null; // y-axis (left-to-right tilt)
 }
 
+const TEST_MODE_KEY = 'note-drop-test-orientation';
+
 export function useOrientation() {
   const [orientation, setOrientation] = useState<Orientation>({ alpha: null, beta: null, gamma: null });
   const [error, setError] = useState<string | null>(null);
@@ -49,6 +51,25 @@ export function useOrientation() {
   };
 
   useEffect(() => {
+    // Check for test mode values in local storage
+    try {
+      const testData = localStorage.getItem(TEST_MODE_KEY);
+      if (testData) {
+        const parsed = JSON.parse(testData);
+        if (parsed.enabled) {
+          setOrientation({
+            alpha: parsed.alpha,
+            beta: parsed.beta,
+            gamma: parsed.gamma,
+          });
+          setPermissionGranted(true); // Assume granted for test mode
+          return; // Don't attach real listeners
+        }
+      }
+    } catch (e) {
+      console.warn('Could not read test orientation data', e);
+    }
+    
     // Automatically try to add listener for browsers not requiring explicit permission
     if (typeof (DeviceOrientationEvent as any).requestPermission !== 'function') {
         window.addEventListener('deviceorientation', handleOrientation);

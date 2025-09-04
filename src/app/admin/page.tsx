@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState } from "react";
@@ -23,6 +24,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { EditableNote, ReportsTab } from "./reports-tab";
+import { TestModeTab } from "./TestModeTab";
 
 function AllNotesTab() {
   const [notes, setNotes] = useState<Note[]>([]);
@@ -89,9 +91,10 @@ export default function AdminPage() {
       </div>
 
       <Tabs defaultValue="reports">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="reports">Reports</TabsTrigger>
           <TabsTrigger value="all-notes">All Notes</TabsTrigger>
+          <TabsTrigger value="test-mode">Test Mode</TabsTrigger>
         </TabsList>
         <TabsContent value="reports" className="mt-6">
           <ReportsTab />
@@ -99,8 +102,10 @@ export default function AdminPage() {
         <TabsContent value="all-notes" className="mt-6">
           <AllNotesTab />
         </TabsContent>
+        <TabsContent value="test-mode" className="mt-6">
+          <TestModeTab />
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
-
