@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 import { useARMode } from './use-ar-mode'
 import { useOrientation } from './use-orientation'
@@ -12,7 +12,8 @@ const mockedUseOrientation = useOrientation as any
 const mockedTrackEvent = trackEvent as any
 
 describe('useARMode', () => {
-  test('activates when beta exceeds threshold', () => {
+  test('activates only after beta exceeds threshold for debounce period', () => {
+    vi.useFakeTimers()
     mockedUseOrientation.mockReturnValue({
       orientation: { alpha: 0, beta: 30, gamma: 0 },
       permissionGranted: true,
@@ -27,24 +28,33 @@ describe('useARMode', () => {
       requestPermission: vi.fn().mockResolvedValue(true)
     })
     rerender()
+    expect(result.current.isARActive).toBe(false)
+
+    act(() => {
+      vi.advanceTimersByTime(200)
+    })
+    expect(result.current.isARActive).toBe(false)
+
+    act(() => {
+      vi.advanceTimersByTime(100)
+    })
     expect(result.current.isARActive).toBe(true)
+    vi.useRealTimers()
   })
 
-  test('prevents flicker around threshold', () => {
+  test('debounces deactivation when hovering near threshold', () => {
+    vi.useFakeTimers()
     mockedUseOrientation.mockReturnValue({
       orientation: { alpha: 0, beta: 80, gamma: 0 },
       permissionGranted: true,
       requestPermission: vi.fn().mockResolvedValue(true)
     })
     const { result, rerender } = renderHook(() => useARMode(60, 5))
-    expect(result.current.isARActive).toBe(true)
+    expect(result.current.isARActive).toBe(false)
 
-    mockedUseOrientation.mockReturnValue({
-      orientation: { alpha: 0, beta: 58, gamma: 0 },
-      permissionGranted: true,
-      requestPermission: vi.fn().mockResolvedValue(true)
+    act(() => {
+      vi.advanceTimersByTime(300)
     })
-    rerender()
     expect(result.current.isARActive).toBe(true)
 
     mockedUseOrientation.mockReturnValue({
@@ -53,7 +63,33 @@ describe('useARMode', () => {
       requestPermission: vi.fn().mockResolvedValue(true)
     })
     rerender()
+    expect(result.current.isARActive).toBe(true)
+
+    act(() => {
+      vi.advanceTimersByTime(100)
+    })
+    mockedUseOrientation.mockReturnValue({
+      orientation: { alpha: 0, beta: 80, gamma: 0 },
+      permissionGranted: true,
+      requestPermission: vi.fn().mockResolvedValue(true)
+    })
+    rerender()
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+    expect(result.current.isARActive).toBe(true)
+
+    mockedUseOrientation.mockReturnValue({
+      orientation: { alpha: 0, beta: 40, gamma: 0 },
+      permissionGranted: true,
+      requestPermission: vi.fn().mockResolvedValue(true)
+    })
+    rerender()
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
     expect(result.current.isARActive).toBe(false)
+    vi.useRealTimers()
   })
 
   test('requests camera permission', async () => {
