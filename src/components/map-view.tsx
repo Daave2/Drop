@@ -4,9 +4,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
-import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
+import { Plus, MapPin, Compass, LocateFixed, Loader2 } from 'lucide-react';
 import { useLocation, Coordinates } from '@/hooks/use-location';
 import { useNotes } from '@/hooks/use-notes';
+import { useToast } from '@/hooks/use-toast';
 import { useProximityNotifications } from '@/hooks/use-proximity-notifications';
 import { useSettings } from '@/hooks/use-settings';
 import { Button } from '@/components/ui/button';
@@ -39,8 +40,9 @@ const BASE_REVEAL_RADIUS_M = 35;
 const HOT_POST_THRESHOLD = 50;
 function MapViewContent() {
   const { location, permissionState, requestPermission: requestLocationPermission } = useLocation();
-  const { notes, fetchNotes } = useNotes();
+  const { notes, fetchNotes, loading, error } = useNotes();
   const { proximityRadiusM } = useSettings();
+  const { toast } = useToast();
   useProximityNotifications(notes, location, proximityRadiusM);
   const [selectedNote, setSelectedNote] = useState<GhostNote | null>(null);
   const [revealedNoteId, setRevealedNoteId] = useState<string | null>(null);
@@ -62,6 +64,16 @@ function MapViewContent() {
   } = useARMode();
   const [arDismissed, setArDismissed] = useState(false);
   const isARViewVisible = isARActive && arPermissionGranted && !arDismissed;
+
+  useEffect(() => {
+    if (error) {
+      toast({
+        title: 'Failed to fetch notes',
+        description: error,
+        variant: 'destructive',
+      });
+    }
+  }, [error, toast]);
 
   const [viewState, setViewState] = useState<Partial<ViewState>>({
     longitude: DEFAULT_CENTER.longitude,
@@ -308,6 +320,26 @@ function MapViewContent() {
             </Popup>
         )}
       </Map>
+
+      {loading && (
+        <div
+          data-testid="map-loading"
+          className="absolute inset-0 z-20 flex items-center justify-center bg-background/50"
+        >
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      )}
+
+      {!loading && notes.length === 0 && (
+        <div
+          data-testid="no-notes"
+          className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"
+        >
+          <p className="rounded-md bg-background/80 px-4 py-2 text-sm text-muted-foreground">
+            No notes nearby yet
+          </p>
+        </div>
+      )}
 
       <header className="absolute top-0 left-0 right-0 p-2 sm:p-4 flex justify-between items-center bg-gradient-to-b from-background/80 to-transparent">
         <Logo />
