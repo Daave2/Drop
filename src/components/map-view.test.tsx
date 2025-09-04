@@ -120,10 +120,11 @@ describe('MapView', () => {
     expect(updatedMap.style.display).toBe('block');
   });
 
-  it('renders spinner while loading', () => {
+  it('renders loader while loading', () => {
     useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: true, error: null });
     const { getByTestId } = render(<MapView />);
-    expect(getByTestId('map-loading')).toBeTruthy();
+    const loader = getByTestId('map-loading');
+    expect(loader.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
   });
 
   it('shows message when no notes', () => {
