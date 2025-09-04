@@ -7,6 +7,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { ThemeProvider } from '@/components/theme-provider';
 import { Pwa } from '@/components/pwa';
 import { SettingsProvider } from '@/hooks/use-settings';
+import { NdSprite } from '@/components/ui/nd-sprite';
 
 export const metadata: Metadata = {
   title: 'NoteDrop: Location-Based Notes',
@@ -40,6 +41,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=PT+Sans:wght@400;700&family=Source+Code+Pro:wght@400;700&display=swap" rel="stylesheet" />
       </head>
       <body className={cn('font-body antialiased', 'min-h-screen bg-background')}>
+        <NdSprite />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
