@@ -31,8 +31,6 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
   const [isCreating, setIsCreating] = useState(false);
   const isCreatingRef = useRef(false);
   const [progress, setProgress] = useState(0);
-  const [hasValidHit, setHasValidHit] = useState(false);
-  const hasValidHitRef = useRef(false);
   const { location } = useLocation();
   const locationRef = useRef(location);
   const onCreateNoteRef = useRef(onCreateNote);
@@ -99,11 +97,7 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
       ) {
         const results = frame.getHitTestResults(hitTestSourceRef.current);
         if (results.length > 0) {
-          if (!hasValidHitRef.current) {
-            hasValidHitRef.current = true;
-            setHasValidHit(true);
-            setProgress(1);
-          }
+          setProgress(1);
         } else {
           setProgress((p) => Math.min(p + 0.01, 0.9));
         }
@@ -159,8 +153,6 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
             isCreatingRef.current = false;
             setIsCreating(false);
             setProgress(0);
-            setHasValidHit(false);
-            hasValidHitRef.current = false;
           }
         }
         return;
@@ -317,7 +309,7 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
       >
         Return to Map
       </button>
-      {isCreating && !hasValidHit && (
+      {isCreating && (
         <SurfaceDetectionOverlay progress={progress} />
       )}
       <ARCreateButton
@@ -327,8 +319,6 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
           isCreatingRef.current = next;
           setIsCreating(next);
           setProgress(0);
-          setHasValidHit(false);
-          hasValidHitRef.current = false;
         }}
       />
     </div>
@@ -392,5 +382,3 @@ export function getBearing(
     Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
-
-
