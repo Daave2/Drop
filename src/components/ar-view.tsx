@@ -1,8 +1,8 @@
+
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
-import { ARButton } from "three/examples/jsm/webxr/ARButton.js";
 import { GhostNote } from "@/types";
 import { useLocation, Coordinates } from "@/hooks/use-location";
 import { latLngToLocal, localToLatLng } from "@/lib/geo";
@@ -57,18 +57,6 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
     cameraRef.current = camera;
 
     containerRef.current.appendChild(renderer.domElement);
-    
-    // ARButton creates a button that handles entering an AR session.
-    // We create it, but immediately remove it from the DOM as we have our own UI.
-    // We pass an empty onUnsupported callback to prevent it from showing its own error message.
-    const arButton = ARButton.createButton(renderer, {
-      requiredFeatures: ["local", "hit-test"],
-      onUnsupported: () => {},
-    });
-    // We hide the default button and use our own UI.
-    arButton.style.display = 'none';
-    document.body.appendChild(arButton);
-
 
     const frustum = new THREE.Frustum();
     const projScreenMatrix = new THREE.Matrix4();
@@ -192,7 +180,6 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
       scene.remove(controller);
       renderer.xr.removeEventListener("sessionstart", onSessionStart);
       renderer.xr.removeEventListener("sessionend", onSessionEnd);
-      arButton.remove();
       renderer.forceContextLoss();
       renderer.dispose();
       renderer.domElement.remove();
@@ -293,7 +280,7 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
         const ctx = canvas.getContext("2d");
         if (ctx) {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          ctx.fillStyle = "rgba(0_0_0_/_0.6)";
           ctx.fillRect(0, 0, canvas.width, canvas.height);
           ctx.fillStyle = "white";
           ctx.font = "24px sans-serif";
@@ -309,6 +296,19 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
     onReturnToMap();
   };
 
+  const handleEnterAR = async () => {
+    if (rendererRef.current) {
+        try {
+            const session = await (navigator as any).xr.requestSession('immersive-ar', {
+                requiredFeatures: ['local', 'hit-test']
+            });
+            await rendererRef.current.xr.setSession(session);
+        } catch (e) {
+            console.error("Failed to start AR session", e);
+        }
+    }
+  }
+
   return (
     <div ref={containerRef} className="absolute inset-0 z-20">
       <button
@@ -317,6 +317,7 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
       >
         Return to Map
       </button>
+      <button id="enter-ar-button" onClick={handleEnterAR} className="hidden"></button>
       {isCreating && (
         <SurfaceDetectionOverlay progress={progress} />
       )}
@@ -390,3 +391,5 @@ export function getBearing(
     Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
+
+    

@@ -56,5 +56,7 @@ export function useARMode() {
     }
   };
 
-  return { isARActive: permissionGranted, permissionGranted, requestPermission, arError, setArError };
+  return { permissionGranted, requestPermission, arError, setArError };
 }
+
+    

@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
-import { Plus, MapPin, Compass, LocateFixed, AlertTriangle } from 'lucide-react';
+import { Plus, MapPin, Compass, LocateFixed, AlertTriangle, Camera } from 'lucide-react';
 import { useLocation, Coordinates } from '@/hooks/use-location';
 import { useNotes } from '@/hooks/use-notes';
 import { useToast } from '@/hooks/use-toast';
@@ -61,14 +61,12 @@ function MapViewContent() {
   const searchParams = useSearchParams();
   const { theme } = useTheme();
   const {
-    isARActive,
     permissionGranted: arPermissionGranted,
     requestPermission: requestARPermission,
     arError,
     setArError
   } = useARMode();
-  const [arDismissed, setArDismissed] = useState(false);
-  const isARViewVisible = isARActive && arPermissionGranted && !arDismissed;
+  const [isARViewVisible, setARViewVisible] = useState(false);
 
   useEffect(() => {
     if (error) {
@@ -188,13 +186,6 @@ function MapViewContent() {
     }
   }, [location, viewState.longitude, viewState.latitude, searchParams]);
 
-  useEffect(() => {
-    if (!isARActive) {
-      setArDismissed(false);
-    }
-  }, [isARActive]);
-
-
   const handleMarkerClick = (note: GhostNote) => {
     if (!location) {
         setSelectedNote(note);
@@ -231,10 +222,20 @@ function MapViewContent() {
     }
   };
 
+  const handleEnableAR = async () => {
+    const hasPermission = await requestARPermission();
+    if (hasPermission) {
+        setARViewVisible(true);
+        const enterARButton = document.getElementById('enter-ar-button');
+        enterARButton?.click();
+    }
+  }
+
   const handleARCreateNote = (coords: Coordinates) => {
     setCreatingNote(true);
     setSelectedNote(null);
     setNewNoteLocation(coords);
+    setARViewVisible(false);
     setNoteSheetOpen(true);
   };
 
@@ -274,7 +275,7 @@ function MapViewContent() {
         <ARView
           notes={notes}
           onSelectNote={handleMarkerClick}
-          onReturnToMap={() => setArDismissed(true)}
+          onReturnToMap={() => setARViewVisible(false)}
           onCreateNote={handleARCreateNote}
         />
       )}
@@ -348,7 +349,8 @@ function MapViewContent() {
       <header className="absolute top-0 left-0 right-0 p-2 sm:p-4 flex justify-between items-center bg-gradient-to-b from-background/80 to-transparent">
         <Logo />
         <div className="flex items-center gap-2 bg-background/80 p-1 rounded-full">
-            <Button onClick={requestARPermission} size="sm" variant="secondary">
+            <Button onClick={handleEnableAR} size="sm" variant="secondary">
+              <Camera className="mr-2" />
               Enable AR
             </Button>
             {permissionState === 'prompt' && (
@@ -389,9 +391,6 @@ function MapViewContent() {
           side="bottom"
           className="max-h-[90vh] overflow-y-auto md:max-h-none md:right-0 md:left-auto md:top-0 md:h-full md:rounded-l-2xl md:max-w-md lg:max-w-lg xl:max-w-xl"
         >
-          <SheetHeader>
-            <SheetTitle>Note Details</SheetTitle>
-          </SheetHeader>
           <NoteSheetContent
             noteId={selectedNote?.id ?? null}
             isCreating={isCreatingNote}
@@ -449,3 +448,5 @@ export default function MapView() {
         </React.Suspense>
     )
 }
+
+    
