@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { NotificationsButton } from './notifications-button';
 import ARView from './ar-view';
 import { useARMode } from '@/hooks/use-ar-mode';
+import OnboardingOverlay from './onboarding-overlay';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
@@ -320,6 +321,8 @@ function MapViewContent() {
             </Popup>
         )}
       </Map>
+
+      <OnboardingOverlay />
 
       {loading && (
         <div
