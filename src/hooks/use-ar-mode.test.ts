@@ -42,6 +42,29 @@ describe('useARMode', () => {
     vi.useRealTimers()
   })
 
+  test('activates for negative beta values beyond threshold', () => {
+    vi.useFakeTimers()
+    mockedUseOrientation.mockReturnValue({
+      orientation: { alpha: 0, beta: -30, gamma: 0 },
+      permissionGranted: true,
+      requestPermission: vi.fn().mockResolvedValue(true)
+    })
+    const { result, rerender } = renderHook(() => useARMode(45))
+    expect(result.current.isARActive).toBe(false)
+
+    mockedUseOrientation.mockReturnValue({
+      orientation: { alpha: 0, beta: -80, gamma: 0 },
+      permissionGranted: true,
+      requestPermission: vi.fn().mockResolvedValue(true)
+    })
+    rerender()
+    act(() => {
+      vi.advanceTimersByTime(300)
+    })
+    expect(result.current.isARActive).toBe(true)
+    vi.useRealTimers()
+  })
+
   test('debounces deactivation when hovering near threshold', () => {
     vi.useFakeTimers()
     mockedUseOrientation.mockReturnValue({
