@@ -1,7 +1,13 @@
 
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import * as THREE from "three";
 import { GhostNote } from "@/types";
 import { useLocation, Coordinates } from "@/hooks/use-location";
@@ -16,9 +22,15 @@ interface ARViewProps {
   onSelectNote: (note: GhostNote) => void;
   onReturnToMap: () => void;
   onCreateNote: (coords: Coordinates) => void;
+  style?: React.CSSProperties;
 }
 
-export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNote }: ARViewProps) {
+export type ARViewHandle = {
+  enterAR: () => Promise<void>;
+};
+
+const ARView = forwardRef<ARViewHandle, ARViewProps>(
+  ({ notes, onSelectNote, onReturnToMap, onCreateNote, style }, ref) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const sceneRef = useRef<THREE.Scene>();
   const cameraRef = useRef<THREE.PerspectiveCamera>();
@@ -298,29 +310,28 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
 
   const handleEnterAR = async () => {
     if (rendererRef.current) {
-        try {
-            const session = await (navigator as any).xr.requestSession('immersive-ar', {
-                requiredFeatures: ['local', 'hit-test']
-            });
-            await rendererRef.current.xr.setSession(session);
-        } catch (e) {
-            console.error("Failed to start AR session", e);
-        }
+      try {
+        const session = await (navigator as any).xr.requestSession("immersive-ar", {
+          requiredFeatures: ["local", "hit-test"],
+        });
+        await rendererRef.current.xr.setSession(session);
+      } catch (e) {
+        console.error("Failed to start AR session", e);
+      }
     }
-  }
+  };
+
+  useImperativeHandle(ref, () => ({ enterAR: handleEnterAR }));
 
   return (
-    <div ref={containerRef} className="absolute inset-0 z-20">
+    <div ref={containerRef} style={style} className="absolute inset-0 z-20">
       <button
         onClick={handleReturn}
         className="absolute top-4 left-4 z-10 bg-background/80 text-foreground px-3 py-1 rounded-md"
       >
         Return to Map
       </button>
-      <button id="enter-ar-button" onClick={handleEnterAR} className="hidden"></button>
-      {isCreating && (
-        <SurfaceDetectionOverlay progress={progress} />
-      )}
+      {isCreating && <SurfaceDetectionOverlay progress={progress} />}
       <ARCreateButton
         isCreating={isCreating}
         onToggle={() => {
@@ -332,7 +343,11 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
       />
     </div>
   );
-}
+});
+
+ARView.displayName = "ARView";
+
+export default ARView;
 
 export function ARCreateButton({
   isCreating,
