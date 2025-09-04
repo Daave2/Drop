@@ -94,20 +94,23 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
     const controller = renderer.xr.getController(0);
     scene.add(controller);
 
-    renderer.xr.addEventListener("sessionstart", async () => {
+    const onSessionStart = async () => {
       const session = renderer.xr.getSession();
       if (!session) return;
       localSpaceRef.current = renderer.xr.getReferenceSpace();
       const viewerSpace = await (session as any).requestReferenceSpace("viewer");
       hitTestSourceRef.current = await (session as any).requestHitTestSource({ space: viewerSpace });
       startHeadingRef.current = locationRef.current?.heading ?? 0;
-    });
+    };
 
-    renderer.xr.addEventListener("sessionend", () => {
+    const onSessionEnd = () => {
       hitTestSourceRef.current?.cancel?.();
       hitTestSourceRef.current = null;
       localSpaceRef.current = null;
-    });
+    };
+
+    renderer.xr.addEventListener("sessionstart", onSessionStart);
+    renderer.xr.addEventListener("sessionend", onSessionEnd);
 
     const raycaster = new THREE.Raycaster();
     const tempMatrix = new THREE.Matrix4();
@@ -164,8 +167,15 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
       renderer.setAnimationLoop(null);
       controller.removeEventListener("select", onSelect);
       scene.remove(controller);
+      renderer.xr.removeEventListener("sessionstart", onSessionStart);
+      renderer.xr.removeEventListener("sessionend", onSessionEnd);
       arButton.remove();
+      renderer.forceContextLoss();
       renderer.dispose();
+      renderer.domElement.remove();
+      rendererRef.current = undefined;
+      sceneRef.current = undefined;
+      cameraRef.current = undefined;
     };
   }, [onSelectNote]);
 
