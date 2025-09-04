@@ -33,8 +33,13 @@ export function useARMode(threshold: number = 60) {
       return false;
     }
     try {
-      await navigator.mediaDevices.getUserMedia({ video: true });
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      stream.getTracks().forEach((track) => {
+        track.stop();
+        stream.removeTrack(track);
+      });
       setCameraPermissionGranted(true);
+      trackEvent("ar_permission_granted");
       return true;
     } catch {
       setCameraPermissionGranted(false);
