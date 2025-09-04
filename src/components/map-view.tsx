@@ -69,6 +69,13 @@ function MapViewContent() {
   const [isARViewVisible, setARViewVisible] = useState(false);
 
   useEffect(() => {
+    if (isARViewVisible) {
+      const enterARButton = document.querySelector<HTMLButtonElement>('#enter-ar-button');
+      enterARButton?.click();
+    }
+  }, [isARViewVisible]);
+
+  useEffect(() => {
     if (error) {
       toast({
         title: 'Failed to fetch notes',
@@ -226,8 +233,6 @@ function MapViewContent() {
     const hasPermission = await requestARPermission();
     if (hasPermission) {
         setARViewVisible(true);
-        const enterARButton = document.getElementById('enter-ar-button');
-        enterARButton?.click();
     }
   }
 

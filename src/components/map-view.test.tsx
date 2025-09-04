@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
-import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { render, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
 import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import MapView from './map-view';
 
@@ -47,10 +47,14 @@ vi.mock('@/hooks/use-ar-mode', () => ({
 vi.mock('next-themes', () => ({ useTheme: () => ({ theme: 'light' }) }));
 vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }));
 
+const enterARHandler = vi.hoisted(() => vi.fn());
 vi.mock('./ar-view', () => ({
   __esModule: true,
   default: ({ onReturnToMap }: any) => (
-    <div data-testid="arview" onClick={onReturnToMap} />
+    <div>
+      <button id="enter-ar-button" onClick={enterARHandler}></button>
+      <div data-testid="arview" onClick={onReturnToMap}></div>
+    </div>
   ),
 }));
 vi.mock('./notifications-button', () => ({ NotificationsButton: () => <div /> }));
@@ -59,7 +63,7 @@ vi.mock('./compass-view', () => ({ __esModule: true, default: () => <div /> }));
 vi.mock('./theme-toggle', () => ({ ThemeToggle: () => <div /> }));
 vi.mock('./auth-button', () => ({ AuthButton: () => <div /> }));
 vi.mock('./ui/logo', () => ({ Logo: () => <div /> }));
-vi.mock('@/components/ui/button', () => ({ Button: ({ children }: any) => <button>{children}</button> }));
+vi.mock('@/components/ui/button', () => ({ Button: ({ children, ...props }: any) => <button {...props}>{children}</button> }));
 vi.mock('./ui/sheet', () => ({
   Sheet: ({ children }: any) => <div>{children}</div>,
   SheetContent: ({ children }: any) => <div>{children}</div>,
@@ -78,7 +82,7 @@ vi.mock('./ui/badge', () => ({ Badge: ({ children }: any) => <span>{children}</s
 beforeEach(() => {
   useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: null });
   useToastMock.mockReturnValue({ toast: vi.fn() });
-  useARModeMock.mockReturnValue({ isARActive: false, permissionGranted: false, requestPermission: vi.fn() });
+  useARModeMock.mockReturnValue({ permissionGranted: false, requestPermission: vi.fn(), arError: null, setArError: vi.fn() });
 });
 
 afterEach(() => {
@@ -86,38 +90,59 @@ afterEach(() => {
   useARModeMock.mockReset();
   useNotesMock.mockReset();
   useToastMock.mockReset();
+  enterARHandler.mockReset();
+  window.localStorage.clear();
 });
 
 describe('MapView', () => {
-  it('hides map when AR is active and permissions granted', () => {
-    useARModeMock.mockReturnValue({ isARActive: true, permissionGranted: true, requestPermission: vi.fn() });
-    const { getAllByTestId } = render(<MapView />);
+  it('enters AR view when permission granted and enable AR clicked', async () => {
+    const requestPermission = vi.fn().mockResolvedValue(true);
+    useARModeMock.mockReturnValue({ permissionGranted: false, requestPermission, arError: null, setArError: vi.fn() });
+    const { getAllByTestId, getByText, getByTestId } = render(<MapView />);
+    fireEvent.click(getByTestId('onboarding-overlay'));
+    await waitFor(() => expect(() => getByTestId('onboarding-overlay')).toThrow());
+    await act(async () => {
+      fireEvent.click(getByText('Enable AR'));
+    });
+    await waitFor(() => expect(enterARHandler).toHaveBeenCalled());
     const maps = getAllByTestId('map');
     const map = maps[maps.length - 1] as HTMLDivElement;
     expect(map.style.display).toBe('none');
     expect(getAllByTestId('arview').length).toBeGreaterThan(0);
   });
 
-  it('shows map when AR permissions are denied', () => {
-    useARModeMock.mockReturnValue({ isARActive: true, permissionGranted: false, requestPermission: vi.fn() });
-    const { getAllByTestId, queryAllByTestId } = render(<MapView />);
+  it('keeps map visible when AR permission denied', async () => {
+    const requestPermission = vi.fn().mockResolvedValue(false);
+    useARModeMock.mockReturnValue({ permissionGranted: false, requestPermission, arError: null, setArError: vi.fn() });
+    const { getAllByTestId, getByText, queryAllByTestId, getByTestId } = render(<MapView />);
+    fireEvent.click(getByTestId('onboarding-overlay'));
+    await waitFor(() => expect(() => getByTestId('onboarding-overlay')).toThrow());
+    await act(async () => {
+      fireEvent.click(getByText('Enable AR'));
+    });
+    await waitFor(() => {
+      const maps = getAllByTestId('map');
+      const map = maps[maps.length - 1] as HTMLDivElement;
+      expect(map.style.display).toBe('block');
+      expect(queryAllByTestId('arview')).toHaveLength(0);
+    });
+  });
+
+  it('shows map after returning from AR view', async () => {
+    const requestPermission = vi.fn().mockResolvedValue(true);
+    useARModeMock.mockReturnValue({ permissionGranted: false, requestPermission, arError: null, setArError: vi.fn() });
+    const { getAllByTestId, getByText, queryAllByTestId, getByTestId } = render(<MapView />);
+    fireEvent.click(getByTestId('onboarding-overlay'));
+    await waitFor(() => expect(() => getByTestId('onboarding-overlay')).toThrow());
+    await act(async () => {
+      fireEvent.click(getByText('Enable AR'));
+    });
+    await waitFor(() => expect(getAllByTestId('arview').length).toBeGreaterThan(0));
+    getAllByTestId('arview').forEach(el => fireEvent.click(el));
+    await waitFor(() => expect(queryAllByTestId('arview')).toHaveLength(0));
     const maps = getAllByTestId('map');
     const map = maps[maps.length - 1] as HTMLDivElement;
     expect(map.style.display).toBe('block');
-    expect(queryAllByTestId('arview')).toHaveLength(0);
-  });
-
-  it('shows map after returning from AR view', () => {
-    useARModeMock.mockReturnValue({ isARActive: true, permissionGranted: true, requestPermission: vi.fn() });
-    const { getAllByTestId, queryAllByTestId } = render(<MapView />);
-    const maps = getAllByTestId('map');
-    const map = maps[maps.length - 1] as HTMLDivElement;
-    expect(map.style.display).toBe('none');
-    getAllByTestId('arview').forEach(el => fireEvent.click(el));
-    expect(queryAllByTestId('arview')).toHaveLength(0);
-    const updatedMaps = getAllByTestId('map');
-    const updatedMap = updatedMaps[updatedMaps.length - 1] as HTMLDivElement;
-    expect(updatedMap.style.display).toBe('block');
   });
 
   it('renders loader while loading', () => {
