@@ -17,6 +17,28 @@ export function useARMode() {
 
   const requestPermission = async (): Promise<boolean> => {
     setArError(null);
+    if (!navigator.xr?.isSessionSupported) {
+      const errorMsg = "AR mode is not supported on this device or browser.";
+      setArError(errorMsg);
+      trackEvent("ar_launch_failed", { reason: "xr_unsupported" });
+      return false;
+    }
+
+    try {
+      const supported = await navigator.xr.isSessionSupported("immersive-ar");
+      if (!supported) {
+        const errorMsg = "AR mode is not supported on this device or browser.";
+        setArError(errorMsg);
+        trackEvent("ar_launch_failed", { reason: "xr_unsupported" });
+        return false;
+      }
+    } catch {
+      const errorMsg = "Unable to verify AR support on this device.";
+      setArError(errorMsg);
+      trackEvent("ar_launch_failed", { reason: "xr_check_failed" });
+      return false;
+    }
+
     const orient = await requestOrientationPermission();
     if (!orient) {
       const errorMsg = "Motion sensor access is required for AR mode. Please enable it in your browser settings.";
@@ -45,8 +67,8 @@ export function useARMode() {
       return true;
     } catch (err: any) {
       let errorMsg = "An unknown error occurred while trying to access the camera.";
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-          errorMsg = "Camera access is required for AR mode. Please enable it in your browser settings.";
+      if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+        errorMsg = "Camera access is required for AR mode. Please enable it in your browser settings.";
       }
       setArError(errorMsg);
       setCameraPermissionGranted(false);

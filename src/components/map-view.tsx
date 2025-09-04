@@ -437,7 +437,7 @@ function MapViewContent() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="text-destructive" />
-              AR Permission Error
+              AR Error
             </DialogTitle>
             <DialogDescription className="pt-4">
               {arError}
