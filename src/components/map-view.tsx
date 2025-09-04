@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
-import { Plus, MapPin, Compass, LocateFixed, AlertTriangle, Camera } from 'lucide-react';
+import { Plus, Compass, LocateFixed, AlertTriangle } from 'lucide-react';
 import { useLocation, Coordinates } from '@/hooks/use-location';
 import { useNotes } from '@/hooks/use-notes';
 import { useToast } from '@/hooks/use-toast';
@@ -35,6 +35,7 @@ import ARView, { ARViewHandle } from './ar-view';
 import { useARMode } from '@/hooks/use-ar-mode';
 import OnboardingOverlay from './onboarding-overlay';
 import { MapSkeleton } from './map-skeleton';
+import { NdIcon } from './ui/nd-icon';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
@@ -304,12 +305,13 @@ function MapViewContent() {
             return (
                 <Marker key={note.id} longitude={note.lng} latitude={note.lat} onClick={() => handleMarkerClick(note)}>
                     <button className="transform hover:scale-110 transition-transform relative">
-                        <MapPin className={cn('drop-shadow-lg', 
-                            sizeClass,
-                            isHot ? 'text-accent animate-flame-flicker' : 
-                            note.id === revealedNoteId ? 'text-accent' : 
-                            note.type === 'photo' ? 'text-secondary-foreground/70' : 'text-primary/70'
-                        )} fill="currentColor" />
+                        <NdIcon
+                            name={note.id === revealedNoteId ? 'pin-selected' : 'pin-default'}
+                            className={cn('drop-shadow-lg',
+                                sizeClass,
+                                isHot && 'animate-flame-flicker'
+                            )}
+                        />
                     </button>
                 </Marker>
             );
@@ -358,7 +360,7 @@ function MapViewContent() {
             <Logo />
             <div className="flex items-center gap-2 bg-background/80 p-1 rounded-full">
                 <Button onClick={handleEnableAR} size="sm" variant="secondary">
-                  <Camera className="mr-2" />
+                  <NdIcon name="camera" className="mr-2 h-4 w-4" />
                   Enable AR
                 </Button>
                 {permissionState === 'prompt' && (
