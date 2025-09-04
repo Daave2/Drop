@@ -2,7 +2,7 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import { vi, expect, test } from 'vitest';
-import { ReportsTab } from './page';
+import { ReportsTab } from './reports-tab';
 
 vi.mock('@/lib/firebase', () => ({ db: {} }));
 
