@@ -2,8 +2,8 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
-import { render } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { render, fireEvent, cleanup } from '@testing-library/react';
+import { describe, expect, it, vi, afterEach } from 'vitest';
 import MapView from './map-view';
 
 vi.mock('react-map-gl/maplibre', () => ({
@@ -33,14 +33,20 @@ vi.mock('@/hooks/use-proximity-notifications', () => ({
   useProximityNotifications: () => {},
 }));
 
+const useARModeMock = vi.hoisted(() => vi.fn());
 vi.mock('@/hooks/use-ar-mode', () => ({
-  useARMode: () => ({ isARActive: true, permissionGranted: true, requestPermission: vi.fn() }),
+  useARMode: useARModeMock,
 }));
 
 vi.mock('next-themes', () => ({ useTheme: () => ({ theme: 'light' }) }));
 vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }));
 
-vi.mock('./ar-view', () => ({ __esModule: true, default: () => <div data-testid="arview" /> }));
+vi.mock('./ar-view', () => ({
+  __esModule: true,
+  default: ({ onReturnToMap }: any) => (
+    <div data-testid="arview" onClick={onReturnToMap} />
+  ),
+}));
 vi.mock('./notifications-button', () => ({ NotificationsButton: () => <div /> }));
 vi.mock('./note-sheet-content', () => ({ __esModule: true, default: () => <div /> }));
 vi.mock('./compass-view', () => ({ __esModule: true, default: () => <div /> }));
@@ -63,14 +69,41 @@ vi.mock('./ui/dialog', () => ({
 }));
 vi.mock('./ui/badge', () => ({ Badge: ({ children }: any) => <span>{children}</span> }));
 
+afterEach(() => {
+  cleanup();
+  useARModeMock.mockReset();
+});
 
 describe('MapView', () => {
-  it('hides map when AR is active', () => {
-    const { getByTestId } = render(<MapView />);
-    const map = getByTestId('map') as HTMLDivElement;
+  it('hides map when AR is active and permissions granted', () => {
+    useARModeMock.mockReturnValue({ isARActive: true, permissionGranted: true, requestPermission: vi.fn() });
+    const { getAllByTestId } = render(<MapView />);
+    const maps = getAllByTestId('map');
+    const map = maps[maps.length - 1] as HTMLDivElement;
     expect(map.style.display).toBe('none');
-    // Ensure AR view is rendered
-    expect(getByTestId('arview')).toBeTruthy();
+    expect(getAllByTestId('arview').length).toBeGreaterThan(0);
+  });
+
+  it('shows map when AR permissions are denied', () => {
+    useARModeMock.mockReturnValue({ isARActive: true, permissionGranted: false, requestPermission: vi.fn() });
+    const { getAllByTestId, queryAllByTestId } = render(<MapView />);
+    const maps = getAllByTestId('map');
+    const map = maps[maps.length - 1] as HTMLDivElement;
+    expect(map.style.display).toBe('block');
+    expect(queryAllByTestId('arview')).toHaveLength(0);
+  });
+
+  it('shows map after returning from AR view', () => {
+    useARModeMock.mockReturnValue({ isARActive: true, permissionGranted: true, requestPermission: vi.fn() });
+    const { getAllByTestId, queryAllByTestId } = render(<MapView />);
+    const maps = getAllByTestId('map');
+    const map = maps[maps.length - 1] as HTMLDivElement;
+    expect(map.style.display).toBe('none');
+    getAllByTestId('arview').forEach(el => fireEvent.click(el));
+    expect(queryAllByTestId('arview')).toHaveLength(0);
+    const updatedMaps = getAllByTestId('map');
+    const updatedMap = updatedMaps[updatedMaps.length - 1] as HTMLDivElement;
+    expect(updatedMap.style.display).toBe('block');
   });
 });
 

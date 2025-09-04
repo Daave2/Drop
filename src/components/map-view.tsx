@@ -61,6 +61,7 @@ function MapViewContent() {
     requestPermission: requestARPermission,
   } = useARMode();
   const [arDismissed, setArDismissed] = useState(false);
+  const isARViewVisible = isARActive && arPermissionGranted && !arDismissed;
 
   const [viewState, setViewState] = useState<Partial<ViewState>>({
     longitude: DEFAULT_CENTER.longitude,
@@ -252,7 +253,7 @@ function MapViewContent() {
 
   return (
     <div className="h-screen w-screen relative">
-      {isARActive && arPermissionGranted && !arDismissed && (
+      {isARViewVisible && (
         <ARView
           notes={notes}
           onSelectNote={handleMarkerClick}
@@ -264,7 +265,7 @@ function MapViewContent() {
         ref={mapRef}
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
-        style={{ width: '100%', height: '100%', display: isARActive ? 'none' : 'block' }}
+        style={{ width: '100%', height: '100%', display: isARViewVisible ? 'none' : 'block' }}
         mapStyle={mapStyleUrl}
         antialias={true}
       >
