@@ -21,7 +21,10 @@ export interface Note {
   revealAngleDeg: number;
   teaser?: string | null;
   peekable: boolean;
-  limitedDrop?: { enabled: boolean; endsAt?: any } | null;
+  limitedDrop?: {
+    enabled: boolean;
+    endsAt?: { seconds: number; nanoseconds: number } | null;
+  } | null;
   dmAllowed: boolean;
   reportCount?: number;
 }
