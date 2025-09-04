@@ -79,10 +79,14 @@ vi.mock('./ui/dialog', () => ({
 }));
 vi.mock('./ui/badge', () => ({ Badge: ({ children }: any) => <span>{children}</span> }));
 
+const toastFn = vi.fn();
+
 beforeEach(() => {
   useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: null });
-  useToastMock.mockReturnValue({ toast: vi.fn() });
+  toastFn.mockReset();
+  useToastMock.mockReturnValue({ toast: toastFn });
   useARModeMock.mockReturnValue({ permissionGranted: false, requestPermission: vi.fn(), arError: null, setArError: vi.fn() });
+  (navigator as any).xr = {};
 });
 
 afterEach(() => {
@@ -92,6 +96,7 @@ afterEach(() => {
   useToastMock.mockReset();
   enterARHandler.mockReset();
   window.localStorage.clear();
+  delete (navigator as any).xr;
 });
 
 describe('MapView', () => {
@@ -128,6 +133,24 @@ describe('MapView', () => {
     });
   });
 
+  it('toasts when AR is not supported', async () => {
+    delete (navigator as any).xr;
+    const requestPermission = vi.fn();
+    useARModeMock.mockReturnValue({ permissionGranted: false, requestPermission, arError: null, setArError: vi.fn() });
+    const { getAllByTestId, getByText, getByTestId, queryAllByTestId } = render(<MapView />);
+    fireEvent.click(getByTestId('onboarding-overlay'));
+    await waitFor(() => expect(() => getByTestId('onboarding-overlay')).toThrow());
+    await act(async () => {
+      fireEvent.click(getByText('Enable AR'));
+    });
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(toastFn).toHaveBeenCalled();
+    const maps = getAllByTestId('map');
+    const map = maps[maps.length - 1] as HTMLDivElement;
+    expect(map.style.display).toBe('block');
+    expect(queryAllByTestId('arview')).toHaveLength(0);
+  });
+
   it('shows map after returning from AR view', async () => {
     const requestPermission = vi.fn().mockResolvedValue(true);
     useARModeMock.mockReturnValue({ permissionGranted: false, requestPermission, arError: null, setArError: vi.fn() });
@@ -158,11 +181,11 @@ describe('MapView', () => {
   });
 
   it('toasts on error', async () => {
-    const toastFn = vi.fn();
+    const errorToastFn = vi.fn();
     useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: 'oops' });
-    useToastMock.mockReturnValue({ toast: toastFn });
+    useToastMock.mockReturnValue({ toast: errorToastFn });
     render(<MapView />);
-    await waitFor(() => expect(toastFn).toHaveBeenCalled());
+    await waitFor(() => expect(errorToastFn).toHaveBeenCalled());
   });
 });
 

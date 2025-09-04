@@ -7,6 +7,7 @@ import { GhostNote } from "@/types";
 import { useLocation, Coordinates } from "@/hooks/use-location";
 import { latLngToLocal, localToLatLng } from "@/lib/geo";
 import { distanceBetween } from "geofire-common";
+import { useToast } from "@/hooks/use-toast";
 
 const DETAIL_DISTANCE = 30; // meters at which to show full detail
 const MAX_DISTANCE = 100; // meters beyond which notes are hidden
@@ -34,6 +35,7 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
   const { location } = useLocation();
   const locationRef = useRef(location);
   const onCreateNoteRef = useRef(onCreateNote);
+  const { toast } = useToast();
 
   useEffect(() => {
     locationRef.current = location;
@@ -297,17 +299,29 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
   };
 
   const handleEnterAR = async () => {
-    if (rendererRef.current) {
-        try {
-            const session = await (navigator as any).xr.requestSession('immersive-ar', {
-                requiredFeatures: ['local', 'hit-test']
-            });
-            await rendererRef.current.xr.setSession(session);
-        } catch (e) {
-            console.error("Failed to start AR session", e);
-        }
+    if (!rendererRef.current) return;
+    if (!(navigator as any).xr) {
+      toast({
+        title: 'AR not supported',
+        description: 'Your browser does not support WebXR.',
+        variant: 'destructive',
+      });
+      return;
     }
-  }
+    try {
+      const session = await (navigator as any).xr.requestSession('immersive-ar', {
+        requiredFeatures: ['local', 'hit-test'],
+      });
+      await rendererRef.current.xr.setSession(session);
+    } catch (e: any) {
+      console.error("Failed to start AR session", e);
+      toast({
+        title: 'Failed to start AR session',
+        description: e?.message || 'An unknown error occurred.',
+        variant: 'destructive',
+      });
+    }
+  };
 
   return (
     <div ref={containerRef} className="absolute inset-0 z-20">

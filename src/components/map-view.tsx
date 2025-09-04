@@ -230,6 +230,14 @@ function MapViewContent() {
   };
 
   const handleEnableAR = async () => {
+    if (!(navigator as any).xr) {
+      toast({
+        title: 'AR not supported',
+        description: 'Your browser does not support WebXR.',
+        variant: 'destructive',
+      });
+      return;
+    }
     const hasPermission = await requestARPermission();
     if (hasPermission) {
         setARViewVisible(true);
