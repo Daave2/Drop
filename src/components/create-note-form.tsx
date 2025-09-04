@@ -80,7 +80,9 @@ export default function CreateNoteForm({
       const pseudonym = await getOrCreatePseudonym(user.uid);
       const geohash = geohashForLocation([userLocation.latitude, userLocation.longitude]);
 
-      const newNote: Omit<Note, "id" | "createdAt"> & { createdAt: any } = {
+      const newNote: Omit<Note, "id" | "createdAt"> & {
+        createdAt: ReturnType<typeof serverTimestamp>;
+      } = {
         text,
         lat: userLocation.latitude,
         lng: userLocation.longitude,
