@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -14,10 +15,12 @@ export function useARMode(threshold: number = 60) {
   const [isARActive, setIsARActive] = useState(false);
 
   useEffect(() => {
-    if (orientation.beta !== null) {
+    if (permissionGranted && orientation.beta !== null) {
       setIsARActive(orientation.beta > threshold);
+    } else {
+      setIsARActive(false);
     }
-  }, [orientation.beta, threshold]);
+  }, [orientation.beta, threshold, permissionGranted]);
 
   const permissionGranted = orientationGranted && cameraPermissionGranted;
 
@@ -51,4 +54,3 @@ export function useARMode(threshold: number = 60) {
 
   return { isARActive, permissionGranted, requestPermission };
 }
-
