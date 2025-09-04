@@ -8,8 +8,8 @@ import { trackEvent } from '@/lib/analytics';
 vi.mock('./use-orientation');
 vi.mock('@/lib/analytics');
 
-const mockedUseOrientation = useOrientation as any;
-const mockedTrackEvent = trackEvent as any;
+const mockedUseOrientation = vi.mocked(useOrientation);
+const mockedTrackEvent = vi.mocked(trackEvent);
 
 describe('useARMode', () => {
   beforeEach(() => {
