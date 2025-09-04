@@ -226,7 +226,6 @@ function MapViewContent() {
     const hasPermission = await requestARPermission();
     if (hasPermission) {
       setARViewVisible(true);
-      await arViewRef.current?.enterAR();
     }
   };
 
@@ -254,6 +253,13 @@ function MapViewContent() {
   const mapStyleUrl = theme === 'dark' 
     ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
     : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
+
+  useEffect(() => {
+    if (isARViewVisible) {
+      arViewRef.current?.enterAR();
+    }
+  }, [isARViewVisible]);
+
   
 
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
@@ -270,14 +276,15 @@ function MapViewContent() {
 
   return (
     <div className="h-screen w-screen relative">
-      <ARView
-        ref={arViewRef}
-        notes={notes}
-        onSelectNote={handleMarkerClick}
-        onReturnToMap={() => setARViewVisible(false)}
-        onCreateNote={handleARCreateNote}
-        style={{ display: isARViewVisible ? 'block' : 'none' }}
-      />
+      {isARViewVisible && (
+        <ARView
+          ref={arViewRef}
+          notes={notes}
+          onSelectNote={handleMarkerClick}
+          onReturnToMap={() => setARViewVisible(false)}
+          onCreateNote={handleARCreateNote}
+        />
+      )}
       <Map
         ref={mapRef}
         {...viewState}
