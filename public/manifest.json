@@ -1,7 +1,11 @@
+
 {
   "name": "NoteDrop",
   "short_name": "NoteDrop",
-  "description": "Leave and discover location-anchored virtual post-its.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
   "icons": [
     {
       "src": "/icon-192.png",
@@ -13,11 +17,5 @@
       "sizes": "512x512",
       "type": "image/png"
     }
-  ],
-  "theme_color": "#F0F8FF",
-  "background_color": "#F0F8FF",
-  "start_url": "/",
-  "scope": "/",
-  "display": "standalone",
-  "orientation": "portrait"
+  ]
 }
