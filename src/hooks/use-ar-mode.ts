@@ -1,11 +1,15 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useOrientation } from "./use-orientation";
 import { trackEvent } from "@/lib/analytics";
 
-export function useARMode(threshold: number = 60) {
+export function useARMode(
+  threshold: number = 60,
+  hysteresis: number = 5,
+  debounceMs: number = 250
+) {
   const {
     orientation,
     permissionGranted: orientationGranted,
@@ -13,14 +17,48 @@ export function useARMode(threshold: number = 60) {
   } = useOrientation();
   const [cameraPermissionGranted, setCameraPermissionGranted] = useState(false);
   const [isARActive, setIsARActive] = useState(false);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+<<<<<<< HEAD
     if (permissionGranted && orientation.beta !== null) {
       setIsARActive(orientation.beta > threshold);
     } else {
       setIsARActive(false);
     }
   }, [orientation.beta, threshold, permissionGranted]);
+=======
+    const beta = orientation.beta;
+    if (beta === null) return;
+    const target = isARActive
+      ? beta > threshold - hysteresis
+      : beta > threshold;
+
+    if (target === isARActive) {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+      return;
+    }
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      setIsARActive(target);
+      timeoutRef.current = null;
+    }, debounceMs);
+
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, [orientation.beta, threshold, hysteresis, debounceMs, isARActive]);
+>>>>>>> 2289218c56ffcbe5952beed6ceae9e8cd4674bb5
 
   const permissionGranted = orientationGranted && cameraPermissionGranted;
 

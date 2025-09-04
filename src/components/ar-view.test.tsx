@@ -1,5 +1,8 @@
+// @vitest-environment jsdom
+import React from "react";
 import { describe, expect, test } from "vitest";
-import { getBearing } from "./ar-view";
+import { render, screen } from "@testing-library/react";
+import { getBearing, ARCreateButton, SurfaceDetectionOverlay } from "./ar-view";
 import { latLngToLocal, localToLatLng } from "@/lib/geo";
 
 describe("getBearing", () => {
@@ -17,6 +20,22 @@ describe("getBearing", () => {
       { latitude: 1, longitude: 0 },
     );
     expect(bearing).toBeCloseTo(0);
+  });
+});
+
+describe("ARCreateButton", () => {
+  test("has tooltip explaining surface anchoring", () => {
+    render(<ARCreateButton isCreating={false} onToggle={() => {}} />);
+    const button = screen.getByRole("button", { name: /create note/i });
+    expect(button.getAttribute("title")).toMatch(/surface/);
+  });
+});
+
+describe("SurfaceDetectionOverlay", () => {
+  test("reflects progress percent", () => {
+    render(<SurfaceDetectionOverlay progress={0.5} />);
+    const bar = screen.getByRole("progressbar");
+    expect(bar.getAttribute("aria-valuenow")).toBe("50");
   });
 });
 
