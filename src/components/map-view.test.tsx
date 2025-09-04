@@ -120,7 +120,7 @@ describe('MapView', () => {
     expect(updatedMap.style.display).toBe('block');
   });
 
-  it('renders spinner while loading', () => {
+  it('renders skeleton while loading', () => {
     useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: true, error: null });
     const { getByTestId } = render(<MapView />);
     expect(getByTestId('map-loading')).toBeTruthy();

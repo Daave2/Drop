@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
-import { Plus, MapPin, Compass, LocateFixed, Loader2 } from 'lucide-react';
+import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
 import { useLocation, Coordinates } from '@/hooks/use-location';
 import { useNotes } from '@/hooks/use-notes';
 import { useToast } from '@/hooks/use-toast';
@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { NotificationsButton } from './notifications-button';
 import ARView from './ar-view';
 import { useARMode } from '@/hooks/use-ar-mode';
+import { MapSkeleton } from './map-skeleton';
 
 const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
@@ -322,12 +323,10 @@ function MapViewContent() {
       </Map>
 
       {loading && (
-        <div
+        <MapSkeleton
           data-testid="map-loading"
-          className="absolute inset-0 z-20 flex items-center justify-center bg-background/50"
-        >
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
+          className="absolute inset-0 z-20"
+        />
       )}
 
       {!loading && notes.length === 0 && (
@@ -426,9 +425,9 @@ function MapViewContent() {
 }
 
 export default function MapView() {
-    return (
-        <React.Suspense fallback={<div>Loading...</div>}>
-            <MapViewContent />
-        </React.Suspense>
-    )
+  return (
+    <React.Suspense fallback={<MapSkeleton className="fixed inset-0 h-screen w-screen" />}>
+      <MapViewContent />
+    </React.Suspense>
+  );
 }
