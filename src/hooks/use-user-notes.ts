@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   collection,
   query,
@@ -22,10 +23,12 @@ export function useUserNotes(uid: string, pageSize: number = DEFAULT_PAGE_SIZE) 
   const [loading, setLoading] = useState(false);
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot<DocumentData> | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const loadingRef = useRef(false);
 
   const loadMore = useCallback(async () => {
-    if (!db || loading || !hasMore) return;
+    if (!db || loadingRef.current || !hasMore) return;
 
+    loadingRef.current = true;
     setLoading(true);
 
     try {
@@ -59,9 +62,9 @@ export function useUserNotes(uid: string, pageSize: number = DEFAULT_PAGE_SIZE) 
       console.error("Error fetching user notes:", error);
     } finally {
       setLoading(false);
+      loadingRef.current = false;
     }
-  }, [uid, pageSize, lastDoc, loading, hasMore]);
+  }, [uid, pageSize, lastDoc, hasMore]);
 
   return { notes, loading, hasMore, loadMore };
 }
-
