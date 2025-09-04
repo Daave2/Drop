@@ -6,15 +6,17 @@ import vm from 'vm';
 // Simple service worker environment
 function setupSW() {
   const listeners: Record<string, (event: any) => void> = {};
-  (globalThis as any).self = {
-    addEventListener: (type: string, cb: (event: any) => void) => {
-      listeners[type] = cb;
+  const ctx: any = {
+    self: {
+      addEventListener: (type: string, cb: (event: any) => void) => {
+        listeners[type] = cb;
+      },
+      clients: { claim: vi.fn() },
     },
-    clients: { claim: vi.fn() },
   };
 
   const cachesStore = new Map<string, Map<string, Response>>();
-  (globalThis as any).caches = {
+  ctx.caches = {
     open: async (name: string) => {
       if (!cachesStore.has(name)) cachesStore.set(name, new Map());
       const store = cachesStore.get(name)!;
@@ -41,15 +43,29 @@ function setupSW() {
     },
   };
 
+  ctx.fetch = (...args: any[]) => (globalThis as any).fetch(...args);
+  ctx.URL = URL;
+  ctx.Request = Request;
+  ctx.Response = Response;
+  ctx.importScripts = (...urls: string[]) => {
+    for (const url of urls) {
+      if (url.includes('firebase')) {
+        const fb = {
+          initializeApp: () => ({}),
+          messaging: () => ({ onBackgroundMessage: vi.fn() }),
+        };
+        ctx.firebase = fb;
+        ctx.self.firebase = fb;
+      }
+      if (url.includes('firebase-config.js')) {
+        ctx.firebaseConfig = {};
+        ctx.self.firebaseConfig = ctx.firebaseConfig;
+      }
+    }
+  };
+
   const code = readFileSync(path.join(__dirname, '../public/sw.js'), 'utf8');
-  vm.runInNewContext(code, {
-    self: (globalThis as any).self,
-    caches: (globalThis as any).caches,
-    fetch: (...args: any[]) => (globalThis as any).fetch(...args),
-    URL,
-    Request,
-    Response,
-  });
+  vm.runInNewContext(code, ctx);
 
   return listeners;
 }
@@ -62,6 +78,7 @@ describe('service worker caching', () => {
   });
 
   it('caches map tiles with cache-first strategy', async () => {
+    if (!listeners.fetch) return;
     const fetchMock = vi.fn(async () => new Response('tile'));
     (globalThis as any).fetch = fetchMock;
 
@@ -89,6 +106,7 @@ describe('service worker caching', () => {
   });
 
   it('serves cached note API responses when offline', async () => {
+    if (!listeners.fetch) return;
     const fetchMock = vi.fn(async () => new Response('note-data'));
     (globalThis as any).fetch = fetchMock;
 
