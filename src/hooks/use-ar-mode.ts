@@ -20,14 +20,6 @@ export function useARMode(
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-<<<<<<< HEAD
-    if (permissionGranted && orientation.beta !== null) {
-      setIsARActive(orientation.beta > threshold);
-    } else {
-      setIsARActive(false);
-    }
-  }, [orientation.beta, threshold, permissionGranted]);
-=======
     const beta = orientation.beta;
     if (beta === null) return;
     const target = isARActive
@@ -58,7 +50,6 @@ export function useARMode(
       }
     };
   }, [orientation.beta, threshold, hysteresis, debounceMs, isARActive]);
->>>>>>> 2289218c56ffcbe5952beed6ceae9e8cd4674bb5
 
   const permissionGranted = orientationGranted && cameraPermissionGranted;
 
