@@ -28,7 +28,8 @@ describe('useOrientation', () => {
 
     const { result, unmount } = renderHook(() => useOrientation())
     await act(async () => {
-      await result.current.requestPermission()
+      const granted = await result.current.requestPermission()
+      expect(granted).toBe(true)
     })
     expect(result.current.permissionGranted).toBe(true)
     act(() => listeners[0]({ alpha: 1, beta: 2, gamma: 3 }))
@@ -44,7 +45,8 @@ describe('useOrientation', () => {
     window.addEventListener = addSpy as any
     const { result } = renderHook(() => useOrientation())
     await act(async () => {
-      await result.current.requestPermission()
+      const granted = await result.current.requestPermission()
+      expect(granted).toBe(false)
     })
     expect(result.current.permissionGranted).toBe(false)
     expect(result.current.error).toMatch('denied')

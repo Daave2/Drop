@@ -22,25 +22,29 @@ export function useOrientation() {
     });
   };
 
-  const requestPermission = async () => {
+  const requestPermission = async (): Promise<boolean> => {
     if (typeof (DeviceOrientationEvent as any).requestPermission === 'function') {
       try {
         const permissionState = await (DeviceOrientationEvent as any).requestPermission();
         if (permissionState === 'granted') {
           window.addEventListener('deviceorientation', handleOrientation);
           setPermissionGranted(true);
+          return true;
         } else {
           setError('Permission for device orientation was denied.');
           setPermissionGranted(false);
+          return false;
         }
       } catch (err) {
         setError('Error requesting device orientation permission.');
         setPermissionGranted(false);
+        return false;
       }
     } else {
       // For non-iOS 13+ browsers
       window.addEventListener('deviceorientation', handleOrientation);
       setPermissionGranted(true);
+      return true;
     }
   };
 
