@@ -30,6 +30,9 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
   const startHeadingRef = useRef(0);
   const [isCreating, setIsCreating] = useState(false);
   const isCreatingRef = useRef(false);
+  const [progress, setProgress] = useState(0);
+  const [hasValidHit, setHasValidHit] = useState(false);
+  const hasValidHitRef = useRef(false);
   const { location } = useLocation();
   const locationRef = useRef(location);
   const onCreateNoteRef = useRef(onCreateNote);
@@ -86,8 +89,25 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
       });
     };
 
-    renderer.setAnimationLoop(() => {
+    renderer.setAnimationLoop((_, frame) => {
       updateVisibility();
+      if (
+        isCreatingRef.current &&
+        hitTestSourceRef.current &&
+        localSpaceRef.current &&
+        frame
+      ) {
+        const results = frame.getHitTestResults(hitTestSourceRef.current);
+        if (results.length > 0) {
+          if (!hasValidHitRef.current) {
+            hasValidHitRef.current = true;
+            setHasValidHit(true);
+            setProgress(1);
+          }
+        } else {
+          setProgress((p) => Math.min(p + 0.01, 0.9));
+        }
+      }
       renderer.render(scene, camera);
     });
 
@@ -138,6 +158,9 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
             });
             isCreatingRef.current = false;
             setIsCreating(false);
+            setProgress(0);
+            setHasValidHit(false);
+            hasValidHitRef.current = false;
           }
         }
         return;
@@ -294,19 +317,25 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
       >
         Return to Map
       </button>
+      {isCreating && !hasValidHit && (
+        <SurfaceDetectionOverlay progress={progress} />
+      )}
       <ARCreateButton
         isCreating={isCreating}
         onToggle={() => {
           const next = !isCreatingRef.current;
           isCreatingRef.current = next;
           setIsCreating(next);
+          setProgress(0);
+          setHasValidHit(false);
+          hasValidHitRef.current = false;
         }}
       />
     </div>
   );
 }
 
-function ARCreateButton({
+export function ARCreateButton({
   isCreating,
   onToggle,
 }: {
@@ -317,9 +346,34 @@ function ARCreateButton({
     <button
       onClick={onToggle}
       className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 bg-background/80 text-foreground px-3 py-1 rounded-md"
+      title="Notes anchor to detected surfaces"
     >
       {isCreating ? "Cancel" : "Create Note"}
     </button>
+  );
+}
+
+export function SurfaceDetectionOverlay({
+  progress,
+}: {
+  progress: number;
+}) {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center bg-background/80 text-foreground">
+      <p className="mb-4">Move your device to detect surfaces</p>
+      <div
+        className="w-2/3 rounded-full bg-foreground/20 h-2"
+        role="progressbar"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(progress * 100)}
+      >
+        <div
+          className="h-2 rounded-full bg-foreground transition-all"
+          style={{ width: `${progress * 100}%` }}
+        />
+      </div>
+    </div>
   );
 }
 
