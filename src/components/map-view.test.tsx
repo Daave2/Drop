@@ -2,8 +2,8 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
-import { render, fireEvent, cleanup } from '@testing-library/react';
-import { describe, expect, it, vi, afterEach } from 'vitest';
+import { render, fireEvent, cleanup, waitFor } from '@testing-library/react';
+import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import MapView from './map-view';
 
 vi.mock('react-map-gl/maplibre', () => ({
@@ -21,8 +21,14 @@ vi.mock('@/hooks/use-location', () => ({
   useLocation: () => ({ location: null, permissionState: 'granted', requestPermission: vi.fn() }),
 }));
 
+const useNotesMock = vi.hoisted(() => vi.fn());
 vi.mock('@/hooks/use-notes', () => ({
-  useNotes: () => ({ notes: [], fetchNotes: vi.fn() }),
+  useNotes: useNotesMock,
+}));
+
+const useToastMock = vi.hoisted(() => vi.fn());
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: useToastMock,
 }));
 
 vi.mock('@/hooks/use-settings', () => ({
@@ -69,9 +75,17 @@ vi.mock('./ui/dialog', () => ({
 }));
 vi.mock('./ui/badge', () => ({ Badge: ({ children }: any) => <span>{children}</span> }));
 
+beforeEach(() => {
+  useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: null });
+  useToastMock.mockReturnValue({ toast: vi.fn() });
+  useARModeMock.mockReturnValue({ isARActive: false, permissionGranted: false, requestPermission: vi.fn() });
+});
+
 afterEach(() => {
   cleanup();
   useARModeMock.mockReset();
+  useNotesMock.mockReset();
+  useToastMock.mockReset();
 });
 
 describe('MapView', () => {
@@ -104,6 +118,25 @@ describe('MapView', () => {
     const updatedMaps = getAllByTestId('map');
     const updatedMap = updatedMaps[updatedMaps.length - 1] as HTMLDivElement;
     expect(updatedMap.style.display).toBe('block');
+  });
+
+  it('renders spinner while loading', () => {
+    useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: true, error: null });
+    const { getByTestId } = render(<MapView />);
+    expect(getByTestId('map-loading')).toBeTruthy();
+  });
+
+  it('shows message when no notes', () => {
+    const { getByTestId } = render(<MapView />);
+    expect(getByTestId('no-notes')).toBeTruthy();
+  });
+
+  it('toasts on error', async () => {
+    const toastFn = vi.fn();
+    useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: 'oops' });
+    useToastMock.mockReturnValue({ toast: toastFn });
+    render(<MapView />);
+    await waitFor(() => expect(toastFn).toHaveBeenCalled());
   });
 });
 
