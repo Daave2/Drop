@@ -1,10 +1,16 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Camera, X } from "lucide-react";
 import Image from "next/image";
 import { geohashForLocation } from "geofire-common";
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+import {
+  getDownloadURL,
+  ref,
+  uploadBytesResumable,
+  type UploadTask,
+  type UploadTaskSnapshot,
+} from "firebase/storage";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { z } from "zod";
 
@@ -19,6 +25,7 @@ import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import { SheetFooter, SheetHeader, SheetTitle } from "./ui/sheet";
 import { Textarea } from "./ui/textarea";
+import { Progress } from "./ui/progress";
 import { useAuth } from "./auth-provider";
 
 const noteSchema = z.object({
@@ -46,6 +53,10 @@ export default function CreateNoteForm({
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imageDimensions, setImageDimensions] = useState<{ w: number; h: number } | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const uploadTaskRef = useRef<UploadTask | null>(null);
+  const canceledByUserRef = useRef(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -93,22 +104,45 @@ export default function CreateNoteForm({
 
       if (imageFile) {
         if (imageFile.size > 5 * 1024 * 1024) {
-          toast({ title: "Image too large", description: "Image must be less than 5MB.", variant: "destructive" });
+          toast({
+            title: "Image too large",
+            description: "Image must be less than 5MB.",
+            variant: "destructive",
+          });
           setIsSubmitting(false);
           return;
         }
         const storageRef = ref(storage, `notes/${user.uid}/${Date.now()}-${imageFile.name}`);
 
         const UPLOAD_TIMEOUT = 30000;
-        const uploadPromise = uploadBytes(storageRef, imageFile);
-
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error("Upload timeout")), UPLOAD_TIMEOUT)
-        );
+        let timedOut = false;
+        setIsUploading(true);
+        setUploadProgress(0);
+        const uploadTask = uploadBytesResumable(storageRef, imageFile);
+        uploadTaskRef.current = uploadTask;
+        const timeoutId = setTimeout(() => {
+          timedOut = true;
+          uploadTask.cancel();
+        }, UPLOAD_TIMEOUT);
 
         try {
-          const snapshot = await Promise.race([uploadPromise, timeoutPromise]);
-          const downloadURL = await getDownloadURL((snapshot as any).ref);
+          const snapshot = await new Promise<UploadTaskSnapshot>((resolve, reject) => {
+            uploadTask.on(
+              "state_changed",
+              (snap) => {
+                setUploadProgress((snap.bytesTransferred / snap.totalBytes) * 100);
+              },
+              (err) => {
+                clearTimeout(timeoutId);
+                reject(err);
+              },
+              () => {
+                clearTimeout(timeoutId);
+                resolve(uploadTask.snapshot);
+              }
+            );
+          });
+          const downloadURL = await getDownloadURL(snapshot.ref);
 
           newNote.media = [
             {
@@ -119,12 +153,26 @@ export default function CreateNoteForm({
             },
           ];
         } catch (uploadError: any) {
-          if (uploadError.message === "Upload timeout") {
-            toast({
-              title: "Image upload timed out",
-              description: "Please check your network connection and try again.",
-              variant: "destructive",
-            });
+          if (uploadError.code === "storage/canceled") {
+            if (timedOut) {
+              toast({
+                title: "Image upload timed out",
+                description: "Please check your network connection and try again.",
+                variant: "destructive",
+              });
+            } else if (canceledByUserRef.current) {
+              toast({
+                title: "Upload canceled",
+                description: "Image upload was canceled.",
+                variant: "destructive",
+              });
+            } else {
+              toast({
+                title: "Image upload canceled",
+                description: "Upload was canceled.",
+                variant: "destructive",
+              });
+            }
           } else {
             toast({
               title: "Image upload failed",
@@ -133,9 +181,16 @@ export default function CreateNoteForm({
             });
           }
           console.error("Upload failed:", uploadError);
+          uploadTaskRef.current = null;
+          canceledByUserRef.current = false;
+          setUploadProgress(0);
+          setIsUploading(false);
           setIsSubmitting(false);
           return;
         }
+        uploadTaskRef.current = null;
+        canceledByUserRef.current = false;
+        setIsUploading(false);
       }
 
       await addDoc(collection(db, "notes"), newNote);
@@ -144,6 +199,7 @@ export default function CreateNoteForm({
       formRef.current?.reset();
       setImagePreview(null);
       setImageFile(null);
+      setUploadProgress(0);
       onNoteCreated();
     } catch (error: any) {
       console.error("Error creating note:", error);
@@ -180,6 +236,14 @@ export default function CreateNoteForm({
   };
 
   const handleRemoveImage = () => {
+    if (uploadTaskRef.current) {
+      canceledByUserRef.current = true;
+      uploadTaskRef.current.cancel();
+      uploadTaskRef.current = null;
+      setUploadProgress(0);
+      setIsUploading(false);
+      setIsSubmitting(false);
+    }
     setImagePreview(null);
     setImageFile(null);
     setImageDimensions(null);
@@ -187,6 +251,22 @@ export default function CreateNoteForm({
       fileInputRef.current.value = "";
     }
   };
+
+  const handleCancelUpload = () => {
+    if (uploadTaskRef.current) {
+      canceledByUserRef.current = true;
+      uploadTaskRef.current.cancel();
+    }
+  };
+
+  // Cancel any ongoing upload if the component unmounts
+  useEffect(() => {
+    return () => {
+      if (uploadTaskRef.current) {
+        uploadTaskRef.current.cancel();
+      }
+    };
+  }, []);
 
   if (!user) {
     return (
@@ -203,7 +283,13 @@ export default function CreateNoteForm({
       </SheetHeader>
       <ScrollArea className="flex-1 -mx-6">
         <form ref={formRef} onSubmit={handleSubmit} className="px-6 pt-4 space-y-4">
-          <Textarea name="text" placeholder="What's on your mind? (Max 800 chars)" maxLength={800} rows={5} required />
+          <Textarea
+            name="text"
+            placeholder="What's on your mind? (Max 800 chars)"
+            maxLength={800}
+            rows={5}
+            required
+          />
 
           {imagePreview && (
             <div className="relative">
@@ -230,11 +316,23 @@ export default function CreateNoteForm({
               Location: {userLocation.latitude.toFixed(5)}, {userLocation.longitude.toFixed(5)}
             </p>
           )}
+          {isUploading && (
+            <div className="space-y-2">
+              <Progress value={uploadProgress} />
+              <p className="text-xs text-center">{Math.round(uploadProgress)}%</p>
+            </div>
+          )}
         </form>
       </ScrollArea>
       <SheetFooter className="pt-4">
         <div className="flex items-center justify-between w-full">
-          <Button variant="outline" size="icon" type="button" onClick={() => fileInputRef.current?.click()}>
+          <Button
+            variant="outline"
+            size="icon"
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isSubmitting}
+          >
             <Camera className="h-4 w-4" />
           </Button>
           <Input
@@ -244,17 +342,24 @@ export default function CreateNoteForm({
             ref={fileInputRef}
             onChange={handleImageChange}
             accept="image/png, image/jpeg, image/gif"
+            disabled={isSubmitting}
           />
-          <Button form="create-note-form" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
-                Dropping...
-              </>
-            ) : (
-              "Drop Note"
-            )}
-          </Button>
+          {isUploading ? (
+            <Button variant="destructive" type="button" onClick={handleCancelUpload}>
+              Cancel
+            </Button>
+          ) : (
+            <Button form="create-note-form" type="submit" disabled={isSubmitting}>
+              {isSubmitting ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current mr-2"></div>
+                  Dropping...
+                </>
+              ) : (
+                "Drop Note"
+              )}
+            </Button>
+          )}
         </div>
       </SheetFooter>
     </>
