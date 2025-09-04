@@ -11,7 +11,7 @@ import { Note } from "@/types";
 import { Skeleton } from "./ui/skeleton";
 import CreateNoteForm from "./create-note-form";
 import NoteView from "./note-view";
-import { SheetHeader, SheetTitle } from "./ui/sheet";
+import { SheetHeader, SheetTitle, SheetDescription } from "./ui/sheet";
 
 interface NoteSheetContentProps {
   noteId: string | null;
@@ -72,6 +72,7 @@ export default function NoteSheetContent({
       <>
         <SheetHeader>
           <SheetTitle>Loading Note...</SheetTitle>
+          <SheetDescription>Please wait while we fetch the details.</SheetDescription>
         </SheetHeader>
         <div className="p-4 space-y-6">
           <Skeleton className="h-64 w-full rounded-lg" />
@@ -91,6 +92,7 @@ export default function NoteSheetContent({
       <div className="p-4 text-center">
         <SheetHeader>
           <SheetTitle>Note</SheetTitle>
+          <SheetDescription>Select a note to view its contents.</SheetDescription>
         </SheetHeader>
         Select a note to view its contents.
       </div>

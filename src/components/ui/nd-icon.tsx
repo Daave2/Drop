@@ -16,4 +16,3 @@ export function NdIcon({ name, className, ...props }: NdIconProps) {
     </svg>
   );
 }
-
