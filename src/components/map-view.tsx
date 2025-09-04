@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
-import { Plus, MapPin, Compass, LocateFixed } from 'lucide-react';
+import { Plus, MapPin, Compass, LocateFixed, AlertTriangle } from 'lucide-react';
 import { useLocation, Coordinates } from '@/hooks/use-location';
 import { useNotes } from '@/hooks/use-notes';
 import { useToast } from '@/hooks/use-toast';
@@ -40,6 +40,7 @@ const DEFAULT_CENTER = { latitude: 34.052235, longitude: -118.243683 };
 const DEFAULT_ZOOM = 16;
 const BASE_REVEAL_RADIUS_M = 35;
 const HOT_POST_THRESHOLD = 50;
+
 function MapViewContent() {
   const { location, permissionState, requestPermission: requestLocationPermission } = useLocation();
   const { notes, fetchNotes, loading, error } = useNotes();
@@ -63,6 +64,8 @@ function MapViewContent() {
     isARActive,
     permissionGranted: arPermissionGranted,
     requestPermission: requestARPermission,
+    arError,
+    setArError
   } = useARMode();
   const [arDismissed, setArDismissed] = useState(false);
   const isARViewVisible = isARActive && arPermissionGranted && !arDismissed;
@@ -345,11 +348,9 @@ function MapViewContent() {
       <header className="absolute top-0 left-0 right-0 p-2 sm:p-4 flex justify-between items-center bg-gradient-to-b from-background/80 to-transparent">
         <Logo />
         <div className="flex items-center gap-2 bg-background/80 p-1 rounded-full">
-            {!arPermissionGranted && (
-              <Button onClick={requestARPermission} size="sm" variant="secondary">
-                Enable AR
-              </Button>
-            )}
+            <Button onClick={requestARPermission} size="sm" variant="secondary">
+              Enable AR
+            </Button>
             {permissionState === 'prompt' && (
               <Button onClick={requestLocationPermission} size="sm" variant="secondary">
                 Enable Location
@@ -422,6 +423,21 @@ function MapViewContent() {
             />}
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!arError} onOpenChange={(open) => !open && setArError(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="text-destructive" />
+              AR Permission Error
+            </DialogTitle>
+            <DialogDescription className="pt-4">
+              {arError}
+            </DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }

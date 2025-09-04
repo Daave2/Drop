@@ -43,8 +43,7 @@ export function useOrientation() {
         return false;
       }
     } else {
-      // For non-iOS 13+ browsers
-      window.addEventListener('deviceorientation', handleOrientation);
+      // For non-iOS 13+ browsers that don't require explicit permission
       setPermissionGranted(true);
       return true;
     }
