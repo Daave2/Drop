@@ -264,7 +264,7 @@ function MapViewContent() {
         ref={mapRef}
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
-        style={{ width: '100%', height: '100%' }}
+        style={{ width: '100%', height: '100%', display: isARActive ? 'none' : 'block' }}
         mapStyle={mapStyleUrl}
         antialias={true}
       >
