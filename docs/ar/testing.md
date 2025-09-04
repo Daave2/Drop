@@ -2,16 +2,19 @@
 
 ## Desktop Development & Simulation
 
-Since desktop browsers lack the necessary sensors for AR, use the **WebXR API Emulator** browser extension to simulate a mobile device for development and testing.
+Since desktop browsers lack the necessary sensors for AR, the best way to test is by using **Chrome's Remote Debugging** feature with a connected Android device. This allows you to run the app on your phone while viewing the console and debugging tools on your desktop.
 
-1.  **Install the Extension:**
-    *   [For Chrome](https://chrome.google.com/webstore/detail/webxr-api-emulator/mjddjgeghkdijejnciaefnkjmkafnnje)
-    *   [For Firefox](https://addons.mozilla.org/en-US/firefox/addon/webxr-api-emulator/)
-2.  **Using the Emulator:**
-    *   Open your browser's DevTools.
-    *   Navigate to the **WebXR** tab.
-    *   Select a device to emulate (e.g., "Generic Headset (AR)").
-    *   Use the controls in the panel to move and rotate the virtual device to test your application's AR logic.
+1.  **Enable Developer Options on Android:**
+    *   Go to **Settings** > **About phone**.
+    *   Tap **Build number** seven times.
+    *   Go back to **Settings** > **System** and find the new **Developer options** menu.
+2.  **Enable USB Debugging:**
+    *   In **Developer options**, enable **USB debugging**.
+3.  **Connect to Desktop:**
+    *   Connect your Android device to your computer via USB.
+    *   On your desktop Chrome, navigate to `chrome://inspect`.
+    *   Your device should appear. Find the tab running your application and click **inspect**.
+    *   A DevTools window will open, connected to your phone's browser session.
 
 ---
 
