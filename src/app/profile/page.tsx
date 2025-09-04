@@ -7,7 +7,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { User, Edit, MessageSquare, Heart, MapPin } from "lucide-react";
+import { User, Edit, MessageSquare, Heart, MapPin, BarChart, FilePlus, Star } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
@@ -100,16 +100,21 @@ function UpdateProfileForm({ uid, currentDisplayName }: { uid: string, currentDi
     )
 }
 
-function StatCard({ title, value, isLoading }: { title: string, value: number | string, isLoading: boolean }) {
+function StatCard({ icon: Icon, title, value, isLoading }: { icon: React.ElementType, title: string, value: number | string, isLoading: boolean }) {
     return (
-        <div className="bg-muted p-4 rounded-lg">
-            {isLoading ? (
-                <Skeleton className="h-9 w-1/2 mx-auto" />
-            ) : (
-                <p className="text-3xl font-bold">{value}</p>
-            )}
-            <p className="text-sm text-muted-foreground">{title}</p>
-        </div>
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                {isLoading ? (
+                    <Skeleton className="h-8 w-1/2" />
+                ) : (
+                    <div className="text-2xl font-bold">{value}</div>
+                )}
+            </CardContent>
+        </Card>
     )
 }
 
@@ -137,19 +142,19 @@ function MyNotesList({ uid }: { uid: string }) {
     return (
         <div className="space-y-3">
             {notes.map(note => (
-                <div key={note.id} className="bg-muted/50 p-3 rounded-lg">
-                    <p className="truncate">{note.text}</p>
-                    <div className="flex justify-between items-center text-sm text-muted-foreground mt-2">
-                        <span>{new Date(note.createdAt.seconds * 1000).toLocaleDateString()}</span>
-                        <div className="flex items-center gap-4">
+                <div key={note.id} className="bg-muted/50 p-3 rounded-lg flex justify-between items-center">
+                    <div>
+                        <p className="truncate font-medium">{note.text}</p>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                            <span>{new Date(note.createdAt.seconds * 1000).toLocaleDateString()}</span>
                             <span className="flex items-center gap-1"><Heart className="h-4 w-4" /> {note.score}</span>
-                            <Button asChild variant="ghost" size="sm">
-                                <Link href={`/?lat=${note.lat}&lng=${note.lng}&zoom=18`}>
-                                    <MapPin className="h-4 w-4 mr-1" /> View on Map
-                                </Link>
-                            </Button>
                         </div>
                     </div>
+                    <Button asChild variant="ghost" size="sm">
+                        <Link href={`/?lat=${note.lat}&lng=${note.lng}&zoom=18`}>
+                            <MapPin className="h-4 w-4 mr-1" /> View
+                        </Link>
+                    </Button>
                 </div>
             ))}
             {hasMore && (
@@ -248,35 +253,36 @@ export default function ProfilePage() {
         </div>
 
       <Card>
-        <CardHeader className="flex flex-row items-center gap-4">
-            <Avatar className="h-20 w-20">
-              <AvatarImage src={user?.photoURL ?? ''} alt={user?.displayName ?? ''} />
-              <AvatarFallback className="text-3xl">
-                {user?.isAnonymous ? <User /> : displayName.charAt(0) || <User />}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-                <CardTitle className="text-3xl font-headline">
-                    {user?.isAnonymous ? "Wandering Wombat" : displayName}
-                </CardTitle>
-                <CardDescription>
-                    {user?.isAnonymous ? "Anonymous User" : user?.email}
-                </CardDescription>
+        <CardHeader>
+            <div className="flex items-center gap-4">
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={user?.photoURL ?? ''} alt={user?.displayName ?? ''} />
+                  <AvatarFallback className="text-3xl">
+                    {user?.isAnonymous ? <User /> : displayName.charAt(0) || <User />}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex-1">
+                    <h2 className="text-3xl font-bold font-headline">
+                        {user?.isAnonymous ? "Wandering Wombat" : displayName}
+                    </h2>
+                    <p className="text-muted-foreground">
+                        {user?.isAnonymous ? "Anonymous User" : user?.email}
+                    </p>
+                    {!user?.isAnonymous && (
+                        <div className="mt-2">
+                             <UpdateProfileForm uid={user.uid} currentDisplayName={displayName} />
+                        </div>
+                    )}
+                </div>
+                <AuthButton />
             </div>
-            <AuthButton />
         </CardHeader>
         <CardContent>
-            {user && !user.isAnonymous && (
-                <>
-                    <Separator className="my-4"/>
-                    <UpdateProfileForm uid={user.uid} currentDisplayName={displayName} />
-                </>
-            )}
             <Separator className="my-4"/>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <StatCard title="Notes Dropped" value={notesDropped} isLoading={loadingStats} />
-                <StatCard title="Notes Revealed" value={notesRevealed} isLoading={loadingStats} />
-                <StatCard title="Community Standing" value={communityStanding} isLoading={loadingStats} />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-left">
+                <StatCard icon={FilePlus} title="Notes Dropped" value={notesDropped} isLoading={loadingStats} />
+                <StatCard icon={Heart} title="Notes Revealed" value={notesRevealed} isLoading={loadingStats} />
+                <StatCard icon={Star} title="Community Standing" value={communityStanding} isLoading={loadingStats} />
             </div>
         </CardContent>
       </Card>
@@ -319,3 +325,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
