@@ -46,6 +46,11 @@ function setupSW() {
     self: (globalThis as any).self,
     caches: (globalThis as any).caches,
     fetch: (...args: any[]) => (globalThis as any).fetch(...args),
+    importScripts: () => undefined,
+    firebase: {
+      initializeApp: () => ({}),
+      messaging: () => ({ onBackgroundMessage: vi.fn() }),
+    },
     URL,
     Request,
     Response,
