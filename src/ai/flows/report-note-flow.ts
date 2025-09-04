@@ -39,7 +39,7 @@ const reportNoteFlow = ai.defineFlow(
         const noteSnap = await t.get(noteRef);
         const current = noteSnap.data()?.reportCount ?? 0;
         const newCount = current + 1;
-        const updates: any = { reportCount: newCount };
+        const updates: { reportCount: number; visibility?: 'unlisted' } = { reportCount: newCount };
         if (newCount >= REPORT_THRESHOLD) {
           updates.visibility = 'unlisted';
         }
