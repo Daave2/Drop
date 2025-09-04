@@ -31,7 +31,7 @@ import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { NotificationsButton } from './notifications-button';
-import ARView from './ar-view';
+import ARView, { ARViewHandle } from './ar-view';
 import { useARMode } from '@/hooks/use-ar-mode';
 import OnboardingOverlay from './onboarding-overlay';
 import { MapSkeleton } from './map-skeleton';
@@ -58,22 +58,15 @@ function MapViewContent() {
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchCenterRef = useRef<[number, number] | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
+  const arViewRef = useRef<ARViewHandle>(null);
   const searchParams = useSearchParams();
   const { theme } = useTheme();
   const {
-    permissionGranted: arPermissionGranted,
     requestPermission: requestARPermission,
     arError,
     setArError
   } = useARMode();
   const [isARViewVisible, setARViewVisible] = useState(false);
-
-  useEffect(() => {
-    if (isARViewVisible) {
-      const enterARButton = document.querySelector<HTMLButtonElement>('#enter-ar-button');
-      enterARButton?.click();
-    }
-  }, [isARViewVisible]);
 
   useEffect(() => {
     if (error) {
@@ -232,9 +225,10 @@ function MapViewContent() {
   const handleEnableAR = async () => {
     const hasPermission = await requestARPermission();
     if (hasPermission) {
-        setARViewVisible(true);
+      setARViewVisible(true);
+      await arViewRef.current?.enterAR();
     }
-  }
+  };
 
   const handleARCreateNote = (coords: Coordinates) => {
     setCreatingNote(true);
@@ -276,14 +270,14 @@ function MapViewContent() {
 
   return (
     <div className="h-screen w-screen relative">
-      {isARViewVisible && (
-        <ARView
-          notes={notes}
-          onSelectNote={handleMarkerClick}
-          onReturnToMap={() => setARViewVisible(false)}
-          onCreateNote={handleARCreateNote}
-        />
-      )}
+      <ARView
+        ref={arViewRef}
+        notes={notes}
+        onSelectNote={handleMarkerClick}
+        onReturnToMap={() => setARViewVisible(false)}
+        onCreateNote={handleARCreateNote}
+        style={{ display: isARViewVisible ? 'block' : 'none' }}
+      />
       <Map
         ref={mapRef}
         {...viewState}
