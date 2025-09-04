@@ -346,45 +346,49 @@ function MapViewContent() {
         </div>
       )}
 
-      <header className="absolute top-0 left-0 right-0 p-2 sm:p-4 flex justify-between items-center bg-gradient-to-b from-background/80 to-transparent">
-        <Logo />
-        <div className="flex items-center gap-2 bg-background/80 p-1 rounded-full">
-            <Button onClick={handleEnableAR} size="sm" variant="secondary">
-              <Camera className="mr-2" />
-              Enable AR
-            </Button>
-            {permissionState === 'prompt' && (
-              <Button onClick={requestLocationPermission} size="sm" variant="secondary">
-                Enable Location
-              </Button>
-            )}
-            <ThemeToggle />
-            <NotificationsButton />
-            <AuthButton />
-        </div>
-      </header>
+      {!isARViewVisible && (
+        <>
+          <header className="absolute top-0 left-0 right-0 p-2 sm:p-4 flex justify-between items-center bg-gradient-to-b from-background/80 to-transparent">
+            <Logo />
+            <div className="flex items-center gap-2 bg-background/80 p-1 rounded-full">
+                <Button onClick={handleEnableAR} size="sm" variant="secondary">
+                  <Camera className="mr-2" />
+                  Enable AR
+                </Button>
+                {permissionState === 'prompt' && (
+                  <Button onClick={requestLocationPermission} size="sm" variant="secondary">
+                    Enable Location
+                  </Button>
+                )}
+                <ThemeToggle />
+                <NotificationsButton />
+                <AuthButton />
+            </div>
+          </header>
 
-      <Button
-        className="absolute right-4 rounded-full w-12 h-12 shadow-lg bottom-20 sm:bottom-24 sm:w-14 sm:h-14"
-        onClick={() => {
-            setCreatingNote(true);
-            setSelectedNote(null);
-            setNewNoteLocation(location);
-            setNoteSheetOpen(true);
-        }}
-      >
-        <Plus className="w-6 h-6" />
-      </Button>
+          <Button
+            className="absolute right-4 rounded-full w-12 h-12 shadow-lg bottom-20 sm:bottom-24 sm:w-14 sm:h-14"
+            onClick={() => {
+                setCreatingNote(true);
+                setSelectedNote(null);
+                setNewNoteLocation(location);
+                setNoteSheetOpen(true);
+            }}
+          >
+            <Plus className="w-6 h-6" />
+          </Button>
 
-      <Button
-        variant="secondary"
-        size="icon"
-        className="absolute right-4 rounded-full w-12 h-12 shadow-lg bottom-36 sm:bottom-40 sm:w-14 sm:h-14"
-        onClick={handleCenterMap}
-        disabled={!location}
-      >
-        <LocateFixed className="w-6 h-6" />
-      </Button>
+          <Button
+            variant="secondary"
+            size="icon"
+            className="absolute right-4 rounded-full w-12 h-12 shadow-lg bottom-36 sm:bottom-40 sm:w-14 sm:h-14"
+            onClick={handleCenterMap}
+            disabled={!location}
+          >
+            <LocateFixed className="w-6 h-6" />
+          </Button>
+        </>
+      )}
 
       <Sheet open={isNoteSheetOpen} onOpenChange={setNoteSheetOpen}>
         <SheetContent
