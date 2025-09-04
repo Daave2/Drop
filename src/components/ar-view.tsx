@@ -46,6 +46,7 @@ const ARView = forwardRef<ARViewHandle, ARViewProps>(
   const { location } = useLocation();
   const locationRef = useRef(location);
   const onCreateNoteRef = useRef(onCreateNote);
+  const onSelectNoteRef = useRef(onSelectNote);
 
   useEffect(() => {
     locationRef.current = location;
@@ -54,6 +55,10 @@ const ARView = forwardRef<ARViewHandle, ARViewProps>(
   useEffect(() => {
     onCreateNoteRef.current = onCreateNote;
   }, [onCreateNote]);
+
+  useEffect(() => {
+    onSelectNoteRef.current = onSelectNote;
+  }, [onSelectNote]);
 
   // initialize three.js and WebXR renderer
   useEffect(() => {
@@ -180,7 +185,7 @@ const ARView = forwardRef<ARViewHandle, ARViewProps>(
         }
         const note = obj?.userData.note as GhostNote | undefined;
         if (note) {
-          onSelectNote(note);
+          onSelectNoteRef.current(note);
         }
       }
     };
@@ -199,7 +204,7 @@ const ARView = forwardRef<ARViewHandle, ARViewProps>(
       sceneRef.current = undefined;
       cameraRef.current = undefined;
     };
-  }, [onSelectNote]);
+  }, []);
 
   // create note meshes when notes change
   useEffect(() => {
