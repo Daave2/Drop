@@ -391,5 +391,3 @@ export function getBearing(
     Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
   return (toDeg(Math.atan2(y, x)) + 360) % 360;
 }
-
-    
