@@ -287,7 +287,7 @@ export default function ARView({ notes, onSelectNote, onReturnToMap, onCreateNot
   };
 
   return (
-    <div ref={containerRef} className="absolute inset-0">
+    <div ref={containerRef} className="absolute inset-0 z-20">
       <button
         onClick={handleReturn}
         className="absolute top-4 left-4 z-10 bg-background/80 text-foreground px-3 py-1 rounded-md"
