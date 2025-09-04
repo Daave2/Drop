@@ -21,9 +21,10 @@ export function useARMode(
   useEffect(() => {
     const beta = orientation.beta;
     if (beta === null) return;
+    const absBeta = Math.abs(beta);
     const target = isARActive
-      ? beta > threshold - hysteresis
-      : beta > threshold;
+      ? absBeta > threshold - hysteresis
+      : absBeta > threshold;
 
     if (target === isARActive) {
       if (timeoutRef.current) {
