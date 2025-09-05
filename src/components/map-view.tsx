@@ -91,6 +91,16 @@ function MapViewContent() {
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    const noteId = searchParams.get('note');
+    if (!noteId) return;
+    const note = notes.find((n) => n.id === noteId);
+    if (!note) return;
+    setSelectedNote(note);
+    setCreatingNote(false);
+    setNoteSheetOpen(true);
+  }, [searchParams, notes]);
+
   const getDistance = (coords1: {latitude: number, longitude: number}, coords2: {latitude: number, longitude: number}) => {
       const toRad = (x: number) => (x * Math.PI) / 180;
       const R = 6371e3; // metres

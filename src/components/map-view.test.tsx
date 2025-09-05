@@ -40,9 +40,11 @@ vi.mock('@/hooks/use-proximity-notifications', () => ({
 }));
 
 vi.mock('next-themes', () => ({ useTheme: () => ({ theme: 'light' }) }));
-vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }));
+const useSearchParamsMock = vi.hoisted(() => vi.fn(() => new URLSearchParams()));
+vi.mock('next/navigation', () => ({ useSearchParams: useSearchParamsMock }));
 vi.mock('./notifications-button', () => ({ NotificationsButton: () => <div /> }));
-vi.mock('./note-sheet-content', () => ({ __esModule: true, default: () => <div /> }));
+const NoteSheetContentMock = vi.hoisted(() => vi.fn(() => <div data-testid="note-sheet" />));
+vi.mock('./note-sheet-content', () => ({ __esModule: true, default: NoteSheetContentMock }));
 vi.mock('./compass-view', () => ({ __esModule: true, default: () => <div /> }));
 vi.mock('./theme-toggle', () => ({ ThemeToggle: () => <div /> }));
 vi.mock('./auth-button', () => ({ AuthButton: () => <div /> }));
@@ -66,6 +68,8 @@ vi.mock('./ui/badge', () => ({ Badge: ({ children }: any) => <span>{children}</s
 beforeEach(() => {
   useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: null });
   useToastMock.mockReturnValue({ toast: vi.fn() });
+  useSearchParamsMock.mockReturnValue(new URLSearchParams());
+  NoteSheetContentMock.mockClear();
 });
 
 afterEach(() => {
@@ -94,6 +98,26 @@ describe('MapView', () => {
     useToastMock.mockReturnValue({ toast: toastFn });
     render(<MapView />);
     await waitFor(() => expect(toastFn).toHaveBeenCalled());
+  });
+
+  it('opens note from search params', async () => {
+    const note = {
+      id: '1',
+      lat: 0,
+      lng: 0,
+      createdAt: { seconds: 0, nanoseconds: 0 },
+      score: 0,
+      type: 'text',
+    };
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('note=1'));
+    useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: false, error: null });
+    render(<MapView />);
+    await waitFor(() =>
+      expect(NoteSheetContentMock).toHaveBeenCalledWith(
+        expect.objectContaining({ noteId: '1' }),
+        expect.anything()
+      )
+    );
   });
 });
 

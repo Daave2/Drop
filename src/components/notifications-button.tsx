@@ -1,14 +1,17 @@
 "use client";
 
+import React from "react";
 import { Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNotifications } from "@/hooks/use-notifications";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/components/auth-provider";
+import { useRouter } from "next/navigation";
 
 export function NotificationsButton() {
   const { user } = useAuth();
   const { notifications, markAllAsRead } = useNotifications();
+  const router = useRouter();
 
   if (!user) return null;
 
@@ -29,7 +32,11 @@ export function NotificationsButton() {
           <DropdownMenuItem className="text-muted-foreground">No notifications</DropdownMenuItem>
         )}
         {notifications.map((n) => (
-          <DropdownMenuItem key={n.id} className="flex flex-col items-start gap-1">
+          <DropdownMenuItem
+            key={n.id}
+            className="flex flex-col items-start gap-1"
+            onSelect={() => router.push(`/?note=${n.noteId}`)}
+          >
             <span className="text-sm">
               {n.actorPseudonym} {n.type === 'like' ? 'liked' : 'replied to'} your note
             </span>
