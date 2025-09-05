@@ -43,6 +43,9 @@ body {
     --sidebar-accent-foreground: 220.9 39.3% 11%;
     --sidebar-border: 220 13% 91%;
     --sidebar-ring: 221.2 83.2% 53.3%;
+    --gray-100: 0 0% 95%;
+    --gray-200: 0 0% 88%;
+    --gold: 51 100% 50%;
   }
   .dark {
     --background: 224 71.4% 4.1%;
@@ -77,6 +80,9 @@ body {
     --sidebar-accent-foreground: 210 20% 98%;
     --sidebar-border: 215 27.9% 16.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+    --gray-100: 0 0% 95%;
+    --gray-200: 0 0% 88%;
+    --gold: 51 100% 50%;
   }
 }
 

@@ -78,6 +78,11 @@ export default {
           border: 'hsl(var(--sidebar-border))',
           ring: 'hsl(var(--sidebar-ring))',
         },
+        gray: {
+          100: 'hsl(var(--gray-100))',
+          200: 'hsl(var(--gray-200))',
+        },
+        gold: 'hsl(var(--gold))',
       },
       borderRadius: {
         lg: 'var(--radius)',

@@ -13,7 +13,7 @@ export function Logo({ className }: { className?: string }) {
           d="M32 60c-6.8-8.8-20-19.2-20-32C12 15.2 20.2 7 32 7s20 8.2 20 21c0 12.8-13.2 23.2-20 32z"
         />
         <rect
-          fill="hsl(var(--accent))"
+          fill="hsl(var(--gold))"
           x="23.5"
           y="22.5"
           rx="2.5"
@@ -21,7 +21,7 @@ export function Logo({ className }: { className?: string }) {
           width="17"
           height="17"
         />
-        <path fill="hsl(var(--accent) / 0.8)" d="M40.5 22.5h-6l6 6z" />
+        <path fill="hsl(var(--gold) / 0.8)" d="M40.5 22.5h-6l6 6z" />
       </svg>
       <span className="text-foreground">NoteDrop</span>
     </div>
