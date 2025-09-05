@@ -112,16 +112,13 @@ body {
 }
 
 /* Sketch UI tokens and utilities */
-:root {
+.sketch {
   --ink: #333333;
   --paper: #f2f2f2;
   --paper-2: #e0e0e0;
   --accent: #ffd24a; /* single highlight */
   --radius: 14px;
   --stroke: 3px;
-}
-
-html, body {
   background: var(--paper);
   color: var(--ink);
   -webkit-font-smoothing: antialiased;
@@ -168,7 +165,7 @@ html, body {
 }
 
 /* a11y */
-:focus-visible {
+.sketch :focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: 2px;
 }

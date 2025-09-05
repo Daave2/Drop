@@ -7,7 +7,7 @@ import Icon from '@/components/ui/Icon';
 
 export default function Page() {
   return (
-    <main style={{ maxWidth: 800, margin: '40px auto', padding: '0 16px' }}>
+    <main className="sketch" style={{ maxWidth: 800, margin: '40px auto', padding: '0 16px' }}>
       <SketchCard title="NoteDrop (Sketch UI)">
         <p>Prototype vibe: ghost pins, travel-to-reveal. Fonts: Kalam + Patrick Hand.</p>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 12 }}>
