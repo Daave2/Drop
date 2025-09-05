@@ -22,7 +22,7 @@ NoteDrop is a location-based note app built with Next.js and TypeScript. Users d
 .
 ├── docs/                – Project blueprints and high‑level docs
 ├── public/              – Static assets, icons, manifest and service workers
-├── src/
+├── src/                 – Application source
 │   ├── ai/              – Genkit flows for moderation and report handling
 │   ├── app/             – Next.js routes and global layout
 │   ├── components/      – React components and UI primitives
@@ -30,8 +30,15 @@ NoteDrop is a location-based note app built with Next.js and TypeScript. Users d
 │   ├── lib/             – Shared utilities (Firebase, geo helpers, pseudonyms)
 │   ├── types/           – Shared TypeScript types
 │   └── sw.test.ts       – Service worker tests
-└── ...config files
+├── next.config.ts       – Next.js configuration
+├── tailwind.config.ts   – Tailwind CSS setup
+├── tsconfig.json        – TypeScript compiler options
+├── vitest.config.ts     – Vitest test runner setup
+└── package.json         – npm scripts and dependencies
 ```
+
+Other notable root files include `components.json` for the Shadcn component registry, `postcss.config.mjs` for CSS processing,
+`firestore.indexes.json` for composite index definitions, and `apphosting.yaml` for Firebase Hosting.
 
 ## Key Modules
 
@@ -66,6 +73,11 @@ Shared utilities and services.
 - **reporting.ts** – Constants and helpers for note reporting.
 - **analytics.ts**, **utils.ts** – Miscellaneous helpers.
 
+### `src/types`
+Domain models and global declarations.
+- **index.ts** – Interfaces for notes, replies, notifications, and user profiles.
+- **ambient.d.ts** – Ambient declarations for third‑party modules and browser events.
+
 ### `src/ai`
 Server-side Genkit flows.
 - **genkit.ts** – Configures Genkit with the Gemini model.
@@ -86,6 +98,8 @@ Server-side Genkit flows.
   - `npm run lint` – ESLint rules
   - `npm run typecheck` – TypeScript compiler
   - `npm test` – Vitest unit tests
+
+Tests are colocated with the source they cover using `*.test.tsx` or `*.test.ts` naming. The suite leverages Testing Library, and a dedicated `src/sw.test.ts` exercises the service worker helpers.
 
 Environment variables in `.env.local` configure Firebase and default proximity radius. Service workers and manifest files under `public/` enable PWA behaviour.
 
