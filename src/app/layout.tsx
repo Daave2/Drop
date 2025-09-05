@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Pwa } from '@/components/pwa';
 import { SettingsProvider } from '@/hooks/use-settings';
 import { NdSprite } from '@/components/ui/nd-sprite';
+import { Patrick_Hand } from 'next/font/google';
 
 export const metadata: Metadata = {
   title: 'NoteDrop: Location-Based Notes',
@@ -33,13 +34,18 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const patrickHand = Patrick_Hand({
+    subsets: ['latin'],
+    weight: '400',
+    variable: '--font-hand',
+    display: 'swap',
+  });
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lexend:wght@400;500;700&display=swap" rel="stylesheet" />
-      </head>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={patrickHand.variable}
+    >
       <body className={cn('font-body antialiased', 'min-h-screen bg-background')}>
         <NdSprite />
         <ThemeProvider
