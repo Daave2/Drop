@@ -14,14 +14,14 @@ export default function SketchSprite() {
   <defs>
     <filter id="sketch" x="-10%" y="-10%" width="120%" height="120%">
       <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="11" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="0.8" xChannelSelector="R" yChannelSelector="G"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.2" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
     <style>
-      .i { stroke:#333; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; fill:none; }
+      .i { stroke:#333; stroke-width:4; stroke-linecap:round; stroke-linejoin:round; fill:none; }
       .paper { fill:#f2f2f2; }
       .ink { fill:#333; }
       .accent { fill:#ffd24a; }
-      .muted { stroke:#666; fill:none; }
+      .muted { stroke:#666; stroke-width:4; fill:none; }
     </style>
   </defs>
 

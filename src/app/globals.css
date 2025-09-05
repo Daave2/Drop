@@ -29,6 +29,7 @@ body {
     --border: 220 13% 91%;
     --input: 220 13% 91%;
     --ring: 221.2 83.2% 53.3%;
+    --font-hand: "Architects Daughter","Kalam","Patrick Hand";
     --chart-1: 12 76% 61%;
     --chart-2: 173 58% 39%;
     --chart-3: 197 37% 24%;
@@ -165,16 +166,20 @@ body {
 }
 
 /* Sketch UI primitives */
+
 .sk-card {
   background: var(--paper);
   border: var(--stroke) solid var(--ink);
+  outline: var(--stroke) solid var(--ink);
+  outline-offset: 3px;
   border-radius: var(--radius);
   box-shadow: 0 2px 0 #d7d7d7;
   padding: 16px;
+  filter: url(#sketch);
 }
 
 .sk-title {
-  font-family: "Kalam","Patrick Hand",system-ui,sans-serif;
+  font-family: "Architects Daughter","Kalam","Patrick Hand",system-ui,sans-serif;
   font-weight: 600;
 }
 
@@ -182,13 +187,16 @@ body {
   display: inline-block;
   padding: 12px 18px;
   border: var(--stroke) solid var(--ink);
+  outline: var(--stroke) solid var(--ink);
+  outline-offset: 3px;
   border-radius: 9999px;
   background: #fff;
   color: var(--ink);
   cursor: pointer;
   text-decoration: none;
-  font-family: "Kalam","Patrick Hand",system-ui,sans-serif;
+  font-family: "Architects Daughter","Kalam","Patrick Hand",system-ui,sans-serif;
   transition: transform .02s ease-in-out;
+  filter: url(#sketch);
 }
 .sk-btn:active { transform: translateY(1px); }
 .sk-btn[disabled] { opacity: .5; cursor: not-allowed; filter: grayscale(.5); }
