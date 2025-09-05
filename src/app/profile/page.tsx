@@ -102,7 +102,7 @@ function UpdateProfileForm({ uid, currentDisplayName }: { uid: string, currentDi
 
 function StatCard({ icon: Icon, title, value, isLoading }: { icon: React.ElementType, title: string, value: number | string, isLoading: boolean }) {
     return (
-        <Card>
+        <Card className="hand-drawn">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{title}</CardTitle>
                 <Icon className="h-4 w-4 text-muted-foreground" />
@@ -268,7 +268,7 @@ export default function ProfilePage() {
                     <p className="text-muted-foreground">
                         {user?.isAnonymous ? "Anonymous User" : user?.email}
                     </p>
-                    {!user?.isAnonymous && (
+                    {user && !user.isAnonymous && (
                         <div className="mt-2">
                              <UpdateProfileForm uid={user.uid} currentDisplayName={displayName} />
                         </div>

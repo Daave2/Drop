@@ -277,14 +277,15 @@ function MapViewContent() {
 
   return (
     <div className="h-screen w-screen relative">
-      <ARView
-        ref={arViewRef}
-        notes={notes}
-        style={{ display: isARViewVisible ? 'block' : 'none' }}
-        onSelectNote={handleMarkerClick}
-        onReturnToMap={() => setARViewVisible(false)}
-        onCreateNote={handleARCreateNote}
-      />
+      {isARViewVisible && (
+        <ARView
+          ref={arViewRef}
+          notes={notes}
+          onSelectNote={handleMarkerClick}
+          onReturnToMap={() => setARViewVisible(false)}
+          onCreateNote={handleARCreateNote}
+        />
+      )}
       <Map
         ref={mapRef}
         {...viewState}

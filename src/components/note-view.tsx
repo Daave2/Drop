@@ -236,7 +236,7 @@ export default function NoteView({
             </div>
             <span>{note.createdAt ? new Date(note.createdAt.seconds * 1000).toLocaleDateString() : "Just now"}</span>
           </div>
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="hand-drawn flex items-center gap-2 flex-wrap p-2">
             <Button variant="outline" size="sm" onClick={handleLikeToggle} disabled={isLiking || note.authorUid === user?.uid}>
               <Heart className={cn("h-4 w-4 mr-2", isLiked && "fill-destructive text-destructive")} />
               {note.score}

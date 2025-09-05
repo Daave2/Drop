@@ -82,8 +82,26 @@ body {
   * {
     @apply border-border;
   }
-  body {
+body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .hand-drawn {
+    @apply relative rounded-xl border-2 shadow-md;
+  }
+  .hand-drawn::after {
+    content: "";
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: 100%;
+    height: 100%;
+    border-radius: inherit;
+    border: 2px solid hsl(var(--border));
+    opacity: 0.2;
+    z-index: -1;
   }
 }
 
