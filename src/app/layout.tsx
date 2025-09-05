@@ -71,6 +71,7 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          themes={['light', 'dark', 'sketch']}
         >
           <SettingsProvider>
             <AuthProvider>
