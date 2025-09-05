@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
-import { render, cleanup, waitFor } from '@testing-library/react';
+import { render, cleanup, waitFor, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import MapView from './map-view';
 
@@ -94,6 +94,15 @@ describe('MapView', () => {
     useToastMock.mockReturnValue({ toast: toastFn });
     render(<MapView />);
     await waitFor(() => expect(toastFn).toHaveBeenCalled());
+  });
+
+  it('shows onboarding overlay when help button clicked', async () => {
+    window.localStorage.setItem('onboardingSeen', 'true');
+    const { getByRole, queryByTestId } = render(<MapView />);
+    expect(queryByTestId('onboarding-overlay')).toBeNull();
+    const helpButton = getByRole('button', { name: /help/i });
+    fireEvent.click(helpButton);
+    await waitFor(() => expect(queryByTestId('onboarding-overlay')).toBeTruthy());
   });
 });
 

@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
-import { Plus, Compass, LocateFixed } from 'lucide-react';
+import { Plus, Compass, LocateFixed, CircleHelp } from 'lucide-react';
 import { useLocation, Coordinates } from '@/hooks/use-location';
 import { useNotes } from '@/hooks/use-notes';
 import { useToast } from '@/hooks/use-toast';
@@ -31,7 +31,7 @@ import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { NotificationsButton } from './notifications-button';
-import OnboardingOverlay from './onboarding-overlay';
+import OnboardingOverlay, { type OnboardingOverlayHandle } from './onboarding-overlay';
 import { MapSkeleton } from './map-skeleton';
 import { NdIcon } from './ui/nd-icon';
 
@@ -53,6 +53,7 @@ function MapViewContent() {
   const [newNoteLocation, setNewNoteLocation] = useState<Coordinates | null>(null);
   const [isCompassViewOpen, setCompassViewOpen] = useState(false);
   const mapRef = useRef<MapRef | null>(null);
+  const onboardingRef = useRef<OnboardingOverlayHandle>(null);
   const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchCenterRef = useRef<[number, number] | null>(null);
@@ -294,7 +295,7 @@ function MapViewContent() {
         )}
       </Map>
 
-      <OnboardingOverlay />
+      <OnboardingOverlay ref={onboardingRef} />
 
       {loading && (
         <div data-testid="map-loading" className="absolute inset-0 z-20">
@@ -321,6 +322,20 @@ function MapViewContent() {
               Enable Location
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8"
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.localStorage.setItem('onboardingSeen', 'false');
+              }
+              onboardingRef.current?.show();
+            }}
+          >
+            <CircleHelp className="h-4 w-4" />
+            <span className="sr-only">Help</span>
+          </Button>
           <ThemeToggle />
           <NotificationsButton />
           <AuthButton />

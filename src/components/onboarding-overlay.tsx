@@ -1,14 +1,22 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 
-export default function OnboardingOverlay() {
+export interface OnboardingOverlayHandle {
+  show: () => void;
+}
+
+const OnboardingOverlay = forwardRef<OnboardingOverlayHandle>((_, ref) => {
   const [visible, setVisible] = useState(false);
+
+  useImperativeHandle(ref, () => ({
+    show: () => setVisible(true),
+  }));
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const seen = window.localStorage.getItem('onboardingSeen');
-      if (!seen) {
+      if (seen !== 'true') {
         setVisible(true);
       }
     }
@@ -50,5 +58,9 @@ export default function OnboardingOverlay() {
       </div>
     </div>
   );
-}
+});
+
+OnboardingOverlay.displayName = 'OnboardingOverlay';
+
+export default OnboardingOverlay;
 
