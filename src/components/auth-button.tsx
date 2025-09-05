@@ -1,7 +1,13 @@
 
 "use client";
 
-import { GoogleAuthProvider, signInWithPopup, signOut, signInWithRedirect } from "firebase/auth";
+import React, { useState } from "react";
+import {
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  signInWithRedirect,
+} from "firebase/auth";
 import { LogIn, LogOut, User as UserIcon, UserCog } from "lucide-react";
 import { auth } from "@/lib/firebase";
 import { useAuth } from "@/components/auth-provider";
@@ -21,8 +27,10 @@ import Link from "next/link";
 export function AuthButton() {
   const { user } = useAuth();
   const { toast } = useToast();
+  const [signingIn, setSigningIn] = useState(false);
 
   const handleSignIn = async () => {
+    setSigningIn(true);
     if (!auth) {
       console.error("Firebase is not configured. Unable to sign in.");
       toast({
@@ -30,6 +38,7 @@ export function AuthButton() {
         description: "Firebase is not configured.",
         variant: "destructive",
       });
+      setSigningIn(false);
       return;
     }
     const provider = new GoogleAuthProvider();
@@ -39,10 +48,13 @@ export function AuthButton() {
       const errorCode = error.code as string | undefined;
 
       // Silently ignore user cancelling the sign-in
-      if (errorCode === 'auth/cancelled-popup-request' || errorCode === 'auth/popup-closed-by-user') {
+      if (
+        errorCode === "auth/cancelled-popup-request" ||
+        errorCode === "auth/popup-closed-by-user"
+      ) {
         return;
       }
-      
+
       // Handle popup blocked by trying redirect
       if (errorCode === "auth/popup-blocked") {
         try {
@@ -62,11 +74,12 @@ export function AuthButton() {
         // Handle other errors
         const errorMessages: Record<string, string> = {
           "auth/unauthorized-domain": "This domain is not authorized for sign-in.",
-          "auth/operation-not-supported-in-this-environment": "Sign-in is not supported in this environment.",
+          "auth/operation-not-supported-in-this-environment":
+            "Sign-in is not supported in this environment.",
         };
 
         console.error(`Error signing in with Google (${errorCode}):`, error);
-        
+
         toast({
           title: "Authentication Error",
           description:
@@ -75,6 +88,8 @@ export function AuthButton() {
           variant: "destructive",
         });
       }
+    } finally {
+      setSigningIn(false);
     }
   };
 
@@ -91,10 +106,26 @@ export function AuthButton() {
   };
 
   if (!user) {
-    return <Button onClick={handleSignIn} variant="outline" size="sm">
-      <LogIn className="mr-2 h-4 w-4" />
-      Sign In
-      </Button>;
+    return (
+      <Button
+        onClick={handleSignIn}
+        variant="outline"
+        size="sm"
+        disabled={signingIn}
+      >
+        {signingIn ? (
+          <>
+            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-current" />
+            Signing in...
+          </>
+        ) : (
+          <>
+            <LogIn className="mr-2 h-4 w-4" />
+            Sign In
+          </>
+        )}
+      </Button>
+    );
   }
 
   return (
