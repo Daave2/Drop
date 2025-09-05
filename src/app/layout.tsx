@@ -54,7 +54,7 @@ export default function RootLayout({
       <head>
         {/* Handwritten, readable fonts */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap"
           rel="stylesheet"
         />
         {/* wired-elements (sketchy web components) */}
