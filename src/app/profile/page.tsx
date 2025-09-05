@@ -268,7 +268,7 @@ export default function ProfilePage() {
                     <p className="text-muted-foreground">
                         {user?.isAnonymous ? "Anonymous User" : user?.email}
                     </p>
-                    {!user?.isAnonymous && (
+                    {user && !user.isAnonymous && (
                         <div className="mt-2">
                              <UpdateProfileForm uid={user.uid} currentDisplayName={displayName} />
                         </div>
