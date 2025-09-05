@@ -53,7 +53,7 @@
     <path fill="#FFFFFF" d="M40.5 22.5h-6l6 6z"/>
   </symbol>
 
-  <!-- ==== MAP/AR HELPERS ==== -->
+  <!-- ==== MAP HELPERS ==== -->
   <symbol id="nd-cluster" viewBox="0 0 64 64">
     <circle cx="32" cy="32" r="26" fill="#2F80FF"/>
     <circle cx="32" cy="32" r="22" fill="#FFFFFF" opacity="0.18"/>
@@ -125,11 +125,6 @@
   <symbol id="nd-accessibility" viewBox="0 0 64 64">
     <circle cx="32" cy="12" r="6" fill="#0F172A"/>
     <path d="M14 26h36M32 18v28M22 34l-8 22M42 34l8 22" stroke="#0F172A" stroke-width="4" stroke-linecap="round"/>
-  </symbol>
-
-  <symbol id="nd-ar" viewBox="0 0 64 64">
-    <rect x="8" y="18" width="48" height="28" rx="6" fill="#0F172A"/>
-    <path d="M26 26l6-4 6 4v8l-6 4-6-4z" fill="#FFFFFF"/>
   </symbol>
 
   <symbol id="nd-location-on" viewBox="0 0 64 64">

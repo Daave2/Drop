@@ -32,11 +32,6 @@ export default function OnboardingOverlay() {
       <div className="absolute inset-0 bg-black/60" />
 
       <div className="pointer-events-none">
-        <div className="absolute top-16 right-4 text-right">
-          <div className="bg-background/90 text-foreground text-xs px-2 py-1 rounded-md shadow">
-            Toggle AR
-          </div>
-        </div>
         <div className="absolute bottom-40 right-20 text-right">
           <div className="bg-background/90 text-foreground text-xs px-2 py-1 rounded-md shadow">
             Center on your location
