@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { Heart, Flag, Trash2 } from "lucide-react";
 import {
@@ -223,7 +223,13 @@ export default function NoteView({
         <div className="px-6 pt-4 space-y-6">
           {note.media?.[0]?.path && (
             <div className="rounded-lg overflow-hidden aspect-video relative bg-muted">
-              <Image src={note.media[0].path} alt="Note media" fill className="object-cover" data-ai-hint="mural street art" />
+              <Image
+                src={note.media[0].path}
+                alt={note.text || note.teaser || "Note image"}
+                fill
+                className="object-cover"
+                data-ai-hint="mural street art"
+              />
             </div>
           )}
           <p className="text-lg leading-relaxed whitespace-pre-wrap">{note.text}</p>
