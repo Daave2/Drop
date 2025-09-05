@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
-import { render, fireEvent, cleanup, waitFor, act } from '@testing-library/react';
+import { render, cleanup, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import MapView from './map-view';
 
@@ -39,27 +39,12 @@ vi.mock('@/hooks/use-proximity-notifications', () => ({
   useProximityNotifications: () => {},
 }));
 
-const useARModeMock = vi.hoisted(() => vi.fn());
-vi.mock('@/hooks/use-ar-mode', () => ({
-  useARMode: useARModeMock,
-}));
-
 vi.mock('next-themes', () => ({ useTheme: () => ({ theme: 'light' }) }));
-vi.mock('next/navigation', () => ({ useSearchParams: () => new URLSearchParams() }));
-
-const enterARHandler = vi.hoisted(() => vi.fn());
-vi.mock('./ar-view', () => {
-  const MockARView = React.forwardRef(
-    ({ onReturnToMap, style }: any, ref: any) => {
-      React.useImperativeHandle(ref, () => ({ enterAR: enterARHandler }));
-      return <div data-testid="arview" style={style} onClick={onReturnToMap}></div>;
-    }
-  );
-  MockARView.displayName = 'MockARView';
-  return { __esModule: true, default: MockARView };
-});
+const useSearchParamsMock = vi.hoisted(() => vi.fn(() => new URLSearchParams()));
+vi.mock('next/navigation', () => ({ useSearchParams: useSearchParamsMock }));
 vi.mock('./notifications-button', () => ({ NotificationsButton: () => <div /> }));
-vi.mock('./note-sheet-content', () => ({ __esModule: true, default: () => <div /> }));
+const NoteSheetContentMock = vi.hoisted(() => vi.fn(() => <div data-testid="note-sheet" />));
+vi.mock('./note-sheet-content', () => ({ __esModule: true, default: NoteSheetContentMock }));
 vi.mock('./compass-view', () => ({ __esModule: true, default: () => <div /> }));
 vi.mock('./theme-toggle', () => ({ ThemeToggle: () => <div /> }));
 vi.mock('./auth-button', () => ({ AuthButton: () => <div /> }));
@@ -83,74 +68,18 @@ vi.mock('./ui/badge', () => ({ Badge: ({ children }: any) => <span>{children}</s
 beforeEach(() => {
   useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: null });
   useToastMock.mockReturnValue({ toast: vi.fn() });
-  useARModeMock.mockReturnValue({ permissionGranted: false, requestPermission: vi.fn(), arError: null, setArError: vi.fn() });
+  useSearchParamsMock.mockReturnValue(new URLSearchParams());
+  NoteSheetContentMock.mockClear();
 });
 
 afterEach(() => {
   cleanup();
-  useARModeMock.mockReset();
   useNotesMock.mockReset();
   useToastMock.mockReset();
-  enterARHandler.mockReset();
   window.localStorage.clear();
 });
 
 describe('MapView', () => {
-  it('enters AR view when permission granted and enable AR clicked', async () => {
-    const requestPermission = vi.fn().mockResolvedValue(true);
-    useARModeMock.mockReturnValue({ permissionGranted: false, requestPermission, arError: null, setArError: vi.fn() });
-    const { getAllByTestId, getByText, getByTestId, queryByTestId } = render(<MapView />);
-    fireEvent.click(getByTestId('onboarding-overlay'));
-    await waitFor(() => expect(() => getByTestId('onboarding-overlay')).toThrow());
-    await act(async () => {
-      fireEvent.click(getByText('Enable AR'));
-    });
-    await waitFor(() => expect(enterARHandler).toHaveBeenCalled());
-    await waitFor(() => expect(getByTestId('arview')).toBeTruthy());
-    const maps = getAllByTestId('map');
-    const map = maps[maps.length - 1] as HTMLDivElement;
-    expect(map.style.display).toBe('none');
-    expect(queryByTestId('arview')).toBeTruthy();
-  });
-
-  it('keeps map visible when AR permission denied', async () => {
-    const requestPermission = vi.fn().mockResolvedValue(false);
-    useARModeMock.mockReturnValue({ permissionGranted: false, requestPermission, arError: null, setArError: vi.fn() });
-    const { getAllByTestId, getByText, getByTestId, queryByTestId } = render(<MapView />);
-    fireEvent.click(getByTestId('onboarding-overlay'));
-    await waitFor(() => expect(() => getByTestId('onboarding-overlay')).toThrow());
-    await act(async () => {
-      fireEvent.click(getByText('Enable AR'));
-    });
-    await waitFor(() => {
-      const maps = getAllByTestId('map');
-      const map = maps[maps.length - 1] as HTMLDivElement;
-      expect(map.style.display).toBe('block');
-      const ar = queryByTestId('arview') as HTMLDivElement | null;
-      expect(ar?.style.display).toBe('none');
-    });
-  });
-
-  it('shows map after returning from AR view', async () => {
-    const requestPermission = vi.fn().mockResolvedValue(true);
-    useARModeMock.mockReturnValue({ permissionGranted: false, requestPermission, arError: null, setArError: vi.fn() });
-    const { getAllByTestId, getByText, getByTestId, queryByTestId } = render(<MapView />);
-    fireEvent.click(getByTestId('onboarding-overlay'));
-    await waitFor(() => expect(() => getByTestId('onboarding-overlay')).toThrow());
-    await act(async () => {
-      fireEvent.click(getByText('Enable AR'));
-    });
-    await waitFor(() => expect(getByTestId('arview')).toBeTruthy());
-    fireEvent.click(getByTestId('arview'));
-    await waitFor(() => {
-      const ar = queryByTestId('arview') as HTMLDivElement | null;
-      expect(ar?.style.display).toBe('none');
-    });
-    const maps = getAllByTestId('map');
-    const map = maps[maps.length - 1] as HTMLDivElement;
-    expect(map.style.display).toBe('block');
-  });
-
   it('renders loader while loading', () => {
     useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: true, error: null });
     const { getByTestId } = render(<MapView />);
@@ -169,6 +98,26 @@ describe('MapView', () => {
     useToastMock.mockReturnValue({ toast: toastFn });
     render(<MapView />);
     await waitFor(() => expect(toastFn).toHaveBeenCalled());
+  });
+
+  it('opens note from search params', async () => {
+    const note = {
+      id: '1',
+      lat: 0,
+      lng: 0,
+      createdAt: { seconds: 0, nanoseconds: 0 },
+      score: 0,
+      type: 'text',
+    };
+    useSearchParamsMock.mockReturnValue(new URLSearchParams('note=1'));
+    useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: false, error: null });
+    render(<MapView />);
+    await waitFor(() =>
+      expect(NoteSheetContentMock).toHaveBeenCalledWith(
+        expect.objectContaining({ noteId: '1' }),
+        expect.anything()
+      )
+    );
   });
 });
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Camera, X } from "lucide-react";
 import Image from "next/image";
 import { geohashForLocation } from "geofire-common";
@@ -55,6 +55,7 @@ export default function CreateNoteForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [text, setText] = useState("");
   const uploadTaskRef = useRef<UploadTask | null>(null);
   const canceledByUserRef = useRef(false);
 
@@ -66,11 +67,10 @@ export default function CreateNoteForm({
     }
 
     setIsSubmitting(true);
-    const formData = new FormData(e.currentTarget);
-    const text = formData.get("text") as string;
+    const noteText = text;
 
     try {
-      const validation = noteSchema.safeParse({ text, image: imageFile });
+      const validation = noteSchema.safeParse({ text: noteText, image: imageFile });
       if (!validation.success) {
         toast({ title: "Invalid Input", description: validation.error.errors[0].message, variant: "destructive" });
         setIsSubmitting(false);
@@ -83,7 +83,7 @@ export default function CreateNoteForm({
       const newNote: Omit<Note, "id" | "createdAt"> & {
         createdAt: ReturnType<typeof serverTimestamp>;
       } = {
-        text,
+        text: noteText,
         lat: userLocation.latitude,
         lng: userLocation.longitude,
         geohash,
@@ -92,7 +92,7 @@ export default function CreateNoteForm({
         authorPseudonym: pseudonym,
         type: imageFile ? "photo" : "text",
         score: 0,
-        teaser: text.substring(0, 30) + (text.length > 30 ? "..." : ""),
+        teaser: noteText.substring(0, 30) + (noteText.length > 30 ? "..." : ""),
         visibility: "public",
         trust: 0.5,
         placeMaskMeters: 10,
@@ -199,6 +199,7 @@ export default function CreateNoteForm({
 
       toast({ title: "Success!", description: "Note dropped successfully!" });
       formRef.current?.reset();
+      setText("");
       setImagePreview(null);
       setImageFile(null);
       setUploadProgress(0);
@@ -296,7 +297,10 @@ export default function CreateNoteForm({
             maxLength={800}
             rows={5}
             required
+            value={text}
+            onChange={(e) => setText(e.target.value)}
           />
+          <p className="text-right text-xs text-muted-foreground">{text.length}/800</p>
 
           {imagePreview && (
             <div className="relative">

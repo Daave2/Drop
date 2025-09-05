@@ -7,11 +7,11 @@ Symbols included:
 
 Pins: nd-pin-default • nd-pin-ghost • nd-pin-limited • nd-pin-lowtrust • nd-pin-selected • nd-pin-reported
 
-Map/AR: nd-cluster • nd-compass • nd-sight-arc • nd-lock • nd-camera • nd-countdown
+Map: nd-cluster • nd-compass • nd-sight-arc • nd-lock • nd-camera • nd-countdown
 
 Actions: nd-heart • nd-bookmark • nd-reply • nd-share • nd-flag
 
-System: nd-user • nd-settings • nd-accessibility • nd-ar • nd-location-on • nd-location-off
+System: nd-user • nd-settings • nd-accessibility • nd-location-on • nd-location-off
 
 Badges: nd-badge-starter • nd-badge-verified
 

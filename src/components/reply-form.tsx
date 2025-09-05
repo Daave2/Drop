@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { Send } from "lucide-react";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { z } from "zod";
@@ -104,13 +104,14 @@ export default function ReplyForm({
         <Textarea
           name="text"
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => setText(e.target.value.slice(0, 120))}
           placeholder="Add a reply... (Max 120 chars)"
           maxLength={120}
           rows={1}
           required
           className="flex-grow min-h-0"
         />
+        <p className="text-xs text-muted-foreground text-right">{text.length}/120</p>
         {error && <p className="text-sm text-destructive mt-1">{error}</p>}
       </div>
       <Button type="submit" size="icon" className="h-full" disabled={isSubmitting}>
