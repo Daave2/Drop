@@ -110,3 +110,65 @@ body {
     animation: flame-flicker 1.5s infinite ease-in-out;
   }
 }
+
+/* Sketch UI tokens and utilities */
+:root {
+  --ink: #333333;
+  --paper: #f2f2f2;
+  --paper-2: #e0e0e0;
+  --accent: #ffd24a; /* single highlight */
+  --radius: 14px;
+  --stroke: 3px;
+}
+
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 16px;
+}
+
+/* Sketch UI primitives */
+.sk-card {
+  background: var(--paper);
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--radius);
+  box-shadow: 0 2px 0 #d7d7d7;
+  padding: 16px;
+}
+
+.sk-title {
+  font-family: "Kalam","Patrick Hand",system-ui,sans-serif;
+  font-weight: 600;
+}
+
+.sk-btn {
+  display: inline-block;
+  padding: 12px 18px;
+  border: var(--stroke) solid var(--ink);
+  border-radius: 9999px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+  font-family: "Kalam","Patrick Hand",system-ui,sans-serif;
+  transition: transform .02s ease-in-out;
+}
+.sk-btn:active { transform: translateY(1px); }
+.sk-btn[disabled] { opacity: .5; cursor: not-allowed; filter: grayscale(.5); }
+.sk-btn.sk-cta { background: var(--accent); }
+
+.sk-pill {
+  display: inline-block;
+  border-radius: 9999px;
+  padding: 4px 10px;
+  border: var(--stroke) solid var(--ink);
+  background: #fff;
+}
+
+/* a11y */
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
