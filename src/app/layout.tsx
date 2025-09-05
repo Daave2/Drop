@@ -8,7 +8,17 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Pwa } from '@/components/pwa';
 import { SettingsProvider } from '@/hooks/use-settings';
 import { NdSprite } from '@/components/ui/nd-sprite';
-import { Patrick_Hand } from 'next/font/google';
+import { Inter, Lexend } from 'next/font/google';
+
+const fontSans = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+});
+
+const fontHeading = Lexend({
+  subsets: ['latin'],
+  variable: '--font-heading',
+});
 
 export const metadata: Metadata = {
   title: 'NoteDrop: Location-Based Notes',
@@ -34,17 +44,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const patrickHand = Patrick_Hand({
-    subsets: ['latin'],
-    weight: '400',
-    variable: '--font-hand',
-    display: 'swap',
-  });
   return (
     <html
       lang="en"
       suppressHydrationWarning
-      className={patrickHand.variable}
+      className={`${fontSans.variable} ${fontHeading.variable}`}
     >
       <body className={cn('font-body antialiased', 'min-h-screen bg-background')}>
         <NdSprite />

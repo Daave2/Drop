@@ -18,8 +18,8 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['var(--font-hand)', 'cursive'],
-        headline: ['var(--font-hand)', 'cursive'],
+        body: ['var(--font-sans)', 'sans-serif'],
+        headline: ['var(--font-heading)', 'sans-serif'],
         code: ['Source Code Pro', 'monospace'],
       },
       fontSize: {
