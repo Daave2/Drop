@@ -2,6 +2,7 @@ declare module 'geofire-common';
 declare module 'vitest';
 declare module 'next-themes';
 declare module 'next-themes/dist/types';
+declare module 'react-rough-notation';
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];

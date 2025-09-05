@@ -1,9 +1,7 @@
-
 "use client";
 
 import { useState } from "react";
 import { useOrientation } from "./use-orientation";
-import { trackEvent } from "@/lib/analytics";
 
 export function useARMode() {
   const {
@@ -20,7 +18,6 @@ export function useARMode() {
     if (!navigator.xr?.isSessionSupported) {
       const errorMsg = "AR mode is not supported on this device or browser.";
       setArError(errorMsg);
-      trackEvent("ar_launch_failed", { reason: "xr_unsupported" });
       return false;
     }
 
@@ -29,13 +26,11 @@ export function useARMode() {
       if (!supported) {
         const errorMsg = "AR mode is not supported on this device or browser.";
         setArError(errorMsg);
-        trackEvent("ar_launch_failed", { reason: "xr_unsupported" });
         return false;
       }
     } catch {
       const errorMsg = "Unable to verify AR support on this device.";
       setArError(errorMsg);
-      trackEvent("ar_launch_failed", { reason: "xr_check_failed" });
       return false;
     }
 
@@ -43,15 +38,12 @@ export function useARMode() {
     if (!orient) {
       const errorMsg = "Motion sensor access is required for AR mode. Please enable it in your browser settings.";
       setArError(errorMsg);
-      trackEvent("ar_permission_denied", { type: "orientation" });
-      trackEvent("ar_launch_failed", { reason: "orientation_denied" });
       return false;
     }
 
     if (!navigator.mediaDevices?.getUserMedia) {
       const errorMsg = "Your browser does not support the necessary camera APIs for AR mode.";
       setArError(errorMsg);
-      trackEvent("ar_launch_failed", { reason: "media_devices_unsupported" });
       return false;
     }
 
@@ -63,7 +55,6 @@ export function useARMode() {
         stream.removeTrack(track);
       });
       setCameraPermissionGranted(true);
-      trackEvent("ar_permission_granted");
       return true;
     } catch (err: any) {
       let errorMsg = "An unknown error occurred while trying to access the camera.";
@@ -72,8 +63,6 @@ export function useARMode() {
       }
       setArError(errorMsg);
       setCameraPermissionGranted(false);
-      trackEvent("ar_permission_denied", { type: "camera" });
-      trackEvent("ar_launch_failed", { reason: "camera_denied" });
       return false;
     }
   };
