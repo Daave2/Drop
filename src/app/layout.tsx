@@ -9,6 +9,7 @@ import { Pwa } from '@/components/pwa';
 import { SettingsProvider } from '@/hooks/use-settings';
 import { NdSprite } from '@/components/ui/nd-sprite';
 import { Inter, Lexend } from 'next/font/google';
+import SketchSprite from '@/components/ui/SketchSprite';
 
 const fontSans = Inter({
   subsets: ['latin'],
@@ -50,6 +51,19 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${fontSans.variable} ${fontHeading.variable}`}
     >
+      <head>
+        {/* Handwritten, readable fonts */}
+        <link
+          href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap"
+          rel="stylesheet"
+        />
+        {/* wired-elements (sketchy web components) */}
+        <script
+          type="module"
+          defer
+          src="https://unpkg.com/wired-elements/lib/wired-elements-bundled.js"
+        ></script>
+      </head>
       <body className={cn('font-body antialiased', 'min-h-screen bg-background')}>
         <NdSprite />
         <ThemeProvider
@@ -66,6 +80,8 @@ export default function RootLayout({
             </AuthProvider>
           </SettingsProvider>
         </ThemeProvider>
+        {/* Inline the sketch SVG symbols once per document */}
+        <SketchSprite />
       </body>
     </html>
   );
