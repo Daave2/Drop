@@ -18,7 +18,7 @@ export function NotificationsButton() {
     <DropdownMenu onOpenChange={(open) => open && markAllAsRead()}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Bell className="h-4 w-4" />
+          <Bell className="h-4 w-4 text-gold" />
           {unread > 0 && (
             <span className="absolute top-0 right-0 inline-flex h-2 w-2 rounded-full bg-destructive" />
           )}

@@ -126,7 +126,8 @@ describe('MapView', () => {
       const maps = getAllByTestId('map');
       const map = maps[maps.length - 1] as HTMLDivElement;
       expect(map.style.display).toBe('block');
-      expect(queryByTestId('arview')).toBeNull();
+      const ar = queryByTestId('arview') as HTMLDivElement | null;
+      expect(ar?.style.display).toBe('none');
     });
   });
 
@@ -141,7 +142,10 @@ describe('MapView', () => {
     });
     await waitFor(() => expect(getByTestId('arview')).toBeTruthy());
     fireEvent.click(getByTestId('arview'));
-    await waitFor(() => expect(queryByTestId('arview')).toBeNull());
+    await waitFor(() => {
+      const ar = queryByTestId('arview') as HTMLDivElement | null;
+      expect(ar?.style.display).toBe('none');
+    });
     const maps = getAllByTestId('map');
     const map = maps[maps.length - 1] as HTMLDivElement;
     expect(map.style.display).toBe('block');
