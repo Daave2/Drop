@@ -65,7 +65,7 @@ export function TestModeTab() {
       <CardHeader>
         <CardTitle>Device Simulation</CardTitle>
         <CardDescription>
-          Override device sensors for testing features like the compass or AR mode on a desktop.
+          Override device sensors for testing features like the compass on a desktop.
           Refresh the page to see changes take effect.
         </CardDescription>
       </CardHeader>
