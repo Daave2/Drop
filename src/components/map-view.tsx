@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
-import { Plus, Compass, LocateFixed, AlertTriangle } from 'lucide-react';
+import { Plus, Compass, LocateFixed } from 'lucide-react';
 import { useLocation, Coordinates } from '@/hooks/use-location';
 import { useNotes } from '@/hooks/use-notes';
 import { useToast } from '@/hooks/use-toast';
@@ -31,8 +31,6 @@ import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
 import { NotificationsButton } from './notifications-button';
-import ARView, { ARViewHandle } from './ar-view';
-import { useARMode } from '@/hooks/use-ar-mode';
 import OnboardingOverlay from './onboarding-overlay';
 import { MapSkeleton } from './map-skeleton';
 import { NdIcon } from './ui/nd-icon';
@@ -59,15 +57,8 @@ function MapViewContent() {
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchCenterRef = useRef<[number, number] | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
-  const arViewRef = useRef<ARViewHandle>(null);
   const searchParams = useSearchParams();
   const { theme } = useTheme();
-  const {
-    requestPermission: requestARPermission,
-    arError,
-    setArError
-  } = useARMode();
-  const [isARViewVisible, setARViewVisible] = useState(false);
 
   useEffect(() => {
     if (error) {
@@ -223,21 +214,6 @@ function MapViewContent() {
     }
   };
 
-  const handleEnableAR = async () => {
-    const hasPermission = await requestARPermission();
-    if (hasPermission) {
-      setARViewVisible(true);
-    }
-  };
-
-  const handleARCreateNote = (coords: Coordinates) => {
-    setCreatingNote(true);
-    setSelectedNote(null);
-    setNewNoteLocation(coords);
-    setARViewVisible(false);
-    setNoteSheetOpen(true);
-  };
-
   const handleNoteCreated = () => {
     if (viewState.latitude && viewState.longitude) {
       fetchNotes([viewState.latitude, viewState.longitude]);
@@ -251,15 +227,9 @@ function MapViewContent() {
     setNewNoteLocation(null);
   }, []);
 
-  const mapStyleUrl = theme === 'dark' 
+  const mapStyleUrl = theme === 'dark'
     ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
     : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
-
-  useEffect(() => {
-    if (isARViewVisible) {
-      arViewRef.current?.enterAR();
-    }
-  }, [isARViewVisible]);
 
   
 
@@ -277,19 +247,11 @@ function MapViewContent() {
 
   return (
     <div className="h-screen w-screen relative">
-      <ARView
-        ref={arViewRef}
-        notes={notes}
-        style={{ display: isARViewVisible ? 'block' : 'none' }}
-        onSelectNote={handleMarkerClick}
-        onReturnToMap={() => setARViewVisible(false)}
-        onCreateNote={handleARCreateNote}
-      />
       <Map
         ref={mapRef}
         {...viewState}
         onMove={evt => setViewState(evt.viewState)}
-        style={{ width: '100%', height: '100%', display: isARViewVisible ? 'none' : 'block' }}
+        style={{ width: '100%', height: '100%' }}
         mapStyle={mapStyleUrl}
         antialias={true}
       >
@@ -353,49 +315,41 @@ function MapViewContent() {
         </div>
       )}
 
-      {!isARViewVisible && (
-        <>
-          <header className="absolute top-0 left-0 right-0 p-2 sm:p-4 flex justify-between items-center bg-gradient-to-b from-background/80 to-transparent">
-            <Logo />
-            <div className="flex items-center gap-2 bg-background/80 p-1 rounded-full">
-                <Button onClick={handleEnableAR} size="sm" variant="secondary">
-                  <NdIcon name="camera" className="mr-2 h-4 w-4" />
-                  Enable AR
-                </Button>
-                {permissionState === 'prompt' && (
-                  <Button onClick={requestLocationPermission} size="sm" variant="secondary">
-                    Enable Location
-                  </Button>
-                )}
-                <ThemeToggle />
-                <NotificationsButton />
-                <AuthButton />
-            </div>
-          </header>
+      <header className="absolute top-0 left-0 right-0 p-2 sm:p-4 flex justify-between items-center bg-gradient-to-b from-background/80 to-transparent">
+        <Logo />
+        <div className="flex items-center gap-2 bg-background/80 p-1 rounded-full">
+            {permissionState === 'prompt' && (
+              <Button onClick={requestLocationPermission} size="sm" variant="secondary">
+                Enable Location
+              </Button>
+            )}
+            <ThemeToggle />
+            <NotificationsButton />
+            <AuthButton />
+        </div>
+      </header>
 
-          <Button
-            className="absolute right-4 rounded-full w-12 h-12 shadow-lg bottom-20 sm:bottom-24 sm:w-14 sm:h-14"
-            onClick={() => {
-                setCreatingNote(true);
-                setSelectedNote(null);
-                setNewNoteLocation(location);
-                setNoteSheetOpen(true);
-            }}
-          >
-            <Plus className="w-6 h-6" />
-          </Button>
+      <Button
+        className="absolute right-4 rounded-full w-12 h-12 shadow-lg bottom-20 sm:bottom-24 sm:w-14 sm:h-14"
+        onClick={() => {
+            setCreatingNote(true);
+            setSelectedNote(null);
+            setNewNoteLocation(location);
+            setNoteSheetOpen(true);
+        }}
+      >
+        <Plus className="w-6 h-6" />
+      </Button>
 
-          <Button
-            variant="secondary"
-            size="icon"
-            className="absolute right-4 rounded-full w-12 h-12 shadow-lg bottom-36 sm:bottom-40 sm:w-14 sm:h-14"
-            onClick={handleCenterMap}
-            disabled={!location}
-          >
-            <LocateFixed className="w-6 h-6" />
-          </Button>
-        </>
-      )}
+      <Button
+        variant="secondary"
+        size="icon"
+        className="absolute right-4 rounded-full w-12 h-12 shadow-lg bottom-36 sm:bottom-40 sm:w-14 sm:h-14"
+        onClick={handleCenterMap}
+        disabled={!location}
+      >
+        <LocateFixed className="w-6 h-6" />
+      </Button>
 
       <Sheet open={isNoteSheetOpen} onOpenChange={setNoteSheetOpen}>
         <SheetContent
@@ -432,20 +386,6 @@ function MapViewContent() {
                 }}
                 revealRadius={getNoteDynamicProps(selectedNote.score).revealRadius}
             />}
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!arError} onOpenChange={(open) => !open && setArError(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <AlertTriangle className="text-destructive" />
-              AR Error
-            </DialogTitle>
-            <DialogDescription className="pt-4">
-              {arError}
-            </DialogDescription>
-          </DialogHeader>
         </DialogContent>
       </Dialog>
 

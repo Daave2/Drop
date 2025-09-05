@@ -17,7 +17,6 @@ export function WobblyWrapper({
   const canAnnotate =
     typeof window !== "undefined" &&
     typeof SVGPathElement !== "undefined" &&
-    // @ts-expect-error: getTotalLength may not exist in non-browser environments
     typeof SVGPathElement.prototype.getTotalLength === "function"
 
   if (!canAnnotate) {
