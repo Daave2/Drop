@@ -34,15 +34,6 @@ NEXT_PUBLIC_PROXIMITY_RADIUS_M=100
 
 If not provided, the default radius is 50 meters.
 
-## Browser & Device Support
-
-| Device/OS | Browser | AR Support | Notes |
-|-----------|---------|------------|-------|
-| Android (ARCore capable) | Chrome 81+ | ✅ WebXR AR | Requires HTTPS and camera permissions |
-| Android (ARCore capable) | Samsung Internet 14+ | ✅ WebXR AR | May require enabling experimental WebXR flag |
-| iOS 15+ | Safari | ❌ No WebXR | Falls back to non-AR experience |
-| Desktop (Windows/macOS) | Chrome, Edge, Firefox | ❌ | AR features require mobile hardware |
-
 ## Documentation
 
 A high level project blueprint is available in [`docs/blueprint.md`](docs/blueprint.md).
