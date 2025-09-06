@@ -168,13 +168,25 @@ body {
 /* Sketch UI primitives */
 
 .sk-card {
+  position: relative;
   background: var(--paper);
   border: var(--stroke) solid var(--ink);
-  outline: var(--stroke) solid var(--ink);
-  outline-offset: 3px;
   border-radius: var(--radius);
   box-shadow: 0 2px 0 #d7d7d7;
   padding: 16px;
+  filter: url(#sketch);
+}
+
+.sk-card::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: var(--stroke) solid var(--ink);
+  border-radius: var(--radius);
+  pointer-events: none;
   filter: url(#sketch);
 }
 
@@ -184,11 +196,10 @@ body {
 }
 
 .sk-btn {
+  position: relative;
   display: inline-block;
   padding: 12px 18px;
   border: var(--stroke) solid var(--ink);
-  outline: var(--stroke) solid var(--ink);
-  outline-offset: 3px;
   border-radius: 9999px;
   background: #fff;
   color: var(--ink);
@@ -198,8 +209,21 @@ body {
   transition: transform .02s ease-in-out;
   filter: url(#sketch);
 }
+
+.sk-btn::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: -3px;
+  right: -3px;
+  bottom: -3px;
+  border: var(--stroke) solid var(--ink);
+  border-radius: 9999px;
+  pointer-events: none;
+  filter: url(#sketch);
+}
 .sk-btn:active { transform: translateY(1px); }
-.sk-btn[disabled] { opacity: .5; cursor: not-allowed; filter: grayscale(.5); }
+.sk-btn[disabled] { opacity: .5; cursor: not-allowed; filter: url(#sketch) grayscale(.5); }
 .sk-btn.sk-cta { background: var(--sk-accent); }
 
 .sk-pill {
@@ -208,6 +232,7 @@ body {
   padding: 4px 10px;
   border: var(--stroke) solid var(--ink);
   background: #fff;
+  filter: url(#sketch);
 }
 
 /* a11y */

@@ -13,8 +13,8 @@ export default function SketchSprite() {
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
   <defs>
     <filter id="sketch" x="-10%" y="-10%" width="120%" height="120%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" seed="11" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="1.2" xChannelSelector="R" yChannelSelector="G"/>
+      <feTurbulence type="fractalNoise" baseFrequency="0.8" numOctaves="3" seed="11" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="3" xChannelSelector="R" yChannelSelector="G"/>
     </filter>
     <style>
       .i { stroke:#333; stroke-width:4; stroke-linecap:round; stroke-linejoin:round; fill:none; }
