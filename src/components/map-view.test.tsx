@@ -93,6 +93,21 @@ describe('MapView', () => {
     expect(loader.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
   });
 
+  it('does not render loader when notes exist', () => {
+    const note = {
+      id: '1',
+      lat: 0,
+      lng: 0,
+      createdAt: { seconds: 0, nanoseconds: 0 },
+      score: 0,
+      type: 'text',
+      teaser: 't',
+    };
+    useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: true, error: null });
+    const { queryByTestId } = render(<MapView />);
+    expect(queryByTestId('map-loading')).toBeNull();
+  });
+
   it('shows message when no notes', () => {
     const { getByTestId } = render(<MapView />);
     expect(getByTestId('no-notes')).toBeTruthy();
