@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
-import { render, cleanup, waitFor } from '@testing-library/react';
+import { render, cleanup, waitFor, act } from '@testing-library/react';
 import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import MapView from './map-view';
 
@@ -77,14 +77,20 @@ afterEach(() => {
   useNotesMock.mockReset();
   useToastMock.mockReset();
   window.localStorage.clear();
+  vi.useRealTimers();
 });
 
 describe('MapView', () => {
-  it('renders loader while loading', () => {
+  it('renders loader after delay when loading', () => {
+    vi.useFakeTimers();
     useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: true, error: null });
-    const { getByTestId } = render(<MapView />);
-    const loader = getByTestId('map-loading');
-    expect(loader.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+    const { queryByTestId } = render(<MapView />);
+    expect(queryByTestId('map-loading')).toBeNull();
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+    const loader = queryByTestId('map-loading');
+    expect(loader).toBeTruthy();
   });
 
   it('shows message when no notes', () => {

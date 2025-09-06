@@ -52,6 +52,7 @@ function MapViewContent() {
   const [isCreatingNote, setCreatingNote] = useState(false);
   const [newNoteLocation, setNewNoteLocation] = useState<Coordinates | null>(null);
   const [isCompassViewOpen, setCompassViewOpen] = useState(false);
+  const [showLoader, setShowLoader] = useState(false);
   const mapRef = useRef<MapRef | null>(null);
   const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -69,6 +70,18 @@ function MapViewContent() {
       });
     }
   }, [error, toast]);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout | null = null;
+    if (loading) {
+      timer = setTimeout(() => setShowLoader(true), 300);
+    } else {
+      setShowLoader(false);
+    }
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [loading]);
 
   const [viewState, setViewState] = useState<Partial<ViewState>>({
     longitude: DEFAULT_CENTER.longitude,
@@ -306,7 +319,7 @@ function MapViewContent() {
 
       <OnboardingOverlay />
 
-      {loading && (
+      {showLoader && (
         <div data-testid="map-loading" className="absolute inset-0 z-20">
           <MapSkeleton />
         </div>
