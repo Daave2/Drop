@@ -26,7 +26,10 @@ export const metadata: Metadata = {
   description: 'Leave and discover location-anchored virtual post-its.',
   manifest: '/manifest.json',
   icons: {
-    icon: '/favicon.svg',
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+    ],
     apple: '/icon-512.png',
   },
 };
