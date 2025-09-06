@@ -11,6 +11,7 @@ function setupSW() {
       listeners[type] = cb;
     },
     clients: { claim: vi.fn() },
+    location: { origin: 'https://example.com' },
   };
 
   const cachesStore = new Map<string, Map<string, Response>>();
