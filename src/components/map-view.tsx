@@ -273,10 +273,7 @@ function MapViewContent() {
             const isHot = note.score >= HOT_POST_THRESHOLD;
             return (
                 <Marker key={note.id} longitude={note.lng} latitude={note.lat} onClick={() => handleMarkerClick(note)}>
-                    <button
-                        aria-label="note-marker"
-                        className="transform hover:scale-110 transition-transform relative"
-                    >
+                    <button className="transform hover:scale-110 transition-transform relative">
                         <NdIcon
                             name={note.id === revealedNoteId ? 'pin-selected' : 'pin-default'}
                             className={cn('drop-shadow-lg',
@@ -309,7 +306,7 @@ function MapViewContent() {
 
       <OnboardingOverlay />
 
-      {loading && notes.length === 0 && (
+      {loading && (
         <div data-testid="map-loading" className="absolute inset-0 z-20">
           <MapSkeleton />
         </div>
@@ -378,15 +375,7 @@ function MapViewContent() {
         </SheetContent>
       </Sheet>
 
-      <Dialog
-        open={isCompassViewOpen}
-        onOpenChange={(open) => {
-          setCompassViewOpen(open);
-          if (!open && revealedNoteId !== selectedNote?.id) {
-            setSelectedNote(null);
-          }
-        }}
-      >
+      <Dialog open={isCompassViewOpen} onOpenChange={setCompassViewOpen}>
         <DialogContent>
             <DialogHeader>
                 <DialogTitle>Get Closer to Reveal</DialogTitle>

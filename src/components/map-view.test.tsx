@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
-import { render, cleanup, waitFor, fireEvent } from '@testing-library/react';
+import { render, cleanup, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import MapView from './map-view';
 
@@ -17,9 +17,8 @@ vi.mock('react-map-gl/maplibre', () => ({
   Popup: ({ children }: any) => <div>{children}</div>,
 }));
 
-const useLocationMock = vi.hoisted(() => vi.fn());
 vi.mock('@/hooks/use-location', () => ({
-  useLocation: useLocationMock,
+  useLocation: () => ({ location: null, permissionState: 'granted', requestPermission: vi.fn() }),
 }));
 
 const useNotesMock = vi.hoisted(() => vi.fn());
@@ -57,12 +56,8 @@ vi.mock('./ui/sheet', () => ({
   SheetHeader: ({ children }: any) => <div>{children}</div>,
   SheetTitle: ({ children }: any) => <div>{children}</div>,
 }));
-let dialogOnOpenChange: ((open: boolean) => void) | null = null;
 vi.mock('./ui/dialog', () => ({
-  Dialog: ({ children, onOpenChange }: any) => {
-    dialogOnOpenChange = onOpenChange;
-    return <div>{children}</div>;
-  },
+  Dialog: ({ children }: any) => <div>{children}</div>,
   DialogContent: ({ children }: any) => <div>{children}</div>,
   DialogHeader: ({ children }: any) => <div>{children}</div>,
   DialogTitle: ({ children }: any) => <div>{children}</div>,
@@ -74,7 +69,6 @@ beforeEach(() => {
   useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: null });
   useToastMock.mockReturnValue({ toast: vi.fn() });
   useSearchParamsMock.mockReturnValue(new URLSearchParams());
-  useLocationMock.mockReturnValue({ location: null, permissionState: 'granted', requestPermission: vi.fn() });
   NoteSheetContentMock.mockClear();
 });
 
@@ -91,21 +85,6 @@ describe('MapView', () => {
     const { getByTestId } = render(<MapView />);
     const loader = getByTestId('map-loading');
     expect(loader.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
-  });
-
-  it('does not render loader when notes exist', () => {
-    const note = {
-      id: '1',
-      lat: 0,
-      lng: 0,
-      createdAt: { seconds: 0, nanoseconds: 0 },
-      score: 0,
-      type: 'text',
-      teaser: 't',
-    };
-    useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: true, error: null });
-    const { queryByTestId } = render(<MapView />);
-    expect(queryByTestId('map-loading')).toBeNull();
   });
 
   it('shows message when no notes', () => {
@@ -139,35 +118,6 @@ describe('MapView', () => {
         expect.anything()
       )
     );
-  });
-
-  it('hides note preview when closing compass view out of range', async () => {
-    const note = {
-      id: '1',
-      lat: 10,
-      lng: 10,
-      createdAt: { seconds: 0, nanoseconds: 0 },
-      score: 0,
-      type: 'text',
-      teaser: 'Teaser',
-    };
-    useLocationMock.mockReturnValue({
-      location: { latitude: 0, longitude: 0 },
-      permissionState: 'granted',
-      requestPermission: vi.fn(),
-    });
-    useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: false, error: null });
-
-    const { getByLabelText, queryByText } = render(<MapView />);
-
-    fireEvent.click(getByLabelText('note-marker'));
-    expect(queryByText('Teaser')).toBeNull();
-
-    dialogOnOpenChange && dialogOnOpenChange(false);
-
-    await waitFor(() => {
-      expect(queryByText('Teaser')).toBeNull();
-    });
   });
 });
 
