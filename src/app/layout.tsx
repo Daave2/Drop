@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import './themes/sketch.css';
 import { Toaster } from '@/components/ui/toaster';
 import { AuthProvider } from '@/components/auth-provider';
 import { cn } from '@/lib/utils';
@@ -69,13 +70,7 @@ export default function RootLayout({
       </head>
       <body className={cn('font-body antialiased', 'min-h-screen bg-background')}>
         <NdSprite />
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-          themes={['light', 'dark', 'sketch']}
-        >
+        <ThemeProvider>
           <SettingsProvider>
             <AuthProvider>
               {children}
@@ -83,9 +78,9 @@ export default function RootLayout({
               <Pwa />
             </AuthProvider>
           </SettingsProvider>
+          {/* Inline the sketch SVG symbols once per document */}
+          <SketchSprite />
         </ThemeProvider>
-        {/* Inline the sketch SVG symbols once per document */}
-        <SketchSprite />
       </body>
     </html>
   );

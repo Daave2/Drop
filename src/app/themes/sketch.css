@@ -1,0 +1,172 @@
+/* Hand-drawn overlay — activates ONLY when html[data-theme="sketch"] is present. */
+html[data-theme="sketch"] {
+  --ink: #292929;
+  --paper: #f2f2f2;
+  --paper-2: #e3e3e3;
+  --accent: #ffd24a;
+  --danger: #ef4444;
+  --stroke: 3.5px;
+  --radius: 16px;
+}
+
+/* Apply fonts (you already load them in layout): Architects Daughter / Kalam */
+html[data-theme="sketch"] body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+/* Utility: jitter filter from SketchSprite (feTurbulence+feDisplacementMap) */
+html[data-theme="sketch"] .sk-rough { filter: url(#sketch); }
+
+/* ------- Generic “frame” (cards, panels, stat boxes) ------- */
+html[data-theme="sketch"] :where(.card, .panel, section[data-card], .nd-card, .stat, .metric) {
+  position: relative;
+  background: var(--paper);
+  border-radius: var(--radius);
+  padding: 14px;
+  box-shadow: 0 2px 0 #d7d7d7;
+}
+html[data-theme="sketch"] :where(.card, .panel, section[data-card], .nd-card, .stat, .metric)::before,
+html[data-theme="sketch"] :where(.card, .panel, section[data-card], .nd-card, .stat, .metric)::after {
+  content: "";
+  position: absolute;
+  inset: -7px;
+  border-radius: calc(var(--radius) + 8px);
+  border: var(--stroke) solid var(--ink);
+  pointer-events: none;
+}
+html[data-theme="sketch"] :where(.card, .panel, section[data-card], .nd-card, .stat, .metric)::before { transform: rotate(-0.5deg); opacity: .95; }
+html[data-theme="sketch"] :where(.card, .panel, section[data-card], .nd-card, .stat, .metric)::after  { transform: rotate(0.35deg);  opacity: .65; }
+
+/* Title bar strip (add class .titlebar on headers you want styled) */
+html[data-theme="sketch"] .titlebar {
+  background: #dedede;
+  border-radius: 12px 12px 0 0;
+  padding: 10px 14px;
+  margin: -8px -8px 12px -8px;
+  position: relative;
+  font-family: "Architects Daughter","Kalam","Patrick Hand",system-ui,sans-serif;
+  font-weight: 700;
+  font-size: 22px;
+}
+html[data-theme="sketch"] .titlebar::before,
+html[data-theme="sketch"] .titlebar::after {
+  content: "";
+  position: absolute;
+  inset: -6px -6px 6px -6px;
+  border-radius: 14px 14px 4px 4px;
+  border: var(--stroke) solid var(--ink);
+  pointer-events: none;
+}
+html[data-theme="sketch"] .titlebar::before { transform: rotate(-0.6deg); }
+html[data-theme="sketch"] .titlebar::after  { transform: rotate(0.4deg); opacity: .7; }
+
+/* Headings & large numerals */
+html[data-theme="sketch"] .h1,
+html[data-theme="sketch"] h1.sk { font-family:"Architects Daughter","Kalam","Patrick Hand",system-ui,sans-serif; font-weight:700; font-size:36px; }
+html[data-theme="sketch"] .h2,
+html[data-theme="sketch"] h2.sk { font-family:"Architects Daughter","Kalam","Patrick Hand",system-ui,sans-serif; font-weight:700; font-size:28px; }
+html[data-theme="sketch"] .num { font-family:"Kalam","Patrick Hand",system-ui,sans-serif; font-weight:700; font-size:34px; }
+
+/* Scribble divider */
+html[data-theme="sketch"] .scribble-hr { height:0; border:none; margin:14px 0 12px; position:relative; }
+html[data-theme="sketch"] .scribble-hr::before,
+html[data-theme="sketch"] .scribble-hr::after {
+  content:""; position:absolute; left:0; right:0; height:0; border-top:var(--stroke) solid var(--ink);
+}
+html[data-theme="sketch"] .scribble-hr::before { transform: rotate(-0.4deg); top:0; }
+html[data-theme="sketch"] .scribble-hr::after  { transform: rotate(0.3deg); top:3px; opacity:.7; }
+
+/* Avatar scribble ring (apply .avatar on your img wrapper) */
+html[data-theme="sketch"] .avatar { width:88px; height:88px; border-radius:9999px; overflow:hidden; position:relative; display:inline-block; }
+html[data-theme="sketch"] .avatar::before,
+html[data-theme="sketch"] .avatar::after { content:""; position:absolute; inset:-6px; border-radius:9999px; border:var(--stroke) solid var(--ink); pointer-events:none; }
+html[data-theme="sketch"] .avatar::before { transform: rotate(-0.6deg); }
+html[data-theme="sketch"] .avatar::after  { transform: rotate(0.5deg); opacity:.7; }
+
+/* ------- Buttons (match most libs) ------- */
+html[data-theme="sketch"] :where(button, .btn, [role="button"]) {
+  position: relative;
+  border-radius: 9999px;
+  background: #fff;
+  color: var(--ink);
+  font-family: "Architects Daughter","Kalam","Patrick Hand",system-ui,sans-serif;
+}
+html[data-theme="sketch"] :where(button, .btn, [role="button"])::before,
+html[data-theme="sketch"] :where(button, .btn, [role="button"])::after {
+  content:""; position:absolute; inset:-5px; border-radius:9999px; border:var(--stroke) solid var(--ink); pointer-events:none;
+}
+html[data-theme="sketch"] :where(button, .btn, [role="button"])::before { transform: rotate(-0.6deg); }
+html[data-theme="sketch"] :where(button, .btn, [role="button"])::after  { transform: rotate(0.45deg); opacity:.7; }
+html[data-theme="sketch"] :where(button, .btn, [role="button"]):active { transform: translateY(1px) rotate(-.2deg); }
+
+/* Primary buttons — opt-in via .cta */
+html[data-theme="sketch"] :where(button.cta, .btn.cta) { background: var(--accent); }
+
+/* ------- Inputs / Textareas / Selects (generic selectors) ------- */
+html[data-theme="sketch"] :where(input[type=text],input[type=search],input[type=number],input[type=email],input[type=password],textarea,select,.input,.textarea,.select) {
+  background:#fff; color:var(--ink); border:none; outline:none; border-radius:12px; position:relative; z-index:0;
+}
+html[data-theme="sketch"] :where(input[type=text],input[type=search],input[type=number],input[type=email],input[type=password],textarea,select,.input,.textarea,.select)::before,
+html[data-theme="sketch"] :where(input[type=text],input[type=search],input[type=number],input[type=email],input[type=password],textarea,select,.input,.textarea,.select)::after {
+  /* pseudo on replaced elements won’t render reliably, so we wrap below */
+  content: none;
+}
+/* Wrap helper: when an ancestor has .field-wrap, draw the wobble on it */
+html[data-theme="sketch"] .field-wrap { position:relative; border-radius:12px; }
+html[data-theme="sketch"] .field-wrap::before,
+html[data-theme="sketch"] .field-wrap::after {
+  content:""; position:absolute; inset:-6px; border-radius:14px; border:var(--stroke) solid var(--ink); pointer-events:none;
+}
+html[data-theme="sketch"] .field-wrap::before { transform: rotate(-.55deg); }
+html[data-theme="sketch"] .field-wrap::after  { transform: rotate(.35deg); opacity:.7; }
+
+/* Select caret */
+html[data-theme="sketch"] select { padding-right: 36px; background-image:
+  linear-gradient(45deg, transparent 50%, var(--ink) 50%),
+  linear-gradient(135deg, var(--ink) 50%, transparent 50%);
+  background-position: calc(100% - 20px) calc(50% - 3px), calc(100% - 15px) calc(50% - 3px);
+  background-size: 6px 6px, 6px 6px; background-repeat:no-repeat;
+}
+
+/* Error state (add .error to .field-wrap) */
+html[data-theme="sketch"] .field-wrap.error::before,
+html[data-theme="sketch"] .field-wrap.error::after { border-color: var(--danger); }
+
+/* ------- Checkbox & Switch ------- */
+html[data-theme="sketch"] .checkbox { display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none; }
+html[data-theme="sketch"] .checkbox .box { position:relative; width:22px; height:22px; border-radius:6px; background:#fff; }
+html[data-theme="sketch"] .checkbox .box::before,
+html[data-theme="sketch"] .checkbox .box::after { content:""; position:absolute; inset:-4px; border-radius:8px; border:var(--stroke) solid var(--ink); pointer-events:none; }
+html[data-theme="sketch"] .checkbox .box::before { transform: rotate(-.6deg); }
+html[data-theme="sketch"] .checkbox .box::after  { transform: rotate(.5deg); opacity:.7; }
+html[data-theme="sketch"] .checkbox input { position:absolute; opacity:0; }
+html[data-theme="sketch"] .checkbox .tick { position:absolute; left:5px; top:2px; width:10px; height:14px; border-right:var(--stroke) solid var(--ink); border-bottom:var(--stroke) solid var(--ink); transform:rotate(35deg) scale(0); transform-origin:left bottom; transition:transform .09s ease-out; }
+html[data-theme="sketch"] .checkbox input:checked + .box .tick { transform: rotate(35deg) scale(1); }
+
+html[data-theme="sketch"] .switch { display:inline-flex; align-items:center; gap:10px; cursor:pointer; }
+html[data-theme="sketch"] .switch .track { position:relative; width:52px; height:28px; border-radius:9999px; background:#fff; }
+html[data-theme="sketch"] .switch .track::before,
+html[data-theme="sketch"] .switch .track::after { content:""; position:absolute; inset:-4px; border-radius:9999px; border:var(--stroke) solid var(--ink); pointer-events:none; }
+html[data-theme="sketch"] .switch .track::before { transform: rotate(-.6deg); }
+html[data-theme="sketch"] .switch .track::after  { transform: rotate(.4deg); opacity:.7; }
+html[data-theme="sketch"] .switch .thumb { position:absolute; top:3px; left:3px; width:22px; height:22px; border-radius:9999px; background:var(--accent); box-shadow:0 1px 0 #d7d7d7; transition:left .1s ease; }
+html[data-theme="sketch"] .switch input { position:absolute; opacity:0; }
+html[data-theme="sketch"] .switch input:checked ~ .track .thumb { left:27px; }
+
+/* ------- Drawer / Sheet (works with shadcn Sheet, Radix Dialog, etc.) ------- */
+html[data-theme="sketch"] :where([role="dialog"], .dialog-content, .sheet-content, aside.sheet, .nd-sheet) {
+  position: relative;
+  background: var(--paper);
+  border-radius: 16px;
+}
+html[data-theme="sketch"] :where([role="dialog"], .dialog-content, .sheet-content, aside.sheet, .nd-sheet)::before,
+html[data-theme="sketch"] :where([role="dialog"], .dialog-content, .sheet-content, aside.sheet, .nd-sheet)::after {
+  content:""; position:absolute; inset:-7px; border-radius:24px; border:var(--stroke) solid var(--ink); pointer-events:none;
+}
+html[data-theme="sketch"] :where([role="dialog"], .dialog-content, .sheet-content, aside.sheet, .nd-sheet)::before { transform: rotate(-.5deg); }
+html[data-theme="sketch"] :where([role="dialog"], .dialog-content, .sheet-content, aside.sheet, .nd-sheet)::after  { transform: rotate(.35deg); opacity:.7; }
+
+/* a11y focus */
+html[data-theme="sketch"] :focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
