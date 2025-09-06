@@ -189,13 +189,6 @@ export default function SketchSprite() {
     </g>
   </symbol>
 
-  <symbol id="sk-edit" viewBox="0 0 64 64">
-    <g filter="url(#sketch)">
-      <path class="i" d="M12 52l8-2 26-26-6-6-26 26-2 8z"/>
-      <path class="i" d="M36 18l6 6"/>
-    </g>
-  </symbol>
-
   <!-- Badges -->
   <symbol id="sk-badge-starter" viewBox="0 0 64 64">
     <g filter="url(#sketch)">
