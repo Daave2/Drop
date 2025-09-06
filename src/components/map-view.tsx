@@ -57,6 +57,7 @@ function MapViewContent() {
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchCenterRef = useRef<[number, number] | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
+  const hasCenteredRef = useRef(false);
   const searchParams = useSearchParams();
   const { theme } = useTheme();
 
@@ -171,22 +172,17 @@ function MapViewContent() {
     };
   }, [viewState.latitude, viewState.longitude, fetchNotes]);
   
-
   useEffect(() => {
-    if (location && mapRef.current) {
-      if (
-        !searchParams.get('lat') &&
-        viewState.longitude === DEFAULT_CENTER.longitude &&
-        viewState.latitude === DEFAULT_CENTER.latitude
-      ) {
-        mapRef.current.flyTo({
-          center: [location.longitude, location.latitude],
-          zoom: 17,
-          duration: 2000,
-        });
-      }
+    if (hasCenteredRef.current) return;
+    if (location && mapRef.current && !searchParams.get('lat')) {
+      mapRef.current.flyTo({
+        center: [location.longitude, location.latitude],
+        zoom: 17,
+        duration: 2000,
+      });
+      hasCenteredRef.current = true;
     }
-  }, [location, viewState.longitude, viewState.latitude, searchParams]);
+  }, [location, searchParams]);
 
   const handleMarkerClick = (note: GhostNote) => {
     if (!location) {
