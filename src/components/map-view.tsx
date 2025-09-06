@@ -309,7 +309,7 @@ function MapViewContent() {
 
       <OnboardingOverlay />
 
-      {loading && (
+      {loading && notes.length === 0 && (
         <div data-testid="map-loading" className="absolute inset-0 z-20">
           <MapSkeleton />
         </div>
