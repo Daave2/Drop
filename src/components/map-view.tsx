@@ -1,6 +1,11 @@
 
 "use client";
 
+/**
+ * Map view that renders user and note locations using MapLibre.
+ * Integrates location, notes, notifications and theme hooks to provide
+ * an interactive geospatial experience.
+ */
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
@@ -45,20 +50,21 @@ function MapViewContent() {
   const { proximityRadiusM } = useSettings();
   const { toast } = useToast();
   useProximityNotifications(notes, location, proximityRadiusM);
-  const [selectedNote, setSelectedNote] = useState<GhostNote | null>(null);
-  const [revealedNoteId, setRevealedNoteId] = useState<string | null>(null);
-  const [isNoteSheetOpen, setNoteSheetOpen] = useState(false);
-  const [isCreatingNote, setCreatingNote] = useState(false);
-  const [newNoteLocation, setNewNoteLocation] = useState<Coordinates | null>(null);
-  const [isCompassViewOpen, setCompassViewOpen] = useState(false);
-  const mapRef = useRef<MapRef | null>(null);
-  const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const lastFetchCenterRef = useRef<[number, number] | null>(null);
-  const lastFetchTimeRef = useRef<number>(0);
-  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null);
+  const [selectedNote, setSelectedNote] = useState<GhostNote | null>(null); // note currently focused
+  const [revealedNoteId, setRevealedNoteId] = useState<string | null>(null); // id of note user has unlocked
+  const [isNoteSheetOpen, setNoteSheetOpen] = useState(false); // controls sheet visibility
+  const [isCreatingNote, setCreatingNote] = useState(false); // whether user is creating a note
+  const [newNoteLocation, setNewNoteLocation] = useState<Coordinates | null>(null); // coords for new note
+  const [isCompassViewOpen, setCompassViewOpen] = useState(false); // compass overlay state
+  const mapRef = useRef<MapRef | null>(null); // reference to Map instance
+  const moveTimeoutRef = useRef<NodeJS.Timeout | null>(null); // debounce timer for map movement
+  const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null); // delay timer for fetching notes
+  const lastFetchCenterRef = useRef<[number, number] | null>(null); // last center used to fetch notes
+  const lastFetchTimeRef = useRef<number>(0); // timestamp of last fetch
+  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null); // current URL query params
   const { theme } = useTheme();
 
+  // Display toast when note retrieval fails
   useEffect(() => {
     if (error) {
       toast({
@@ -75,8 +81,9 @@ function MapViewContent() {
     zoom: DEFAULT_ZOOM,
     pitch: 45,
     bearing: -17.6,
-  });
+  }); // camera state for map
   
+  // Sync local state with URL search parameters and history changes
   useEffect(() => {
     const updateSearchParams = () => {
       setSearchParams(new URLSearchParams(window.location.search));
@@ -104,20 +111,22 @@ function MapViewContent() {
     };
   }, []);
 
+  // Fly to coordinates provided in query parameters
   useEffect(() => {
     if (!searchParams) return;
     const lat = searchParams.get('lat');
     const lng = searchParams.get('lng');
     const zoom = searchParams.get('zoom');
     if (lat && lng && mapRef.current) {
-        mapRef.current.flyTo({
-            center: [parseFloat(lng), parseFloat(lat)],
-            zoom: zoom ? parseInt(zoom) : 17,
-            duration: 2000,
-        });
+      mapRef.current.flyTo({
+        center: [parseFloat(lng), parseFloat(lat)],
+        zoom: zoom ? parseInt(zoom) : 17,
+        duration: 2000,
+      });
     }
   }, [searchParams]);
 
+  // Open specific note when note ID is present in URL
   useEffect(() => {
     if (!searchParams) return;
     const noteId = searchParams.get('note');
@@ -129,41 +138,62 @@ function MapViewContent() {
     setNoteSheetOpen(true);
   }, [searchParams, notes]);
 
-  const getDistance = (coords1: {latitude: number, longitude: number}, coords2: {latitude: number, longitude: number}) => {
-      const toRad = (x: number) => (x * Math.PI) / 180;
-      const R = 6371e3; // metres
-    
-      const dLat = toRad(coords2.latitude - coords1.latitude);
-      const dLon = toRad(coords2.longitude - coords1.longitude);
-      const lat1 = toRad(coords1.latitude);
-      const lat2 = toRad(coords2.latitude);
-    
-      const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    
-      return R * c;
-  }
+  /**
+   * Calculate distance between two coordinates using the Haversine formula.
+   * @param coords1 - starting coordinate with latitude and longitude
+   * @param coords2 - destination coordinate with latitude and longitude
+   * @returns Distance in meters
+   */
+  const getDistance = (
+    coords1: { latitude: number; longitude: number },
+    coords2: { latitude: number; longitude: number }
+  ) => {
+    const toRad = (x: number) => (x * Math.PI) / 180;
+    const R = 6371e3; // metres
 
+    const dLat = toRad(coords2.latitude - coords1.latitude);
+    const dLon = toRad(coords2.longitude - coords1.longitude);
+    const lat1 = toRad(coords1.latitude);
+    const lat2 = toRad(coords2.latitude);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(lat1) * Math.cos(lat2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
+
+  /**
+   * Derive marker size and reveal radius from a note's score.
+   * @param score - reputation score of the note
+   * @returns CSS size class and reveal radius in meters
+   */
   const getNoteDynamicProps = (score: number) => {
     const size = Math.round(8 + Math.log(score + 1) * 2);
-    const revealRadius = Math.min(BASE_REVEAL_RADIUS_M + Math.log(score + 1) * 50, 500);
+    const revealRadius = Math.min(
+      BASE_REVEAL_RADIUS_M + Math.log(score + 1) * 50,
+      500
+    );
 
     return {
-        sizeClass: `h-${size} w-${size}`,
-        revealRadius,
+      sizeClass: `h-${size} w-${size}`,
+      revealRadius,
     };
   };
 
 
+  // Debounce map movement and rate-limit note fetching
   useEffect(() => {
     if (moveTimeoutRef.current) {
       clearTimeout(moveTimeoutRef.current);
     }
     moveTimeoutRef.current = setTimeout(() => {
       if (viewState.latitude && viewState.longitude) {
-        const newCenter: [number, number] = [viewState.latitude, viewState.longitude];
+        const newCenter: [number, number] = [
+          viewState.latitude,
+          viewState.longitude,
+        ];
         const prevCenter = lastFetchCenterRef.current;
         const movedMeters =
           prevCenter ? distanceBetween(prevCenter, newCenter) * 1000 : Infinity;
@@ -200,6 +230,7 @@ function MapViewContent() {
   }, [viewState.latitude, viewState.longitude, fetchNotes]);
   
 
+  // Center map on user location when available
   useEffect(() => {
     if (location && mapRef.current) {
       if (
