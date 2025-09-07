@@ -5,7 +5,8 @@ This file tracks outstanding tasks for the project. Update the list as tasks are
 - [ ] Add offline status indicator to detect network loss
 - [ ] Cache note queries in `useNotes` to reduce Firestore reads
 - [ ] Add tests for `note-sheet-content` component
-- [ ] Improve notifications button accessibility with a label
+- [x] Improve notifications button accessibility with a label
+- [ ] Audit icon-only buttons for missing accessible labels
 - [ ] Document required environment variables
 - [ ] Add unit tests for content moderation flow
 - [ ] Introduce tests for report dialog component

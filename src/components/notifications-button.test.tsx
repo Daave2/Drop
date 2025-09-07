@@ -41,6 +41,18 @@ beforeEach(() => {
 });
 
 describe('NotificationsButton', () => {
+  it('renders accessible label for screen readers', () => {
+    useAuthMock.mockReturnValue({ user: { uid: 'user1' } });
+    useNotificationsMock.mockReturnValue({
+      notifications: [],
+      markAllAsRead: vi.fn(),
+    });
+
+    const { getByRole } = render(<NotificationsButton />);
+    const button = getByRole('button', { name: /notifications/i });
+    expect(button).toBeTruthy();
+  });
+
   it('navigates to note when notification is selected', () => {
     const notification = {
       id: 'notif1',
