@@ -6,6 +6,18 @@ import { useAuth } from "@/components/auth-provider";
 import { GhostNote } from "@/types";
 import type { Coordinates } from "./use-location";
 
+/**
+ * Dispatches a browser notification when the user enters the proximity of a note.
+ *
+ * @param notes - Notes to monitor for proximity.
+ * @param location - Current user location; `null` when unavailable.
+ * @param radiusM - Distance in meters at which a notification should fire.
+ * @param cooldownMs - Minimum time between notifications to avoid spamming.
+ *
+ * Side Effects:
+ * - Uses the Notification API (or a service worker) to show system notifications.
+ * - Persists IDs of notified notes to `localStorage` for the authenticated user.
+ */
 export function useProximityNotifications(
   notes: GhostNote[],
   location: Coordinates | null,
@@ -13,8 +25,8 @@ export function useProximityNotifications(
   cooldownMs: number = 60000
 ) {
   const { user } = useAuth();
-  const notifiedRef = useRef<Set<string>>(new Set());
-  const lastNotificationRef = useRef(0);
+  const notifiedRef = useRef<Set<string>>(new Set()); // Persist IDs of notes already notified
+  const lastNotificationRef = useRef(0); // Timestamp of last notification to enforce cooldown
   const storageKey = user ? `proximityNotified:${user.uid}` : null;
 
   useEffect(() => {
@@ -36,6 +48,7 @@ export function useProximityNotifications(
 
   useEffect(() => {
     if (!location) return;
+    // Only attempt to notify when the Notification API is available and permission granted
     if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
 
     for (const note of notes) {
@@ -47,6 +60,7 @@ export function useProximityNotifications(
           [note.lat, note.lng]
         ) * 1000;
       if (distance <= radiusM) {
+        // Prefer service worker notifications for better reliability, fallback to constructor
         if ("serviceWorker" in navigator) {
           void navigator.serviceWorker.ready.then((reg) => {
             if ("showNotification" in reg) {
