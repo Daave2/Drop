@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { doc, getDoc, Timestamp } from "firebase/firestore";
 
 import { useToast } from "@/hooks/use-toast";
