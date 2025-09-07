@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import Map, { Marker, Popup } from 'react-map-gl/maplibre';
 import type { MapRef, ViewState } from 'react-map-gl/maplibre';
 import { Plus, Compass, LocateFixed } from 'lucide-react';
@@ -237,9 +237,13 @@ function MapViewContent() {
     setNewNoteLocation(null);
   }, []);
 
-  const mapStyleUrl = theme === 'dark' 
-    ? "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
-    : "https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json";
+  const mapStyleUrl = useMemo(
+    () =>
+      theme === 'dark'
+        ? 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json'
+        : 'https://basemaps.cartocdn.com/gl/voyager-gl-style/style.json',
+    [theme]
+  );
 
   if (permissionState !== 'granted' && permissionState !== 'prompt') {
     return (
@@ -261,6 +265,7 @@ function MapViewContent() {
         onMove={evt => setViewState(evt.viewState)}
         style={{ width: '100%', height: '100%' }}
         mapStyle={mapStyleUrl}
+        reuseMaps
         antialias={true}
       >
         {location && (
