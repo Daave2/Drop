@@ -104,3 +104,9 @@ Tests are colocated with the source they cover using `*.test.tsx` or `*.test.ts`
 Environment variables in `.env.local` configure Firebase and default proximity radius. Service workers and manifest files under `public/` enable PWA behaviour.
 
 This document should provide enough context for onboarding and further development without direct access to every source file.
+ 
+## AI Coding Tips
+
+- Review [`AGENTS.md`](AGENTS.md) and [`CONTRIBUTING.md`](CONTRIBUTING.md) before making changes.
+- Favor type-safe React components and keep layouts mobile responsive.
+- Update or add tests when modifying hooks or utilities.
