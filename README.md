@@ -26,13 +26,35 @@ NoteDrop is an experimental location-based note taking application built with Ne
 
 ## Configuration
 
-Set environment variables in a `.env.local` file to customize behavior. `NEXT_PUBLIC_PROXIMITY_RADIUS_M` defines the default distance (in meters) for proximity notifications, but users can adjust the radius later in their profile settings.
+Set the following environment variables in a `.env.local` file to configure the app:
+
+| Variable | Description |
+| --- | --- |
+| `NEXT_PUBLIC_FIREBASE_API_KEY` | Firebase API key |
+| `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Firebase authentication domain |
+| `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Firebase project identifier |
+| `NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET` | Firebase storage bucket |
+| `NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID` | Firebase messaging sender ID |
+| `NEXT_PUBLIC_FIREBASE_APP_ID` | Firebase app ID |
+| `NEXT_PUBLIC_FCM_VAPID_KEY` | Web push VAPID key for FCM |
+| `NEXT_PUBLIC_PROXIMITY_RADIUS_M` | Default proximity radius in meters (defaults to 50) |
+| `NEXT_PUBLIC_REPORT_THRESHOLD` | Reports required before a note is hidden (defaults to 3) |
+| `GEMINI_API_KEY` | Gemini API key for AI features |
+
+Example `.env.local`:
 
 ```bash
-NEXT_PUBLIC_PROXIMITY_RADIUS_M=100 
+NEXT_PUBLIC_FIREBASE_API_KEY=...
+NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+NEXT_PUBLIC_FIREBASE_PROJECT_ID=...
+NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+NEXT_PUBLIC_FIREBASE_APP_ID=...
+NEXT_PUBLIC_FCM_VAPID_KEY=...
+NEXT_PUBLIC_PROXIMITY_RADIUS_M=100
+NEXT_PUBLIC_REPORT_THRESHOLD=3
+GEMINI_API_KEY=your-gemini-key
 ```
-
-If not provided, the default radius is 50 meters.
 
 ## Documentation
 
