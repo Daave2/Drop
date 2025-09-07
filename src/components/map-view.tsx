@@ -266,6 +266,7 @@ function MapViewContent() {
         style={{ width: '100%', height: '100%' }}
         mapStyle={mapStyleUrl}
         reuseMaps
+        fadeDuration={0}
         antialias={true}
       >
         {location && (
