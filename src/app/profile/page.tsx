@@ -26,6 +26,13 @@ const profileSchema = z.object({
     displayName: z.string().min(3, "Display name must be at least 3 characters.").max(50, "Display name cannot exceed 50 characters."),
 });
 
+/**
+ * Form allowing a signed-in user to update their display name.
+ *
+ * @param uid - Authenticated user's unique identifier used as the Firestore document ID.
+ * @param currentDisplayName - Display name currently stored for the user.
+ * @sideEffects Writes to the `profiles` collection in Firestore and updates local form state.
+ */
 function UpdateProfileForm({ uid, currentDisplayName }: { uid: string, currentDisplayName: string }) {
     const { toast } = useToast();
     const [isEditing, setIsEditing] = useState(false);
@@ -50,28 +57,28 @@ function UpdateProfileForm({ uid, currentDisplayName }: { uid: string, currentDi
             return;
         }
 
-        setIsSubmitting(true);
+        setIsSubmitting(true); // Begin submission state
         try {
-            const profileRef = doc(db, 'profiles', uid);
+            const profileRef = doc(db, 'profiles', uid); // Reference to the user's profile document
             // We use `uid` in the document body to satisfy security rules if needed,
             // and to keep a record of the owner.
-            await setDoc(profileRef, { pseudonym: displayName, uid: uid }, { merge: true });
+            await setDoc(profileRef, { pseudonym: displayName, uid: uid }, { merge: true }); // Merge new display name into Firestore
             toast({ title: "Success!", description: "Display name updated successfully!" });
-            setIsEditing(false);
+            setIsEditing(false); // Exit edit mode after successful save
         } catch (err: any) {
             console.error("Error updating display name:", err);
             toast({ title: "Error", description: err.message || "Failed to update display name.", variant: "destructive" });
         } finally {
-            setIsSubmitting(false);
+            setIsSubmitting(false); // Reset submission state
         }
     };
 
     if (!isEditing) {
         return (
             <Button variant="ghost" size="sm" onClick={() => {
-                setIsEditing(true);
+                setIsEditing(true); // Reveal edit form
                 setError(null);
-             }} className="flex items-center gap-2">
+            }} className="flex items-center gap-2">
                 <Edit className="h-4 w-4" />
                 <span>Change Display Name</span>
             </Button>
@@ -100,6 +107,15 @@ function UpdateProfileForm({ uid, currentDisplayName }: { uid: string, currentDi
     )
 }
 
+/**
+ * Displays a single statistic within a card.
+ *
+ * @param icon - Icon component representing the statistic.
+ * @param title - Label for the statistic.
+ * @param value - Numerical or textual value to display.
+ * @param isLoading - Whether the statistic is currently loading.
+ * @remarks Pure component with no side effects.
+ */
 function StatCard({ icon: Icon, title, value, isLoading }: { icon: React.ElementType, title: string, value: number | string, isLoading: boolean }) {
     return (
         <Card>
@@ -118,11 +134,17 @@ function StatCard({ icon: Icon, title, value, isLoading }: { icon: React.Element
     )
 }
 
+/**
+ * Lists notes dropped by a user with pagination controls.
+ *
+ * @param uid - UID of the user whose notes are fetched.
+ * @sideEffects Fetches notes from Firestore via `useUserNotes` and updates local pagination state.
+ */
 function MyNotesList({ uid }: { uid: string }) {
-    const { notes, loading, hasMore, loadMore } = useUserNotes(uid);
+    const { notes, loading, hasMore, loadMore } = useUserNotes(uid); // Custom hook querying user's notes
 
     useEffect(() => {
-        loadMore();
+        loadMore(); // Fetch initial batch of notes on mount
     }, [loadMore]);
 
     if (loading && notes.length === 0) {
@@ -160,13 +182,17 @@ function MyNotesList({ uid }: { uid: string }) {
             {hasMore && (
                 <Button onClick={loadMore} disabled={loading} className="w-full" variant="outline">
                     {loading ? 'Loading...' : 'Load more'}
-                </Button>
+                </Button> // Request next page of notes
             )}
         </div>
     )
 }
 
-
+/**
+ * Profile page displaying user information, stats, settings and their notes.
+ *
+ * @sideEffects Subscribes to Firestore profile document, queries statistics, and updates user settings.
+ */
 export default function ProfilePage() {
   const { user } = useAuth();
   const [profileData, setProfileData] = useState<{pseudonym?: string, createdAt?: Timestamp} | null>(null);
@@ -178,28 +204,28 @@ export default function ProfilePage() {
 
   useEffect(() => {
       if (user) {
-          const profileRef = doc(db, 'profiles', user.uid);
+          const profileRef = doc(db, 'profiles', user.uid); // Reference to current user's profile
           const unsubscribe = onSnapshot(profileRef, (doc) => {
               if (doc.exists()) {
-                  setProfileData(doc.data());
+                  setProfileData(doc.data()); // Update profile info when changes occur
               }
           });
 
           const fetchStats = async () => {
             if (!user) return;
-            setLoadingStats(true);
+            setLoadingStats(true); // Show loading state while querying stats
             try {
                 // Fetch notes dropped
-                const notesRef = collection(db, 'notes');
-                const droppedQuery = query(notesRef, where("authorUid", "==", user.uid));
-                const droppedSnapshot = await getCountFromServer(droppedQuery);
-                setNotesDropped(droppedSnapshot.data().count);
+                const notesRef = collection(db, 'notes'); // Reference to notes collection
+                const droppedQuery = query(notesRef, where("authorUid", "==", user.uid)); // Query notes created by user
+                const droppedSnapshot = await getCountFromServer(droppedQuery); // Count without retrieving documents
+                setNotesDropped(droppedSnapshot.data().count); // Store number of notes dropped
 
                 // Fetch notes revealed (liked)
-                const likesRef = collection(db, 'likes');
-                const revealedQuery = query(likesRef, where("userId", "==", user.uid));
-                const revealedSnapshot = await getCountFromServer(revealedQuery);
-                setNotesRevealed(revealedSnapshot.data().count);
+                const likesRef = collection(db, 'likes'); // Reference to likes collection
+                const revealedQuery = query(likesRef, where("userId", "==", user.uid)); // Query likes by user
+                const revealedSnapshot = await getCountFromServer(revealedQuery); // Count liked notes
+                setNotesRevealed(revealedSnapshot.data().count); // Store number of notes revealed
 
             } catch (error: any) {
                 console.error("Failed to fetch stats:", error);
@@ -209,12 +235,12 @@ export default function ProfilePage() {
                     variant: "destructive",
                 });
             } finally {
-                setLoadingStats(false);
+                setLoadingStats(false); // Hide loading state after fetch
             }
           }
           fetchStats();
 
-          return () => unsubscribe();
+          return () => unsubscribe(); // Clean up listener on unmount
       }
   }, [user, toast]);
   
@@ -304,7 +330,7 @@ export default function ProfilePage() {
                 max={200}
                 step={5}
                 value={[proximityRadiusM]}
-                onValueChange={([v]) => setProximityRadiusM(v)}
+                onValueChange={([v]) => setProximityRadiusM(v)} // Persist radius change in settings
               />
             </div>
           </div>
