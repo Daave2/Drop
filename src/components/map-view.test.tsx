@@ -41,8 +41,6 @@ vi.mock('@/hooks/use-proximity-notifications', () => ({
 }));
 
 vi.mock('next-themes', () => ({ useTheme: () => ({ theme: 'light' }) }));
-const useSearchParamsMock = vi.hoisted(() => vi.fn(() => new URLSearchParams()));
-vi.mock('next/navigation', () => ({ useSearchParams: useSearchParamsMock }));
 vi.mock('./notifications-button', () => ({ NotificationsButton: () => <div /> }));
 const NoteSheetContentMock = vi.hoisted(() => vi.fn(() => <div data-testid="note-sheet" />));
 vi.mock('./note-sheet-content', () => ({ __esModule: true, default: NoteSheetContentMock }));
@@ -73,9 +71,9 @@ vi.mock('./ui/badge', () => ({ Badge: ({ children }: any) => <span>{children}</s
 beforeEach(() => {
   useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: null, hasFetched: true });
   useToastMock.mockReturnValue({ toast: vi.fn() });
-  useSearchParamsMock.mockReturnValue(new URLSearchParams());
   useLocationMock.mockReturnValue({ location: null, permissionState: 'granted', requestPermission: vi.fn() });
   NoteSheetContentMock.mockClear();
+  window.history.replaceState({}, '', '/');
 });
 
 afterEach(() => {
@@ -83,6 +81,7 @@ afterEach(() => {
   useNotesMock.mockReset();
   useToastMock.mockReset();
   window.localStorage.clear();
+  window.history.replaceState({}, '', '/');
 });
 
 describe('MapView', () => {
@@ -136,7 +135,7 @@ describe('MapView', () => {
       score: 0,
       type: 'text',
     };
-    useSearchParamsMock.mockReturnValue(new URLSearchParams('note=1'));
+    window.history.replaceState({}, '', '/?note=1');
     useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: false, error: null, hasFetched: true });
     render(<MapView />);
     await waitFor(() =>
