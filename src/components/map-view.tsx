@@ -26,7 +26,6 @@ import {
 import { Badge } from './ui/badge';
 import CompassView from './compass-view';
 import { distanceBetween } from 'geofire-common';
-import { useSearchParams } from 'next/navigation';
 import { ThemeToggle } from './theme-toggle';
 import { useTheme } from 'next-themes';
 import { cn } from '@/lib/utils';
@@ -57,7 +56,7 @@ function MapViewContent() {
   const fetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastFetchCenterRef = useRef<[number, number] | null>(null);
   const lastFetchTimeRef = useRef<number>(0);
-  const searchParams = useSearchParams();
+  const [searchParams, setSearchParams] = useState<URLSearchParams | null>(null);
   const { theme } = useTheme();
 
   useEffect(() => {
@@ -79,6 +78,16 @@ function MapViewContent() {
   });
   
   useEffect(() => {
+    const updateSearchParams = () => {
+      setSearchParams(new URLSearchParams(window.location.search));
+    };
+    updateSearchParams();
+    window.addEventListener('popstate', updateSearchParams);
+    return () => window.removeEventListener('popstate', updateSearchParams);
+  }, []);
+
+  useEffect(() => {
+    if (!searchParams) return;
     const lat = searchParams.get('lat');
     const lng = searchParams.get('lng');
     const zoom = searchParams.get('zoom');
@@ -92,6 +101,7 @@ function MapViewContent() {
   }, [searchParams]);
 
   useEffect(() => {
+    if (!searchParams) return;
     const noteId = searchParams.get('note');
     if (!noteId) return;
     const note = notes.find((n) => n.id === noteId);
@@ -175,7 +185,7 @@ function MapViewContent() {
   useEffect(() => {
     if (location && mapRef.current) {
       if (
-        !searchParams.get('lat') &&
+        !searchParams?.get('lat') &&
         viewState.longitude === DEFAULT_CENTER.longitude &&
         viewState.latitude === DEFAULT_CENTER.latitude
       ) {
@@ -419,9 +429,5 @@ function MapViewContent() {
 }
 
 export default function MapView() {
-    return (
-        <React.Suspense fallback={<MapSkeleton className="h-screen w-screen" />}>
-            <MapViewContent />
-        </React.Suspense>
-    )
+  return <MapViewContent />;
 }
