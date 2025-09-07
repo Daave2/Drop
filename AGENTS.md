@@ -10,6 +10,7 @@ This repository uses Next.js and TypeScript.
 - Ensure new UI remains mobile-optimized with responsive layouts.
 - Include unit tests for hooks and utilities using Vitest when adding new logic.
 - Refer to `CONTRIBUTING.md` and `structure.md` for project layout and workflow details.
+- Keep `todo.md` up to date with current tasks.
 
 ## Checks
 
