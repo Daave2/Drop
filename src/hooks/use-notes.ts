@@ -19,9 +19,16 @@ import { geohashQueryBounds, distanceBetween } from "geofire-common";
 import { db } from "../lib/firebase";
 import { GhostNote } from "@/types";
 
+/** Search radius in meters for nearby notes. */
 const RADIUS_M = 5000;
+/** Maximum number of notes to return to limit Firestore reads. */
 const MAX_NOTES = 50;
 
+/**
+ * Hook that fetches nearby public Ghost notes from Firestore based on a
+ * geographic center. It exposes loading, error and data state along with a
+ * `fetchNotes` function that triggers the query.
+ */
 export function useNotes() {
   const [notes, setNotes] = useState<GhostNote[]>([]);
   const [loading, setLoading] = useState(false);
@@ -32,6 +39,8 @@ export function useNotes() {
     if (!db) return;
     setLoading(true);
 
+    // Generate geohash bounds around the provided center point. Each bound
+    // corresponds to a Firestore query that is later merged.
     const bounds = geohashQueryBounds(center, RADIUS_M);
 
     const promises = bounds.map((b: [string, string]) =>
