@@ -19,3 +19,9 @@
 - Code font: 'Source Code Pro' for any displayed code snippets.
 - Custom sticky-note style markers for notes; compass overlay with arrow and distance indicator.
 - Mobile-first layout using bottom sheets for note details and creation; map view as primary interface.
+
+## Further Reading
+
+For implementation details see [structure.md](../structure.md).
+Contribution guidelines and coding conventions live in [CONTRIBUTING.md](../CONTRIBUTING.md)
+and [AGENTS.md](../AGENTS.md).

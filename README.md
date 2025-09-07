@@ -36,6 +36,16 @@ If not provided, the default radius is 50 meters.
 
 ## Documentation
 
-A high level project blueprint is available in [`docs/blueprint.md`](docs/blueprint.md).
+Key documents for orientation:
+
+- [`docs/blueprint.md`](docs/blueprint.md) – product goals and feature overview.
+- [`structure.md`](structure.md) – architecture and source layout.
+- [`CONTRIBUTING.md`](CONTRIBUTING.md) – development workflow and coding guidelines.
 
 The main application entry point is [`src/app/page.tsx`](src/app/page.tsx).
+
+## AI Coding Notes
+
+When using an AI assistant, share the above files and [`AGENTS.md`](AGENTS.md) for context.
+Ensure generated code follows the existing style, includes tests for new logic,
+and passes `npm run lint`, `npm run typecheck`, and `npm test` before commit.
