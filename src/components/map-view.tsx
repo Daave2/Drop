@@ -42,7 +42,7 @@ const HOT_POST_THRESHOLD = 50;
 
 function MapViewContent() {
   const { location, permissionState, requestPermission: requestLocationPermission } = useLocation();
-  const { notes, fetchNotes, loading, error } = useNotes();
+  const { notes, fetchNotes, loading, error, hasFetched } = useNotes();
   const { proximityRadiusM } = useSettings();
   const { toast } = useToast();
   useProximityNotifications(notes, location, proximityRadiusM);
@@ -309,13 +309,13 @@ function MapViewContent() {
 
       <OnboardingOverlay />
 
-      {loading && notes.length === 0 && (
+      {!hasFetched && (
         <div data-testid="map-loading" className="absolute inset-0 z-20">
           <MapSkeleton />
         </div>
       )}
 
-      {!loading && notes.length === 0 && (
+      {hasFetched && !loading && notes.length === 0 && (
         <div
           data-testid="no-notes"
           className="absolute inset-0 z-20 flex items-center justify-center pointer-events-none"

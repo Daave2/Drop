@@ -26,6 +26,7 @@ export function useNotes() {
   const [notes, setNotes] = useState<GhostNote[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasFetched, setHasFetched] = useState(false);
 
   const fetchNotes = useCallback(async (center: [number, number]) => {
     if (!db) return;
@@ -84,9 +85,10 @@ export function useNotes() {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
       setLoading(false);
+      setHasFetched(true);
     }
   }, []);
 
-  return { notes, loading, fetchNotes, error };
+  return { notes, loading, fetchNotes, error, hasFetched };
 }
 

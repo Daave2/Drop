@@ -71,7 +71,7 @@ vi.mock('./ui/dialog', () => ({
 vi.mock('./ui/badge', () => ({ Badge: ({ children }: any) => <span>{children}</span> }));
 
 beforeEach(() => {
-  useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: null });
+  useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: null, hasFetched: true });
   useToastMock.mockReturnValue({ toast: vi.fn() });
   useSearchParamsMock.mockReturnValue(new URLSearchParams());
   useLocationMock.mockReturnValue({ location: null, permissionState: 'granted', requestPermission: vi.fn() });
@@ -86,11 +86,17 @@ afterEach(() => {
 });
 
 describe('MapView', () => {
-  it('renders loader while loading', () => {
-    useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: true, error: null });
+  it('renders loader before first fetch', () => {
+    useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: true, error: null, hasFetched: false });
     const { getByTestId } = render(<MapView />);
     const loader = getByTestId('map-loading');
     expect(loader.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0);
+  });
+
+  it('does not render loader after initial fetch', () => {
+    useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: true, error: null, hasFetched: true });
+    const { queryByTestId } = render(<MapView />);
+    expect(queryByTestId('map-loading')).toBeNull();
   });
 
   it('does not render loader when notes exist', () => {
@@ -103,7 +109,7 @@ describe('MapView', () => {
       type: 'text',
       teaser: 't',
     };
-    useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: true, error: null });
+    useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: true, error: null, hasFetched: true });
     const { queryByTestId } = render(<MapView />);
     expect(queryByTestId('map-loading')).toBeNull();
   });
@@ -115,7 +121,7 @@ describe('MapView', () => {
 
   it('toasts on error', async () => {
     const toastFn = vi.fn();
-    useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: 'oops' });
+    useNotesMock.mockReturnValue({ notes: [], fetchNotes: vi.fn(), loading: false, error: 'oops', hasFetched: true });
     useToastMock.mockReturnValue({ toast: toastFn });
     render(<MapView />);
     await waitFor(() => expect(toastFn).toHaveBeenCalled());
@@ -131,7 +137,7 @@ describe('MapView', () => {
       type: 'text',
     };
     useSearchParamsMock.mockReturnValue(new URLSearchParams('note=1'));
-    useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: false, error: null });
+    useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: false, error: null, hasFetched: true });
     render(<MapView />);
     await waitFor(() =>
       expect(NoteSheetContentMock).toHaveBeenCalledWith(
@@ -156,7 +162,7 @@ describe('MapView', () => {
       permissionState: 'granted',
       requestPermission: vi.fn(),
     });
-    useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: false, error: null });
+    useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: false, error: null, hasFetched: true });
 
     const { getByLabelText, queryByText } = render(<MapView />);
 

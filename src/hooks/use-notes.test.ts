@@ -44,6 +44,7 @@ describe('useNotes', () => {
     expect(getDocs).toHaveBeenCalled()
     expect(result.current.loading).toBe(false)
     expect(result.current.error).toBeNull()
+    expect(result.current.hasFetched).toBe(true)
   })
 
   test('propagates fetch errors', async () => {
@@ -55,6 +56,7 @@ describe('useNotes', () => {
     })
     await waitFor(() => expect(result.current.error).toBe('boom'))
     expect(result.current.loading).toBe(false)
+    expect(result.current.hasFetched).toBe(true)
   })
 
   test('clears error after successful fetch', async () => {
@@ -76,6 +78,7 @@ describe('useNotes', () => {
       await result.current.fetchNotes([0, 0])
     })
     await waitFor(() => expect(result.current.error).toBe('fail'))
+    expect(result.current.hasFetched).toBe(true)
 
     await act(async () => {
       await result.current.fetchNotes([0, 0])
