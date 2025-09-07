@@ -82,8 +82,26 @@ function MapViewContent() {
       setSearchParams(new URLSearchParams(window.location.search));
     };
     updateSearchParams();
+
+    const originalPushState = history.pushState;
+    const originalReplaceState = history.replaceState;
+
+    history.pushState = ((...args: any[]) => {
+      originalPushState.apply(history, args as any);
+      updateSearchParams();
+    }) as typeof history.pushState;
+
+    history.replaceState = ((...args: any[]) => {
+      originalReplaceState.apply(history, args as any);
+      updateSearchParams();
+    }) as typeof history.replaceState;
+
     window.addEventListener('popstate', updateSearchParams);
-    return () => window.removeEventListener('popstate', updateSearchParams);
+    return () => {
+      window.removeEventListener('popstate', updateSearchParams);
+      history.pushState = originalPushState;
+      history.replaceState = originalReplaceState;
+    };
   }, []);
 
   useEffect(() => {

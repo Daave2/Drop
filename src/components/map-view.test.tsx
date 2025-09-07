@@ -2,7 +2,7 @@
  * @vitest-environment jsdom
  */
 import React from 'react';
-import { render, cleanup, waitFor, fireEvent } from '@testing-library/react';
+import { render, cleanup, waitFor, fireEvent, act } from '@testing-library/react';
 import { describe, expect, it, vi, afterEach, beforeEach } from 'vitest';
 import MapView from './map-view';
 
@@ -138,6 +138,28 @@ describe('MapView', () => {
     window.history.replaceState({}, '', '/?note=1');
     useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: false, error: null, hasFetched: true });
     render(<MapView />);
+    await waitFor(() =>
+      expect(NoteSheetContentMock).toHaveBeenCalledWith(
+        expect.objectContaining({ noteId: '1' }),
+        expect.anything()
+      )
+    );
+  });
+
+  it('reacts to search param changes during session', async () => {
+    const note = {
+      id: '1',
+      lat: 0,
+      lng: 0,
+      createdAt: { seconds: 0, nanoseconds: 0 },
+      score: 0,
+      type: 'text',
+    };
+    useNotesMock.mockReturnValue({ notes: [note], fetchNotes: vi.fn(), loading: false, error: null, hasFetched: true });
+    render(<MapView />);
+    await act(async () => {
+      window.history.pushState({}, '', '/?note=1');
+    });
     await waitFor(() =>
       expect(NoteSheetContentMock).toHaveBeenCalledWith(
         expect.objectContaining({ noteId: '1' }),
