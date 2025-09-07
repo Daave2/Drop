@@ -33,6 +33,12 @@ export default function ReplyForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Submit a reply to Firestore for the current note.
+   *
+   * Creates a reply document and, when applicable, a notification for the note
+   * author. Also triggers a push notification via the `/api/notify` endpoint.
+   */
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!user) {

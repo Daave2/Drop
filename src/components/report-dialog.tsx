@@ -38,6 +38,12 @@ export default function ReportDialog({
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  /**
+   * Submit a report for the current note to Firestore.
+   *
+   * Increments the note's report count via transaction and stores the report
+   * details. May unlist the note if the threshold is exceeded.
+   */
   const handleSubmit = async () => {
     if (!user) {
       toast({ title: "Not signed in", description: "You must be signed in to report.", variant: "destructive" });

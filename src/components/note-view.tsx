@@ -45,6 +45,16 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+/**
+ * Display a note with its media, metadata, and real-time replies.
+ *
+ * Subscribes to the underlying Firestore note and replies collections to keep
+ * the view in sync and exposes actions for liking, reporting and deleting.
+ *
+ * @param note - The initial note data to render.
+ * @param onClose - Callback invoked when the view should be dismissed.
+ * @remarks Major state includes like status, reply list, and dialog visibility.
+ */
 export default function NoteView({
   note: initialNote,
   onClose,
@@ -63,6 +73,7 @@ export default function NoteView({
   const [isDeleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
+    // Subscribe to the note document for live updates and visibility changes.
     const noteRef = doc(db, "notes", initialNote.id);
     const unsubscribeNote = onSnapshot(
       noteRef,
@@ -95,6 +106,7 @@ export default function NoteView({
   }, [initialNote.id, toast, onClose, user?.uid]);
 
   useEffect(() => {
+    // Monitor like document for this user to reflect current like status.
     if (!user) return;
     const likeId = `${user.uid}_${initialNote.id}`;
     const likeRef = doc(db, "likes", likeId);
@@ -105,6 +117,7 @@ export default function NoteView({
   }, [initialNote.id, user]);
 
   useEffect(() => {
+    // Listen for replies on this note in chronological order.
     const repliesRef = collection(db, "notes", initialNote.id, "replies");
     const q = query(repliesRef, orderBy("createdAt", "asc"));
 
@@ -131,6 +144,12 @@ export default function NoteView({
     return () => unsubscribe();
   }, [initialNote.id]);
 
+  /**
+   * Toggle the current user's like on the note in Firestore.
+   *
+   * Updates the note's score and creates a notification for the author when a
+   * new like is added.
+   */
   const handleLikeToggle = async () => {
     if (!user) {
       toast({ title: "Please sign in to like notes.", variant: "destructive" });
@@ -198,6 +217,11 @@ export default function NoteView({
     }
   };
 
+  /**
+   * Delete the note document from Firestore if the current user is the author.
+   *
+   * Closes the view after deletion and shows feedback to the user.
+   */
   const handleDelete = async () => {
     if (user?.uid !== note.authorUid) {
       toast({ title: "Not Authorized", description: "You can only delete your own notes.", variant: "destructive" });
@@ -212,6 +236,17 @@ export default function NoteView({
       toast({ title: "Error", description: error.message || "Failed to delete the note.", variant: "destructive" });
     }
     setDeleteDialogOpen(false);
+  };
+
+  /**
+   * Close dialogs and parent view after a report is submitted.
+   *
+   * The `ReportDialog` component is responsible for writing the report to
+   * Firestore; this callback merely cleans up UI state.
+   */
+  const handleReportSubmit = () => {
+    setReportDialogOpen(false);
+    onClose();
   };
 
   return (
@@ -291,10 +326,7 @@ export default function NoteView({
         note={note}
         open={isReportDialogOpen}
         onOpenChange={setReportDialogOpen}
-        onReportSubmit={() => {
-          setReportDialogOpen(false);
-          onClose();
-        }}
+        onReportSubmit={handleReportSubmit}
       />
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <AlertDialogContent>
