@@ -9,23 +9,37 @@ export interface Coordinates {
   heading?: number | null;
 }
 
+/**
+ * Tracks the user's geolocation and permission status.
+ *
+ * Returns an object with the following fields:
+ * - `location`: latest coordinates or `null` if unavailable.
+ * - `error`: error message when a lookup fails, otherwise `null`.
+ * - `permissionState`: browser geolocation permission state.
+ * - `requestPermission`: function to prompt the user for permission.
+ *
+ * Permission workflow: checks for Geolocation API support, uses the
+ * Permissions API (when available) to monitor permission changes, and
+ * starts watching position only after permission is granted.
+ */
 export function useLocation() {
   const [location, setLocation] = useState<Coordinates | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [permissionState, setPermissionState] = useState<PermissionState>('prompt');
-
+  // Convert non-finite heading values to null for consistency
   const normalizeHeading = (heading: number | null | undefined) =>
     typeof heading === 'number' && Number.isFinite(heading) ? heading : null;
 
   useEffect(() => {
     if (!navigator.geolocation) {
+      // Geolocation API unavailable; treat as a denied permission
       setError('Geolocation is not supported by your browser.');
       setPermissionState('denied');
       return;
     }
-    
+
     const permissions = (navigator as any).permissions
-    // Check initial permission status if the Permissions API is supported
+    // Use Permissions API to react to permission changes when supported
     if (permissions?.query) {
       permissions.query({ name: 'geolocation' }).then((permissionStatus: PermissionStatus) => {
         setPermissionState(permissionStatus.state);
@@ -56,6 +70,7 @@ export function useLocation() {
     let watchId: number | undefined;
 
     if (permissions?.query) {
+      // Start watching only when permission is granted
       if (permissionState === 'granted') {
         watchId = navigator.geolocation.watchPosition(successHandler, errorHandler, {
           enableHighAccuracy: true,
@@ -73,6 +88,7 @@ export function useLocation() {
 
     return () => {
       if (watchId) {
+        // Clean up geolocation watcher on unmount or dependency change
         navigator.geolocation.clearWatch(watchId);
       }
     };
