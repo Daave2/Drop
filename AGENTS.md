@@ -1,24 +1,14 @@
-# AGENTS
+# AGENTS (Main-Commit Mode)
 
-This repository uses Next.js and TypeScript.
+This repo uses Next.js + TypeScript. Commits to **main** are allowed with guardrails.
 
-## Guidelines
+## Source of truth
+- All work items live in **`todo.yaml`** (machine-readable backlog).
+- Every commit MUST reference a task ID (e.g., `ND-004`) and keep `todo.yaml` up to date.
 
-- Keep code formatted with the existing style.
-- Favor functional, typed components in `src`.
-- Only commit to main branch; do not create new branches.
-- Ensure new UI remains mobile-optimized with responsive layouts.
-- Include unit tests for hooks and utilities using Vitest when adding new logic.
-- Refer to `CONTRIBUTING.md` and `structure.md` for project layout and workflow details.
-- Keep `todo.md` up to date with current tasks.
-
-## Checks
-
-Run the following commands and ensure they pass before committing:
-
-```bash
-npm run lint
-npm run typecheck
-npm test
-```
-
+## Commit rules (main)
+1) **Atomic & small**: one task (or one step) per commit.
+2) **Message**: `{id}: {short_title}` — e.g., `ND-002: cache nearby notes`
+3) **Checks must pass locally** before committing:
+   ```bash
+   npm run lint && npm run typecheck && npm test
