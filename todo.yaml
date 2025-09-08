@@ -1,12 +1,12 @@
 meta:
   version: 3
   commands:
-    test: "npm run lint && npm run typecheck && npm test"
+    test: npm run lint && npm run typecheck && npm test
   conventions:
-    commit: "{id}: {short_title}"
+    commit: '{id}: {short_title}'
     trailers:
-      - "Task-ID: {id}"
-      - "Task-Status: {status}"   # 'doing' or 'done'
+      - 'Task-ID: {id}'
+      - 'Task-Status: {status}'
   main_mode:
     require_checks: true
     require_task_id_in_subject: true
@@ -265,4 +265,120 @@ tasks:
       - Explain purpose of NOTIFY_SECRET in README.
     acceptance:
       - README mentions NOTIFY_SECRET.
+    notes: ''
+  - id: ND-016
+    title: Remove unused exports (150) across 42 files
+    priority: P2
+    status: todo
+    tags:
+      - cleanup
+      - techdebt
+    files:
+      - next.config.ts
+      - tailwind.config.ts
+      - vitest.config.ts
+      - src/app/actions.ts
+      - src/app/layout.tsx
+      - src/app/page.tsx
+      - src/hooks/use-orientation.ts
+      - src/hooks/use-toast.ts
+      - src/lib/cache.ts
+      - src/lib/geo.ts
+      - src/types/index.ts
+      - src/ai/flows/content-moderation.ts
+      - src/app/admin/page.tsx
+      - src/app/favicon.ico/route.ts
+      - src/app/firebase-config.js/route.ts
+      - src/app/legal/page.tsx
+      - src/app/profile/page.tsx
+      - src/components/notifications/OfflineBanner.tsx
+      - src/components/ui/accordion.tsx
+      - src/components/ui/alert-dialog.tsx
+      - src/components/ui/alert.tsx
+      - src/components/ui/badge.tsx
+      - src/components/ui/button.tsx
+      - src/components/ui/calendar.tsx
+      - src/components/ui/carousel.tsx
+      - src/components/ui/chart.tsx
+      - src/components/ui/checkbox.tsx
+      - src/components/ui/collapsible.tsx
+      - src/components/ui/dialog.tsx
+      - src/components/ui/dropdown-menu.tsx
+      - src/components/ui/form.tsx
+      - src/components/ui/menubar.tsx
+      - src/components/ui/nd-icon.tsx
+      - src/components/ui/popover.tsx
+      - src/components/ui/radio-group.tsx
+      - src/components/ui/scroll-area.tsx
+      - src/components/ui/select.tsx
+      - src/components/ui/sheet.tsx
+      - src/components/ui/sidebar.tsx
+      - src/components/ui/table.tsx
+      - src/components/ui/toast.tsx
+      - src/app/demo/sketch/page.tsx
+    steps:
+      - >-
+        Delete unused exports or mark as intentional with // eslint-disable-next-line
+        import/no-unused-modules
+    acceptance:
+      - ts-prune reports 0 items (or justified ignores)
+    notes: ''
+  - id: ND-017
+    title: Bug hunt follow-ups
+    priority: P2
+    status: done
+    tags:
+      - docs
+    notes: Identified bugs and added tasks.
+  - id: ND-018
+    title: Address npm audit issues (crit:117 high:0 mod:2 low:3)
+    priority: P1
+    status: todo
+    tags:
+      - security
+      - deps
+    steps:
+      - Review `npm audit` and run `npm audit fix` where safe.
+      - Pin or replace vulnerable dependencies.
+    acceptance:
+      - `npm audit` reports 0 critical/high vulnerabilities.
+    notes: ''
+  - id: ND-019
+    title: Fix MapView test mock to forward ref
+    priority: P2
+    status: todo
+    tags:
+      - tests
+    files:
+      - src/components/map-view.test.tsx
+    steps:
+      - Wrap Map mock with `React.forwardRef` so ref is accepted.
+    acceptance:
+      - No "Function components cannot be given refs" warning.
+    notes: ''
+  - id: ND-020
+    title: Adjust next/image mock to avoid fill boolean attribute
+    priority: P2
+    status: todo
+    tags:
+      - tests
+    files:
+      - src/components/note-view.test.tsx
+    steps:
+      - Remove boolean `fill` prop from mocked `<img>` or handle appropriately.
+    acceptance:
+      - No warning about non-boolean `fill` attribute.
+    notes: ''
+  - id: ND-021
+    title: Clean up DropdownMenu mock to handle onOpenChange
+    priority: P2
+    status: todo
+    tags:
+      - tests
+    files:
+      - src/components/notifications-button.test.tsx
+    steps:
+      - Ensure mock does not pass `onOpenChange` to DOM elements.
+    acceptance:
+      - No warning about unknown event handler `onOpenChange`.
     notes: ''
