@@ -27,3 +27,4 @@ Include or update tests when adding new hooks or utilities.
 
 Sharing these files with an AI assistant gives it the context needed to contribute effectively.
 
+- Work items live in `todo.yaml`. If you add new work during a PR, append a task with priority and acceptance criteria.
