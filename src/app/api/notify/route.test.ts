@@ -3,8 +3,17 @@ import { POST } from './route';
 import { NextRequest } from 'next/server';
 
 const sendMock = vi.fn();
+const sendMultiMock = vi.fn();
+const getDocMock = vi.fn();
 vi.mock('firebase-admin/app', () => ({ getApps: () => [], initializeApp: vi.fn() }));
-vi.mock('firebase-admin/messaging', () => ({ getMessaging: () => ({ send: sendMock }) }));
+vi.mock('firebase-admin/messaging', () => ({
+  getMessaging: () => ({ send: sendMock, sendEachForMulticast: sendMultiMock }),
+}));
+vi.mock('firebase-admin/firestore', () => ({
+  getFirestore: () => ({
+    collection: () => ({ doc: () => ({ get: getDocMock }) }),
+  }),
+}));
 
 function makeReq(body: any, headers: Record<string, string>) {
   return new NextRequest('http://localhost/api/notify', {
@@ -16,11 +25,13 @@ function makeReq(body: any, headers: Record<string, string>) {
 
 beforeEach(() => {
   sendMock.mockReset();
+  sendMultiMock.mockReset();
+  getDocMock.mockResolvedValue({ exists: true, data: () => ({ tokens: ['t'] }) });
   process.env.NOTIFY_SECRET = 'secret';
 });
 
 describe('notify route', () => {
-  test('sends notification', async () => {
+  test('sends notification with token', async () => {
     const req = makeReq(
       { token: 't', title: 'hi', body: 'there' },
       { authorization: 'Bearer secret', 'x-forwarded-for': '1.1.1.1' }
@@ -28,6 +39,16 @@ describe('notify route', () => {
     const res = await POST(req);
     expect(res.status).toBe(200);
     expect(sendMock).toHaveBeenCalled();
+  });
+
+  test('sends notification by userId', async () => {
+    const req = makeReq(
+      { userId: 'u', title: 'hi', body: 'b' },
+      { 'x-forwarded-for': '3.3.3.3' }
+    );
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    expect(sendMultiMock).toHaveBeenCalled();
   });
 
   test('rejects invalid payload', async () => {
