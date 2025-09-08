@@ -11,6 +11,7 @@ import { SettingsProvider } from '@/hooks/use-settings';
 import { NdSprite } from '@/components/ui/nd-sprite';
 import { Inter, Lexend } from 'next/font/google';
 import SketchSprite from '@/components/ui/SketchSprite';
+import { OfflineBanner } from '@/components/notifications/OfflineBanner';
 
 const fontSans = Inter({
   subsets: ['latin'],
@@ -73,6 +74,7 @@ export default function RootLayout({
         <ThemeProvider>
           <SettingsProvider>
             <AuthProvider>
+              <OfflineBanner />
               {children}
               <Toaster />
               <Pwa />

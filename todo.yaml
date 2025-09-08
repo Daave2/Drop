@@ -1,12 +1,12 @@
 meta:
   version: 3
   commands:
-    test: "npm run lint && npm run typecheck && npm test"
+    test: npm run lint && npm run typecheck && npm test
   conventions:
-    commit: "{id}: {short_title}"
+    commit: '{id}: {short_title}'
     trailers:
-      - "Task-ID: {id}"
-      - "Task-Status: {status}"   # 'doing' or 'done'
+      - 'Task-ID: {id}'
+      - 'Task-Status: {status}'
   main_mode:
     require_checks: true
     require_task_id_in_subject: true
@@ -43,7 +43,7 @@ tasks:
   - id: ND-001
     title: Offline status indicator
     priority: P0
-    status: todo
+    status: done
     tags:
       - ui
       - pwa
@@ -51,6 +51,7 @@ tasks:
       - src/components/notifications/OfflineBanner.tsx
       - src/hooks/use-online.ts
       - src/app/layout.tsx
+      - src/hooks/use-online.test.ts
     steps:
       - Create use-online hook (listen to window online/offline).
       - Render a top banner within 2s of going offline; hide within 2s of reconnect.
