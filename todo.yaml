@@ -147,7 +147,7 @@ tasks:
   - id: ND-008
     title: Tests for report dialog component
     priority: P1
-    status: todo
+    status: done
     tags:
       - tests
       - ui
