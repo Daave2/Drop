@@ -11,7 +11,6 @@ import { useAuth } from "./auth-provider";
 
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -19,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { buttonVariants } from "./ui/button";
 import { Label } from "./ui/label";
 import { Textarea } from "./ui/textarea";
 
@@ -38,7 +38,8 @@ export default function ReportDialog({
   const [reason, setReason] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!user) {
       toast({ title: "Not signed in", description: "You must be signed in to report.", variant: "destructive" });
       return;
@@ -86,30 +87,37 @@ export default function ReportDialog({
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
+      <AlertDialogContent role="dialog" aria-modal="true" aria-label="Report Note">
         <AlertDialogHeader>
           <AlertDialogTitle>Report Note</AlertDialogTitle>
           <AlertDialogDescription>
             Why are you reporting this note? Please provide a brief explanation. Your report is anonymous to other users.
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <div className="grid gap-2">
-          <Label htmlFor="reason">Reason for reporting</Label>
-          <Textarea
-            id="reason"
-            placeholder="e.g., This note contains harassment."
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            maxLength={500}
-            required
-          />
-        </div>
-        <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={handleSubmit} disabled={isSubmitting || reason.length < 10}>
-            {isSubmitting ? "Submitting..." : "Submit Report"}
-          </AlertDialogAction>
-        </AlertDialogFooter>
+        <form onSubmit={handleSubmit} className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="reason">Reason for reporting</Label>
+            <Textarea
+              id="reason"
+              placeholder="e.g., This note contains harassment."
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              maxLength={500}
+              required
+            />
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              aria-busy={isSubmitting}
+              className={buttonVariants()}
+            >
+              {isSubmitting ? "Submitting…" : "Submit Report"}
+            </button>
+          </AlertDialogFooter>
+        </form>
       </AlertDialogContent>
     </AlertDialog>
   );
