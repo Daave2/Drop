@@ -416,3 +416,19 @@ tasks:
       - Dialog discoverable by role and name for screen readers.
       - Single submit button becomes disabled during pending.
     notes: ''
+  - id: ND-029
+    title: Sync todo lists
+    priority: P2
+    status: done
+    tags:
+      - docs
+      - meta
+    files:
+      - todo.md
+      - todo.yaml
+    steps:
+      - Mark completed tasks in todo.md based on todo.yaml
+      - Add missing tasks from backlog to todo.md
+    acceptance:
+      - todo.md matches tasks and statuses in todo.yaml
+    notes: ''
