@@ -33,7 +33,15 @@ const ModerateContentOutputSchema = z.object({
 export type ModerateContentOutput = z.infer<typeof ModerateContentOutputSchema>;
 
 export async function moderateContent(input: ModerateContentInput): Promise<ModerateContentOutput> {
-  return moderateContentFlow(input);
+  try {
+    return await moderateContentFlow(input);
+  } catch (err) {
+    const error = new Error(
+      'Moderation temporarily unavailable. Please retry.'
+    ) as Error & { status?: number };
+    error.status = 503;
+    throw error;
+  }
 }
 
 const prompt = ai.definePrompt({
