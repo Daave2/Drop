@@ -334,7 +334,7 @@ tasks:
   - id: ND-018
     title: Address npm audit issues (crit:117 high:0 mod:2 low:3)
     priority: P1
-    status: todo
+    status: done
     tags:
       - security
       - deps
