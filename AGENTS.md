@@ -13,6 +13,7 @@ This repo uses **Next.js** + **TypeScript**. Commits to **main** are allowed wit
 3. **Checks must pass locally** before committing:
    ```bash
    npm run lint && npm run typecheck && npm test
+   ```
 4. Update todo.yaml in the same commit:
 Advance status (todo → doing or doing → done).
 Append the commit SHA under the task (commits array).
