@@ -15,6 +15,7 @@
     "tasks:status": "ts-node scripts/task-tools.ts status",
     "tasks:add": "ts-node scripts/task-tools.ts add",
     "tasks:report": "ts-node scripts/task-trailers.ts report",
+    "tasks:scan": "ts-node scripts/find-issues.ts",
     "tasks:verify": "ts-node scripts/task-trailers.ts verify"
   },
   "dependencies": {
@@ -80,28 +81,14 @@
     "genkit-cli": "^1.14.1",
     "js-yaml": "^4.1.0",
     "jsdom": "^26.1.0",
+    "madge": "^6.1.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
+    "ts-prune": "^0.10.3",
     "typescript": "^5",
     "vite": "^7.1.4",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4"
-  }
-  {
-  "scripts": {
-    "tasks:scan": "ts-node scripts/find-issues.ts",
-    "tasks:next": "ts-node scripts/task-tools.ts next",
-    "tasks:status": "ts-node scripts/task-tools.ts status",
-    "tasks:add": "ts-node scripts/task-tools.ts add",
-    "tasks:report": "ts-node scripts/task-trailers.ts report",
-    "tasks:verify": "ts-node scripts/task-trailers.ts verify"
-  },
-  "devDependencies": {
-    "@types/js-yaml": "^4.0.9",
-    "js-yaml": "^4.1.0",
-    "madge": "^6.1.0",
-    "ts-node": "^10.9.2",
-    "ts-prune": "^0.10.3"
   }
 }

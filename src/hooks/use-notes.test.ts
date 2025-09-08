@@ -112,5 +112,30 @@ describe('useNotes', () => {
     await waitFor(() => expect(result.current.notes).toHaveLength(1))
     expect(getDocs).toHaveBeenCalledTimes(1)
   })
+
+  test('ignores cache when center changes', async () => {
+    ;(getDocs as any).mockResolvedValue({
+      docs: [
+        {
+          id: '1',
+          data: () => ({ lat: 1, lng: 2, teaser: 't', type: 'text', score: 1, createdAt: null }),
+        },
+      ],
+    })
+    const { useNotes } = await import('./use-notes')
+    const { result } = renderHook(() => useNotes())
+
+    await act(async () => {
+      await result.current.fetchNotes([0, 0])
+    })
+    await waitFor(() => expect(result.current.notes).toHaveLength(1))
+    expect(getDocs).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      await result.current.fetchNotes([0.1, 0.1])
+    })
+    await waitFor(() => expect(result.current.notes).toHaveLength(1))
+    expect(getDocs).toHaveBeenCalledTimes(2)
+  })
 })
 

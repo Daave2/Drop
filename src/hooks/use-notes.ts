@@ -43,10 +43,13 @@ export function useNotes() {
 
     // Generate geohash bounds around the provided center point. Each bound
     // corresponds to a Firestore query that is later merged. We use these
-    // bounds plus the current zoom (if available) as the cache key.
+    // bounds, the current zoom (if available), and a rounded center point as
+    // the cache key to avoid stale results when the map center changes within
+    // the same geohash window.
     const bounds = geohashQueryBounds(center, RADIUS_M);
     const zoom = Math.round((window as any)?.mapZoom ?? 0);
-    const cacheKey = `${bounds.map((b: [string, string]) => b.join("")).join("|")}:${zoom}`;
+    const roundedCenter = center.map((c) => c.toFixed(3)).join(",");
+    const cacheKey = `${bounds.map((b: [string, string]) => b.join("")).join("|")}:${zoom}:${roundedCenter}`;
     const cached = CACHE.get(cacheKey);
     if (cached) {
       if (process.env.NODE_ENV === "development") {
