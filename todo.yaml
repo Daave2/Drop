@@ -43,7 +43,7 @@ tasks:
   - id: ND-001
     title: Offline status indicator
     priority: P0
-    status: todo
+    status: done
     tags:
       - ui
       - pwa
@@ -51,6 +51,7 @@ tasks:
       - src/components/notifications/OfflineBanner.tsx
       - src/hooks/use-online.ts
       - src/app/layout.tsx
+      - src/hooks/use-online.test.ts
     steps:
       - Create use-online hook (listen to window online/offline).
       - Render a top banner within 2s of going offline; hide within 2s of reconnect.
@@ -130,7 +131,7 @@ tasks:
   - id: ND-007
     title: Unit tests for content moderation flow
     priority: P0
-    status: todo
+    status: done
     tags:
       - tests
       - safety
@@ -197,13 +198,14 @@ tasks:
   - id: ND-011
     title: Strengthen validation in notify API route
     priority: P0
-    status: todo
+    status: done
     tags:
       - api
       - safety
     files:
       - src/app/api/notify/route.ts
       - src/lib/validators.ts
+      - .env.example
     steps:
       - zod schema for {token,title,body}; max body 2KB.
       - Return structured 400/401/429/5xx errors.
@@ -226,7 +228,7 @@ tasks:
   - id: ND-013
     title: Tests for notify API route
     priority: P0
-    status: todo
+    status: done
     tags:
       - tests
       - api
@@ -252,4 +254,15 @@ tasks:
       - package.json
     acceptance:
       - Trailers replace SHA recording; tasks CLI updated; commit history report available.
+    notes: ''
+  - id: ND-015
+    title: Document NOTIFY_SECRET environment variable
+    priority: P2
+    status: todo
+    tags:
+      - docs
+    steps:
+      - Explain purpose of NOTIFY_SECRET in README.
+    acceptance:
+      - README mentions NOTIFY_SECRET.
     notes: ''
