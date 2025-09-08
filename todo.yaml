@@ -1,13 +1,16 @@
 meta:
-  version: 2
+  version: 3
   commands:
-    test: npm run lint && npm run typecheck && npm test
+    test: "npm run lint && npm run typecheck && npm test"
   conventions:
-    commit: '{id}: {short_title}'
-    footer: 'Refs: {id}'
+    commit: "{id}: {short_title}"
+    trailers:
+      - "Task-ID: {id}"
+      - "Task-Status: {status}"   # 'doing' or 'done'
   main_mode:
     require_checks: true
     require_task_id_in_subject: true
+    use_commit_trailers: true
 defaults:
   owner: '@unassigned'
   labels:
@@ -36,19 +39,6 @@ tasks:
     acceptance:
       - All checks PASS; missing pieces added.
       - Scripts run locally (lint/type/test OK).
-    commits:
-      - sha: e51c9bb
-        message: fix todo.yaml schema and add maintenance task
-        time: '2025-09-08T10:59:32.215Z'
-      - sha: b72c304
-        message: fix AGENTS main-mode block
-        time: '2025-09-08T11:00:13.947Z'
-      - sha: 66c3754
-        message: add task-tools scripts and deps
-        time: '2025-09-08T11:00:26.636Z'
-      - sha: 1dc370e
-        message: add CI workflow
-        time: '2025-09-08T11:00:41.953Z'
     notes: Maintenance/meta task to validate automation.
   - id: ND-001
     title: Offline status indicator
@@ -69,7 +59,6 @@ tasks:
       - DevTools offline triggers banner within 2s; hides within 2s on reconnect.
       - Map pans/zooms; no console errors.
       - Unit test stubs navigator.onLine.
-    commits: []
     notes: Task originated in todo.md.
   - id: ND-002
     title: Cache note queries in useNotes to reduce Firestore reads
@@ -87,7 +76,6 @@ tasks:
     acceptance:
       - Returning to a previous area doesn’t refetch within 30s.
       - Hook API remains unchanged.
-    commits: []
     notes: Hook referenced in structure.
   - id: ND-003
     title: Tests for note-sheet-content component
@@ -100,7 +88,6 @@ tasks:
       - src/components/note-sheet-content.test.tsx
     acceptance:
       - Tests present and passing.
-    commits: []
     notes: Already complete.
   - id: ND-004
     title: Notifications button has accessible label
@@ -113,7 +100,6 @@ tasks:
       - src/components/notifications-button.tsx
     acceptance:
       - Icon-only button has aria-label or visible text.
-    commits: []
     notes: Already complete.
   - id: ND-005
     title: Audit icon-only buttons for accessible labels
@@ -129,7 +115,6 @@ tasks:
       - Fix Testing Library queries by role/name.
     acceptance:
       - 'Axe: 0 critical on /, /profile, note sheet.'
-    commits: []
     notes: ''
   - id: ND-006
     title: Document required environment variables
@@ -141,7 +126,6 @@ tasks:
       - README.md
     acceptance:
       - README lists env vars and example .env.
-    commits: []
     notes: Already complete.
   - id: ND-007
     title: Unit tests for content moderation flow
@@ -158,7 +142,6 @@ tasks:
       - Error case returns 503 with retry guidance.
     acceptance:
       - Allowed sample persists; blocked sample rejected; error handled.
-    commits: []
     notes: ''
   - id: ND-008
     title: Tests for report dialog component
@@ -174,7 +157,6 @@ tasks:
       - Validate required reason; disable submit while pending; success state.
     acceptance:
       - Tests cover happy/invalid/pending paths.
-    commits: []
     notes: ''
   - id: ND-009
     title: Rate limiting for reportNoteFlow
@@ -193,7 +175,6 @@ tasks:
       - Hide note at threshold (default 3; env configurable).
     acceptance:
       - Limits enforced; threshold hide; tests included.
-    commits: []
     notes: ''
   - id: ND-010
     title: 'Service Worker: cache note images (SWR)'
@@ -212,7 +193,6 @@ tasks:
       - Purge on version bump.
     acceptance:
       - Images load offline; tests simulate fetch/cache.
-    commits: []
     notes: ''
   - id: ND-011
     title: Strengthen validation in notify API route
@@ -229,7 +209,6 @@ tasks:
       - Return structured 400/401/429/5xx errors.
     acceptance:
       - Manual curl tests pass; invalid payloads rejected.
-    commits: []
     notes: ''
   - id: ND-012
     title: Provide .env.example and remove real keys
@@ -243,7 +222,6 @@ tasks:
       - README.md
     acceptance:
       - .env.example exists with placeholders; README references it.
-    commits: []
     notes: Already complete.
   - id: ND-013
     title: Tests for notify API route
@@ -258,5 +236,20 @@ tasks:
       - Mock FCM; test success + invalid + unauth + rate-limit.
     acceptance:
       - All cases pass in Vitest; coverage includes error paths.
-    commits: []
+    notes: ''
+  - id: ND-014
+    title: Switch to commit trailers
+    priority: P0
+    status: done
+    tags:
+      - automation
+      - tooling
+    files:
+      - AGENTS.md
+      - todo.yaml
+      - scripts/task-tools.ts
+      - scripts/task-trailers.ts
+      - package.json
+    acceptance:
+      - Trailers replace SHA recording; tasks CLI updated; commit history report available.
     notes: ''
