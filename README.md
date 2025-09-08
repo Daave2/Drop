@@ -60,6 +60,7 @@ GEMINI_API_KEY=your-gemini-key
 
 Key documents for orientation:
 
+- `todo.yaml` – machine-readable backlog for automated agents (Codex) and humans.
 - [`docs/blueprint.md`](docs/blueprint.md) – product goals and feature overview.
 - [`structure.md`](structure.md) – architecture and source layout.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) – development workflow and coding guidelines.
