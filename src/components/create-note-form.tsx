@@ -317,6 +317,7 @@ export default function CreateNoteForm({
                 size="icon"
                 className="absolute top-2 right-2 h-6 w-6"
                 onClick={handleRemoveImage}
+                aria-label="Remove image"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -343,6 +344,7 @@ export default function CreateNoteForm({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={isSubmitting}
+            aria-label="Add image"
           >
             <Camera className="h-4 w-4" />
           </Button>

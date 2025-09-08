@@ -407,6 +407,7 @@ function MapViewContent() {
 
       <Button
         className="absolute right-4 rounded-full w-12 h-12 shadow-lg bottom-20 sm:bottom-24 sm:w-14 sm:h-14"
+        aria-label="Add note"
         onClick={() => {
             setCreatingNote(true);
             setSelectedNote(null);
@@ -423,6 +424,7 @@ function MapViewContent() {
         className="absolute right-4 rounded-full w-12 h-12 shadow-lg bottom-36 sm:bottom-40 sm:w-14 sm:h-14"
         onClick={handleCenterMap}
         disabled={!location}
+        aria-label="Center map"
       >
         <LocateFixed className="w-6 h-6" />
       </Button>

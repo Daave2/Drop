@@ -114,7 +114,13 @@ export default function ReplyForm({
         <p className="text-xs text-muted-foreground text-right">{text.length}/120</p>
         {error && <p className="text-sm text-destructive mt-1">{error}</p>}
       </div>
-      <Button type="submit" size="icon" className="h-full" disabled={isSubmitting}>
+      <Button
+        type="submit"
+        size="icon"
+        className="h-full"
+        disabled={isSubmitting}
+        aria-label="Send reply"
+      >
         {isSubmitting ? (
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
         ) : (
