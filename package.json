@@ -14,7 +14,8 @@
     "tasks:next": "ts-node scripts/task-tools.ts next",
     "tasks:status": "ts-node scripts/task-tools.ts status",
     "tasks:add": "ts-node scripts/task-tools.ts add",
-    "tasks:record": "ts-node scripts/task-tools.ts record"
+    "tasks:report": "ts-node scripts/task-trailers.ts report",
+    "tasks:verify": "ts-node scripts/task-trailers.ts verify"
   },
   "dependencies": {
     "@genkit-ai/googleai": "^1.14.1",

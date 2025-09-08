@@ -5,7 +5,6 @@ import yaml from 'js-yaml';
 
 type Priority = 'P0' | 'P1' | 'P2';
 type Status = 'todo' | 'doing' | 'pr' | 'done' | 'blocked';
-type CommitRef = { sha: string; message: string; time: string };
 
 type Task = {
   id: string;
@@ -18,14 +17,10 @@ type Task = {
   steps?: string[];
   acceptance?: string[];
   notes?: string;
-  commits?: CommitRef[];
+  // commits removed in Trailer Mode
 };
 
-type Data = {
-  meta?: any;
-  defaults?: any;
-  tasks: Task[];
-};
+type Data = { meta?: any; defaults?: any; tasks: Task[] };
 
 const file = path.resolve(process.cwd(), 'todo.yaml');
 
@@ -55,11 +50,7 @@ if (cmd === 'next') {
     data.tasks.find(t => t.status === 'todo' && t.priority === 'P0') ??
     data.tasks.find(t => t.status === 'todo' && t.priority === 'P1') ??
     data.tasks.find(t => t.status === 'todo');
-  if (!next) {
-    console.log('No pending tasks.');
-    process.exit(0);
-  }
-  console.log(JSON.stringify(next, null, 2));
+  console.log(next ? JSON.stringify(next, null, 2) : 'No pending tasks.');
 } else if (cmd === 'status') {
   const [id, status] = rest as [string, Status];
   if (!id || !status) {
@@ -68,10 +59,7 @@ if (cmd === 'next') {
   }
   const data = load();
   const task = data.tasks.find(t => t.id === id);
-  if (!task) {
-    console.error('task not found');
-    process.exit(1);
-  }
+  if (!task) { console.error('task not found'); process.exit(1); }
   task.status = status;
   save(data);
   console.log(`Updated ${id} ⇒ ${status}`);
@@ -83,32 +71,15 @@ if (cmd === 'next') {
   }
   const data = load();
   const id = nextId(data.tasks);
-  const task: Task = { id, title, priority: 'P2', status: 'todo', commits: [] };
+  const task: Task = { id, title, priority: 'P2', status: 'todo' };
   data.tasks.push(task);
   save(data);
   console.log(`Added ${id}: ${title}`);
-} else if (cmd === 'record') {
-  const [id, sha, ...msg] = rest;
-  const message = (msg ?? []).join(' ').trim();
-  if (!id || !sha || !message) {
-    console.error('usage: ts-node scripts/task-tools.ts record <ID> <SHA> "message"');
-    process.exit(1);
-  }
-  const data = load();
-  const task = data.tasks.find(t => t.id === id);
-  if (!task) {
-    console.error('task not found');
-    process.exit(1);
-  }
-  task.commits = task.commits ?? [];
-  task.commits.push({ sha, message, time: new Date().toISOString() });
-  save(data);
-  console.log(`Recorded commit for ${id}: ${sha} ${message}`);
 } else {
   console.log(`Usage:
   ts-node scripts/task-tools.ts next
   ts-node scripts/task-tools.ts status ND-001 doing
   ts-node scripts/task-tools.ts add "New follow-up task"
-  ts-node scripts/task-tools.ts record ND-001 <sha> "short message"
 `);
 }
+
