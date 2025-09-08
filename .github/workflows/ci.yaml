@@ -1,0 +1,218 @@
+
+---
+
+### `todo.yaml`  *(replace entire file; includes main-mode meta + commit history slots)*
+```yaml
+# NoteDrop Task Backlog (machine-readable)
+# Priority: P0 (Now), P1 (Next), P2 (Later)
+# Status: todo | doing | pr | done | blocked
+meta:
+  version: 2
+  commands:
+    test: "npm run lint && npm run typecheck && npm test"
+  conventions:
+    commit: "{id}: {short_title}"
+    footer: "Refs: {id}"
+  main_mode:
+    require_checks: true
+    require_task_id_in_subject: true
+defaults:
+  owner: "@unassigned"
+  labels: ["codex", "automation"]
+
+tasks:
+  - id: ND-001
+    title: "Offline status indicator"
+    priority: P0
+    status: todo
+    tags: [ui, pwa]
+    files:
+      - src/components/notifications/OfflineBanner.tsx
+      - src/hooks/use-online.ts
+      - src/app/layout.tsx
+    steps:
+      - "Create use-online hook (listen to window online/offline)."
+      - "Render a top banner within 2s of going offline; hide within 2s of reconnect."
+      - "Block network-required actions with a friendly toast while offline."
+    acceptance:
+      - "DevTools offline triggers banner within 2s; hides within 2s on reconnect."
+      - "Map pans/zooms; no console errors."
+      - "Unit test stubs navigator.onLine."
+    commits: []
+    notes: "Task originated in todo.md."
+
+  - id: ND-002
+    title: "Cache note queries in useNotes to reduce Firestore reads"
+    priority: P1
+    status: todo
+    tags: [perf, pwa]
+    files:
+      - src/hooks/use-notes.ts
+      - src/lib/cache.ts
+    steps:
+      - "LRU cache by geohash window + zoom; TTL 30s; dedupe results."
+      - "Log cache hits in dev."
+    acceptance:
+      - "Returning to a previous area doesn’t refetch within 30s."
+      - "Hook API remains unchanged."
+    commits: []
+    notes: "Hook referenced in structure."
+
+  - id: ND-003
+    title: "Tests for note-sheet-content component"
+    priority: P2
+    status: done
+    tags: [tests, ui]
+    files:
+      - src/components/note-sheet-content.test.tsx
+    acceptance:
+      - "Tests present and passing."
+    commits: []
+    notes: "Already complete."
+
+  - id: ND-004
+    title: "Notifications button has accessible label"
+    priority: P2
+    status: done
+    tags: [a11y, ui]
+    files:
+      - src/components/notifications-button.tsx
+    acceptance:
+      - "Icon-only button has aria-label or visible text."
+    commits: []
+    notes: "Already complete."
+
+  - id: ND-005
+    title: "Audit icon-only buttons for accessible labels"
+    priority: P1
+    status: todo
+    tags: [a11y, ui]
+    files:
+      - src/components/**/*
+    steps:
+      - "Find icon-only buttons; add aria-label or text."
+      - "Fix Testing Library queries by role/name."
+    acceptance:
+      - "Axe: 0 critical on /, /profile, note sheet."
+    commits: []
+    notes: ""
+
+  - id: ND-006
+    title: "Document required environment variables"
+    priority: P2
+    status: done
+    tags: [docs]
+    files:
+      - README.md
+    acceptance:
+      - "README lists env vars and example .env."
+    commits: []
+    notes: "Already complete."
+
+  - id: ND-007
+    title: "Unit tests for content moderation flow"
+    priority: P0
+    status: todo
+    tags: [tests, safety]
+    files:
+      - src/ai/flows/content-moderation.ts
+      - src/ai/flows/content-moderation.test.ts
+    steps:
+      - "Mock Genkit/Gemini; allow-list and block-list samples."
+      - "Error case returns 503 with retry guidance."
+    acceptance:
+      - "Allowed sample persists; blocked sample rejected; error handled."
+    commits: []
+    notes: ""
+
+  - id: ND-008
+    title: "Tests for report dialog component"
+    priority: P1
+    status: todo
+    tags: [tests, ui]
+    files:
+      - src/components/report-dialog.tsx
+      - src/components/report-dialog.test.tsx
+    steps:
+      - "Validate required reason; disable submit while pending; success state."
+    acceptance:
+      - "Tests cover happy/invalid/pending paths."
+    commits: []
+    notes: ""
+
+  - id: ND-009
+    title: "Rate limiting for reportNoteFlow"
+    priority: P1
+    status: todo
+    tags: [api, safety, tests]
+    files:
+      - src/ai/flows/report-note-flow.ts
+      - src/lib/rate-limit.ts
+      - src/ai/flows/report-note-flow.test.ts
+    steps:
+      - "5 reports/10min per UID; 20/hr per IP."
+      - "Hide note at threshold (default 3; env configurable)."
+    acceptance:
+      - "Limits enforced; threshold hide; tests included."
+    commits: []
+    notes: ""
+
+  - id: ND-010
+    title: "Service Worker: cache note images (SWR)"
+    priority: P1
+    status: todo
+    tags: [pwa, perf, tests]
+    files:
+      - public/service-worker.js
+      - src/sw.ts
+      - src/sw.test.ts
+    steps:
+      - "Cache /images/notes/* with stale-while-revalidate; cap 100 entries or 20MB."
+      - "Purge on version bump."
+    acceptance:
+      - "Images load offline; tests simulate fetch/cache."
+    commits: []
+    notes: ""
+
+  - id: ND-011
+    title: "Strengthen validation in notify API route"
+    priority: P0
+    status: todo
+    tags: [api, safety]
+    files:
+      - src/app/api/notify/route.ts
+      - src/lib/validators.ts
+    steps:
+      - "zod schema for {token,title,body}; max body 2KB."
+      - "Return structured 400/401/429/5xx errors."
+    acceptance:
+      - "Manual curl tests pass; invalid payloads rejected."
+    commits: []
+    notes: ""
+
+  - id: ND-012
+    title: "Provide .env.example and remove real keys"
+    priority: P2
+    status: done
+    tags: [docs, safety]
+    files:
+      - .env.example
+      - README.md
+    acceptance:
+      - ".env.example exists with placeholders; README references it."
+    commits: []
+    notes: "Already complete."
+
+  - id: ND-013
+    title: "Tests for notify API route"
+    priority: P0
+    status: todo
+    tags: [tests, api]
+    files:
+      - src/app/api/notify/route.test.ts
+    steps:
+      - "Mock FCM; test success + invalid + unauth + rate-limit."
+    acceptance:
+      - "All cases pass in Vitest; coverage includes error paths."
+    commits: []
+    notes: ""
