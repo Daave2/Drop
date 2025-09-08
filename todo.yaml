@@ -1,0 +1,171 @@
+# NoteDrop Task Backlog (machine-readable)
+# Priority: P0 (Now), P1 (Next), P2 (Later)
+# Status: todo | doing | pr | done | blocked
+meta:
+  version: 1
+  commands:
+    test: "npm run lint && npm run typecheck && npm test"
+    dev: "npm run dev"
+  conventions:
+    branch: "feat/{id}-{kebab-title}"
+    commit: "{id}: {short_title}"
+    pr_title: "{id}: {title}"
+    pr_body: "Implements: {id}\n\n## Summary\n{summary}\n\n## Tests\n- {tests}"
+defaults:
+  owner: "@unassigned"
+  labels: ["codex", "automation"]
+tasks:
+  - id: ND-001
+    title: "Offline status banner"
+    priority: P0
+    status: todo
+    owner: "@unassigned"
+    tags: [ui, pwa]
+    files:
+      - src/components/notifications/OfflineBanner.tsx
+      - src/hooks/use-online.ts
+      - src/app/layout.tsx
+    steps:
+      - "Create use-online hook (listens to window 'online'/'offline')."
+      - "Render <OfflineBanner/> globally; show within 2s offline, hide within 2s online."
+      - "Block network-required actions with friendly toast when offline."
+    acceptance:
+      - "Toggle devtools offline: banner appears/disappears within 2s."
+      - "No console errors; map still pans/zooms."
+      - "Unit test stubs navigator.onLine and passes."
+    tests:
+      - src/components/notifications/OfflineBanner.test.tsx
+
+  - id: ND-002
+    title: "Validate /api/notify with zod + limits"
+    priority: P0
+    status: todo
+    owner: "@unassigned"
+    tags: [api, safety, tests]
+    files:
+      - src/app/api/notify/route.ts
+      - src/lib/validators.ts
+      - src/lib/rate-limit.ts
+      - src/app/api/notify/route.test.ts
+    steps:
+      - "Add zod schema: {token, title, body} strings; max body 2KB."
+      - "401 if unauth; 429 via rate-limit helper (60/min per UID/IP)."
+      - "Return structured errors {code,message,details}."
+    acceptance:
+      - "200 valid; 400 zod fail; 401 unauth; 429 when exceeded."
+      - "Tests cover all paths; snapshots stable."
+
+  - id: ND-003
+    title: "Moderation flow tests"
+    priority: P0
+    status: todo
+    tags: [tests, safety]
+    files:
+      - src/ai/flows/content-moderation.ts
+      - src/ai/flows/content-moderation.test.ts
+    steps:
+      - "Mock Genkit/Gemini; allow-list and block-list samples."
+      - "Error case returns 503 with retry suggestion."
+    acceptance:
+      - "Allowed sample persists; blocked sample rejected; error handled."
+
+  - id: ND-004
+    title: "Tests for /api/notify route"
+    priority: P0
+    status: todo
+    tags: [tests, api]
+    files:
+      - src/app/api/notify/route.test.ts
+    steps:
+      - "Mock FCM; test success + invalid + unauth + rate-limit."
+    acceptance:
+      - "All tests pass; coverage ≥ the route diff."
+
+  - id: ND-005
+    title: "Client cache for nearby notes (geohash window)"
+    priority: P1
+    status: todo
+    tags: [perf, pwa]
+    files:
+      - src/hooks/use-nearby.ts
+      - src/lib/cache.ts
+    steps:
+      - "LRU by geohash window + zoom; TTL 30s; dedupe."
+      - "Log cache hits in dev."
+    acceptance:
+      - "Returning to previous area does not refetch for 30s."
+      - "Hook API unchanged."
+
+  - id: ND-006
+    title: "Rate-limit report-note flow"
+    priority: P1
+    status: todo
+    tags: [api, safety, tests]
+    files:
+      - src/ai/flows/report-note-flow.ts
+      - src/lib/rate-limit.ts
+      - firestore.rules
+      - src/ai/flows/report-note-flow.test.ts
+    steps:
+      - "5 reports/10min per UID; 20/hr per IP."
+      - "Hide note at threshold (default 3 reports, env configurable)."
+    acceptance:
+      - "Limits enforced; third report hides; tests cover thresholds."
+
+  - id: ND-007
+    title: "Service Worker: cache note images (SWR)"
+    priority: P1
+    status: todo
+    tags: [pwa, perf, tests]
+    files:
+      - public/firebase-messaging-sw.js
+      - src/sw.ts
+      - src/sw.test.ts
+    steps:
+      - "Cache /images/notes/* with stale-while-revalidate; cap 100 entries or 20MB."
+      - "Purge on version bump."
+    acceptance:
+      - "Images load offline; tests simulate fetch & cache."
+
+  - id: ND-008
+    title: "A11y sweep: icon-only buttons need labels"
+    priority: P1
+    status: todo
+    tags: [a11y, ui]
+    files:
+      - src/components/**/*
+    steps:
+      - "Add aria-label or visible text to icon-only controls."
+      - "Fix queryable names in tests."
+    acceptance:
+      - "Axe: 0 critical on /, /profile, note sheet."
+      - "Testing Library can find buttons by name."
+
+  - id: ND-009
+    title: "Theme: Sketch overlay polish (global)"
+    priority: P2
+    status: todo
+    tags: [ui]
+    files:
+      - src/app/themes/sketch.css
+      - src/components/theme/theme-provider.tsx
+    steps:
+      - "Ensure [role='dialog'] and .sheet-content get double-stroke."
+      - "Add .field-wrap helper around inputs in critical forms."
+    acceptance:
+      - "Switching to Sketch instantly roughens drawers/forms site-wide."
+
+  - id: ND-010
+    title: "Docs: seeding + architecture"
+    priority: P2
+    status: todo
+    tags: [docs]
+    files:
+      - docs/seeding.md
+      - README.md
+      - structure.md
+    steps:
+      - "Add scripts/seed.ts instructions and architecture diagram link."
+    acceptance:
+      - "New engineer can run seed and see notes in <5 min."
+
