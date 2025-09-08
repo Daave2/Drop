@@ -88,4 +88,20 @@
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^3.2.4"
   }
+  {
+  "scripts": {
+    "tasks:scan": "ts-node scripts/find-issues.ts",
+    "tasks:next": "ts-node scripts/task-tools.ts next",
+    "tasks:status": "ts-node scripts/task-tools.ts status",
+    "tasks:add": "ts-node scripts/task-tools.ts add",
+    "tasks:report": "ts-node scripts/task-trailers.ts report",
+    "tasks:verify": "ts-node scripts/task-trailers.ts verify"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "js-yaml": "^4.1.0",
+    "madge": "^6.1.0",
+    "ts-node": "^10.9.2",
+    "ts-prune": "^0.10.3"
+  }
 }
