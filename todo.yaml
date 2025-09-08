@@ -396,3 +396,23 @@ tasks:
     acceptance:
       - ts-node scripts/task-tools.ts next runs without YAML errors.
     notes: ''
+  - id: ND-028
+    title: Stabilize ReportDialog tests and a11y name
+    priority: P0
+    status: done
+    tags:
+      - tests
+      - a11y
+      - ui
+    files:
+      - src/components/report-dialog.test.tsx
+      - src/components/report-dialog.tsx
+    steps:
+      - Scope queries to the active dialog in tests.
+      - Ensure single submit button toggles disabled during pending.
+      - Give ReportDialog an accessible name.
+    acceptance:
+      - Vitest passes for ReportDialog without multiple elements error.
+      - Dialog discoverable by role and name for screen readers.
+      - Single submit button becomes disabled during pending.
+    notes: ''
