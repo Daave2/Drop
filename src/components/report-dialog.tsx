@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { collection, doc, runTransaction, serverTimestamp } from "firebase/firestore";
 
 import { useToast } from "@/hooks/use-toast";
