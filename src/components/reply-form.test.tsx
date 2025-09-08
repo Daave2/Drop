@@ -48,4 +48,9 @@ describe("ReplyForm", () => {
     expect(textarea.value.length).toBe(120);
     screen.getByText("120/120");
   });
+
+  it("has an accessible send button", () => {
+    render(<ReplyForm noteId="1" />);
+    expect(screen.getByRole("button", { name: /send reply/i })).toBeTruthy();
+  });
 });

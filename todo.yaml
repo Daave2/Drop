@@ -105,7 +105,7 @@ tasks:
   - id: ND-005
     title: Audit icon-only buttons for accessible labels
     priority: P1
-    status: todo
+    status: done
     tags:
       - a11y
       - ui
@@ -341,7 +341,7 @@ tasks:
       - Review `npm audit` and run `npm audit fix` where safe.
       - Pin or replace vulnerable dependencies.
     acceptance:
-      - `npm audit` reports 0 critical/high vulnerabilities.
+      - "`npm audit` reports 0 critical/high vulnerabilities."
     notes: ''
   - id: ND-019
     title: Fix MapView test mock to forward ref
@@ -381,4 +381,17 @@ tasks:
       - Ensure mock does not pass `onOpenChange` to DOM elements.
     acceptance:
       - No warning about unknown event handler `onOpenChange`.
+    notes: ''
+  - id: ND-022
+    title: Fix todo.yaml indentation to allow task parsing
+    priority: P0
+    status: done
+    tags:
+      - tooling
+    files:
+      - todo.yaml
+    steps:
+      - Correct malformed indentation in ND-018 entry.
+    acceptance:
+      - ts-node scripts/task-tools.ts next runs without YAML errors.
     notes: ''
