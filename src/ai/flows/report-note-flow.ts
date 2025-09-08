@@ -16,6 +16,7 @@ import {
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { REPORT_THRESHOLD } from '@/lib/reporting';
+import { rateLimit } from '@/lib/rate-limit';
 
 const reportNoteFlow = ai.defineFlow(
   {
@@ -30,6 +31,12 @@ const reportNoteFlow = ai.defineFlow(
     }
 
     try {
+      if (
+        rateLimit(`uid:${parsed.data.reporterUid}`, 5, 10 * 60 * 1000) ||
+        rateLimit(`ip:${parsed.data.ip}`, 20, 60 * 60 * 1000)
+      ) {
+        return { success: false, message: 'Too many reports. Please try later.' };
+      }
       if (!getApps().length) {
         initializeApp();
       }

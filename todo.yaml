@@ -147,7 +147,7 @@ tasks:
   - id: ND-008
     title: Tests for report dialog component
     priority: P1
-    status: todo
+    status: done
     tags:
       - tests
       - ui
@@ -162,7 +162,7 @@ tasks:
   - id: ND-009
     title: Rate limiting for reportNoteFlow
     priority: P1
-    status: todo
+    status: done
     tags:
       - api
       - safety
@@ -171,6 +171,7 @@ tasks:
       - src/ai/flows/report-note-flow.ts
       - src/lib/rate-limit.ts
       - src/ai/flows/report-note-flow.test.ts
+      - src/ai/flows/report-note.ts
     steps:
       - 5 reports/10min per UID; 20/hr per IP.
       - Hide note at threshold (default 3; env configurable).
@@ -341,7 +342,7 @@ tasks:
       - Review `npm audit` and run `npm audit fix` where safe.
       - Pin or replace vulnerable dependencies.
     acceptance:
-      - "`npm audit` reports 0 critical/high vulnerabilities."
+      - '`npm audit` reports 0 critical/high vulnerabilities.'
     notes: ''
   - id: ND-019
     title: Fix MapView test mock to forward ref

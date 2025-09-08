@@ -1,6 +1,7 @@
 import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { resetRateLimits } from '@/lib/rate-limit';
 
-const { setMock, updateMock, getFirestoreMock, collectionMock } = vi.hoisted(() => {
+const { setMock, updateMock, getFirestoreMock, collectionMock, getMock } = vi.hoisted(() => {
   const setMock = vi.fn();
   const updateMock = vi.fn();
   const getMock = vi.fn(async () => ({ data: () => ({ reportCount: 0 }) }));
@@ -8,7 +9,7 @@ const { setMock, updateMock, getFirestoreMock, collectionMock } = vi.hoisted(() 
   const docMock = vi.fn(() => ({}));
   const collectionMock = vi.fn(() => ({ doc: docMock }));
   const getFirestoreMock = vi.fn(() => ({ collection: collectionMock, runTransaction: runTransactionMock }));
-  return { setMock, updateMock, getFirestoreMock, collectionMock };
+  return { setMock, updateMock, getFirestoreMock, collectionMock, getMock };
 });
 
 vi.mock('firebase-admin/app', () => ({
@@ -29,6 +30,8 @@ import { reportNote } from './report-note-flow';
 
 beforeEach(() => {
   vi.clearAllMocks();
+  resetRateLimits();
+  getMock.mockResolvedValue({ data: () => ({ reportCount: 0 }) });
 });
 
 describe('reportNote', () => {
@@ -37,6 +40,7 @@ describe('reportNote', () => {
       noteId: 'note1',
       reason: 'This note is inappropriate',
       reporterUid: 'user1',
+      ip: '1.1.1.1',
     });
     expect(res).toEqual({ success: true, message: 'Report submitted successfully.' });
     expect(collectionMock).toHaveBeenCalledWith('reports');
@@ -55,8 +59,61 @@ describe('reportNote', () => {
       noteId: 'note1',
       reason: 'short',
       reporterUid: 'user1',
+      ip: '1.1.1.1',
     });
     expect(res.success).toBe(false);
     expect(setMock).not.toHaveBeenCalled();
+  });
+
+  test('limits reports per uid', async () => {
+    for (let i = 0; i < 5; i++) {
+      const res = await reportNote({
+        noteId: 'n',
+        reason: 'This note is inappropriate',
+        reporterUid: 'user1',
+        ip: '2.2.2.2',
+      });
+      expect(res.success).toBe(true);
+    }
+    const res = await reportNote({
+      noteId: 'n',
+      reason: 'This note is inappropriate',
+      reporterUid: 'user1',
+      ip: '2.2.2.2',
+    });
+    expect(res.success).toBe(false);
+  });
+
+  test('limits reports per ip', async () => {
+    for (let i = 0; i < 20; i++) {
+      const res = await reportNote({
+        noteId: 'n',
+        reason: 'This note is inappropriate',
+        reporterUid: `u${i}`,
+        ip: '3.3.3.3',
+      });
+      expect(res.success).toBe(true);
+    }
+    const res = await reportNote({
+      noteId: 'n',
+      reason: 'This note is inappropriate',
+      reporterUid: 'final',
+      ip: '3.3.3.3',
+    });
+    expect(res.success).toBe(false);
+  });
+
+  test('hides note at threshold', async () => {
+    getMock.mockResolvedValueOnce({ data: () => ({ reportCount: 2 }) });
+    await reportNote({
+      noteId: 'note1',
+      reason: 'This note is inappropriate',
+      reporterUid: 'user1',
+      ip: '4.4.4.4',
+    });
+    expect(updateMock).toHaveBeenCalledWith(expect.any(Object), {
+      reportCount: 3,
+      visibility: 'unlisted',
+    });
   });
 });

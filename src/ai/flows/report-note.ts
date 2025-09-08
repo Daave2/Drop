@@ -15,6 +15,7 @@ export const ReportNoteInputSchema = z.object({
     .max(500)
     .describe('The reason the user is reporting this note.'),
   reporterUid: z.string().describe('The UID of the user making the report.'),
+  ip: z.string().describe('IP address of the user making the report.'),
 });
 export type ReportNoteInput = z.infer<typeof ReportNoteInputSchema>;
 
